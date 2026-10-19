@@ -2,11 +2,9 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { AudioIcon } from "@/components/ui/icons";
+import { EdSlider, EditorButton } from "./ui";
 
-/**
- * Bar timeline di bawah canvas — menampung strip scene/slide/segment
- * (disediakan per tipe) plus tombol Voice Over / Tambah Backsound dan zoom.
- */
 export function TimelineBar({
   children,
   onVoiceOver,
@@ -25,55 +23,61 @@ export function TimelineBar({
   pageLabel?: string;
 }) {
   return (
-    <div className="flex shrink-0 flex-col border-t border-zinc-200/60 bg-zinc-50/70 dark:border-white/10 dark:bg-zinc-900/40">
-      <div className="flex items-start gap-3 px-4 py-3">
+    <div className="flex shrink-0 flex-col border-t border-ed-line-3 bg-ed-timeline backdrop-blur-[10px]">
+      <div className="flex items-start gap-3 px-4 py-4">
         <div className="min-w-0 flex-1 overflow-x-auto">
           <div className="flex items-center gap-2">{children}</div>
         </div>
 
-        <div className="flex w-44 shrink-0 flex-col gap-1.5">
+        <div className="flex w-[779px] shrink-0 flex-col gap-1">
           {onVoiceOver ? (
-            <button
-              type="button"
-              onClick={onVoiceOver}
-              className="w-full rounded-lg border border-zinc-200/70 bg-white/70 px-2 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-white dark:border-white/10 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
+            <EditorButton variant="timeline" size={28} className="w-full justify-center rounded-md" onClick={onVoiceOver}>
               Voice Over
-            </button>
+            </EditorButton>
           ) : null}
           {showBacksound && onAddBacksound ? (
-            <button
-              type="button"
+            <EditorButton
+              variant="timeline"
+              size={28}
+              className="w-full justify-center rounded-md"
               onClick={onAddBacksound}
-              className="w-full rounded-lg border border-zinc-200/70 bg-white/70 px-2 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-white dark:border-white/10 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              icon={<AudioIcon width={14} height={14} />}
             >
               Tambah Backsound
-            </button>
+            </EditorButton>
           ) : null}
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-zinc-200/60 px-4 py-2 dark:border-white/10">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">{pageLabel ?? "Halaman 1/1"}</span>
-        <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          Zoom
-          <input
-            type="range"
-            min={10}
-            max={200}
-            value={zoom}
-            onChange={(e) => onZoom(Number(e.target.value))}
-            aria-label="Zoom timeline"
-            className="h-1 w-28 cursor-pointer appearance-none rounded-full bg-zinc-200 accent-indigo-600 dark:bg-zinc-700"
-          />
-          <span className="w-9 text-right tabular-nums">{zoom}%</span>
-        </label>
+      <div className="flex h-[57px] shrink-0 items-center justify-end gap-3 border-t border-ed-line-3 px-4">
+        <div className="flex items-center gap-4">
+          <div className="flex w-[204px] items-center gap-4">
+            <span className="font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim">
+              Zoom
+            </span>
+            <EdSlider
+              value={zoom}
+              min={10}
+              max={200}
+              step={5}
+              onChange={onZoom}
+              ariaLabel="Zoom timeline"
+              variant="zoom"
+              className="min-w-0 flex-1"
+            />
+            <span className="w-9 shrink-0 text-right font-[family-name:var(--font-ed-alt)] text-xs leading-4 tabular-nums text-ed-dim">
+              {zoom}%
+            </span>
+          </div>
+          <EditorButton variant="chip" size={28} className="rounded-full">
+            {pageLabel ?? "Page 1/1"}
+          </EditorButton>
+        </div>
       </div>
     </div>
   );
 }
 
-/** Item strip timeline (thumbnail) — dipakai video (scene) & carousel (slide). */
 export function TimelineItem({
   active,
   onClick,
@@ -92,16 +96,22 @@ export function TimelineItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-32 shrink-0 overflow-hidden rounded-lg border text-left transition-colors",
+        "relative w-[100px] shrink-0 overflow-hidden rounded-md border text-left transition-colors",
         active
-          ? "border-indigo-500 ring-2 ring-indigo-500/30"
-          : "border-zinc-200/70 hover:border-zinc-300 dark:border-white/10 dark:hover:border-white/20",
+          ? "border-ed-sel-b shadow-sm"
+          : "border-transparent hover:border-ed-input-b",
       )}
     >
-      <div className="flex h-16 items-center justify-center bg-zinc-100 dark:bg-zinc-800">{children}</div>
-      <div className="truncate px-2 py-1 text-[10px] text-zinc-600 dark:text-zinc-300">
+      <div className="flex h-[52px] items-center justify-center bg-black/20">
+        {children}
+      </div>
+      <div className="absolute bottom-1 left-1.5 rounded bg-black/55 px-1 py-0.5">
+        <span className="font-[family-name:var(--font-ed)] text-[8px] leading-4 font-medium text-white">
+          {sublabel ?? "00:00"}
+        </span>
+      </div>
+      <div className="truncate px-1.5 py-0.5 text-[9px] leading-tight text-ed-dim">
         {label}
-        {sublabel ? <span className="text-zinc-400 dark:text-zinc-500"> · {sublabel}</span> : null}
       </div>
     </button>
   );

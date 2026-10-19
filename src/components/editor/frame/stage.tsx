@@ -1,21 +1,22 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { Button } from "@heroui/react";
-import { PauseIcon, PlayIcon, RedoIcon, RefreshIcon, UndoIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
+import {
+  ImageRemoveIcon,
+  PauseIcon,
+  PlayIcon,
+  RedoIcon,
+  UndoIcon,
+} from "@/components/ui/icons";
 import type { EditorController } from "../use-editor-state";
 
-function fmt(sec: number) {
+export function fmt(sec: number) {
   const s = Math.max(0, Math.floor(sec));
   const m = Math.floor(s / 60);
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/**
- * Gaya bingkai preview yang muat penuh di dalam container bertipe `size`
- * (container query): lebar = min(lebar tersedia, tinggi × rasio).
- * Pakai bersama elemen induk ber-`style={{ containerType: "size" }}`.
- */
 export function fitFrame(ratio: string): CSSProperties {
   const [w, h] = ratio.split(":").map(Number);
   const rw = Number.isFinite(w) && w > 0 ? w : 1;
@@ -28,10 +29,6 @@ export function fitFrame(ratio: string): CSSProperties {
   };
 }
 
-/**
- * Bar atas area canvas — tombol “Ganti Aset” (aksi spesifik tipe) di kiri,
- * Undo/Redo dari controller di kanan, sesuai desain Figma.
- */
 export function StageBar({
   controller,
   onSwapAsset,
@@ -44,45 +41,48 @@ export function StageBar({
   right?: ReactNode;
 }) {
   return (
-    <div className="flex shrink-0 items-center justify-between gap-2">
+    <div className="flex shrink-0 items-center justify-between gap-2 px-4">
       {onSwapAsset ? (
-        <Button size="sm" variant="secondary" onPress={onSwapAsset}>
-          <RefreshIcon width={14} height={14} /> {swapLabel}
-        </Button>
+        <button
+          type="button"
+          onClick={onSwapAsset}
+          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-[#C8C8D8] transition-colors hover:text-ed-text"
+        >
+          <ImageRemoveIcon width={15} height={15} />
+          {swapLabel}
+        </button>
       ) : (
         <span />
       )}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-3">
         {right}
-        <Button
-          size="sm"
-          variant="secondary"
-          isIconOnly
-          aria-label="Undo"
-          isDisabled={!controller.canUndo}
-          onPress={controller.undo}
-        >
-          <UndoIcon width={15} height={15} />
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          isIconOnly
-          aria-label="Redo"
-          isDisabled={!controller.canRedo}
-          onPress={controller.redo}
-        >
-          <RedoIcon width={15} height={15} />
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Undo"
+            disabled={!controller.canUndo}
+            onClick={controller.undo}
+            className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-lg border border-ed-input-b bg-ed-elev px-2 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-dim transition-colors hover:text-ed-text disabled:pointer-events-none disabled:opacity-50"
+          >
+            <UndoIcon width={15} height={15} />
+            Undo
+          </button>
+          <button
+            type="button"
+            aria-label="Redo"
+            disabled={!controller.canRedo}
+            onClick={controller.redo}
+            className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-lg border border-ed-input-b bg-ed-elev px-2 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-dim transition-colors hover:text-ed-text disabled:pointer-events-none disabled:opacity-50"
+          >
+            <RedoIcon width={15} height={15} />
+            Redo
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-/**
- * Playbar di bawah preview — penanda waktu, tombol putar/jeda, dan durasi total.
- * `playing`/`onToggle` dikontrol oleh tipe editor (video/audio).
- */
 export function Playbar({
   current,
   total,
@@ -97,18 +97,36 @@ export function Playbar({
   className?: string;
 }) {
   return (
-    <div className={`flex shrink-0 items-center justify-center gap-4 text-xs tabular-nums text-zinc-500 dark:text-zinc-400 ${className ?? ""}`}>
-      <span>{fmt(current)}</span>
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center gap-4 px-4 pb-1",
+        className,
+      )}
+    >
+      <span className="font-[family-name:var(--font-ed-alt)] text-xs leading-4 tabular-nums text-ed-dim">
+        {fmt(current)}
+      </span>
       {onToggle ? (
-        <Button size="sm" variant="secondary" isIconOnly aria-label={playing ? "Jeda" : "Putar"} onPress={onToggle}>
-          {playing ? <PauseIcon width={16} height={16} /> : <PlayIcon width={16} height={16} />}
-        </Button>
+        <button
+          type="button"
+          aria-label={playing ? "Jeda" : "Putar"}
+          onClick={onToggle}
+          className="flex h-9 shrink-0 items-center justify-center rounded-full bg-ed-play px-2.5 text-ed-dim shadow-sm transition-colors hover:text-ed-text"
+        >
+          {playing ? (
+            <PauseIcon width={16} height={16} />
+          ) : (
+            <PlayIcon width={16} height={16} />
+          )}
+        </button>
       ) : (
-        <span className="flex size-8 items-center justify-center">
+        <span className="flex h-9 items-center justify-center rounded-full bg-ed-play px-2.5 text-ed-dim">
           <PlayIcon width={16} height={16} />
         </span>
       )}
-      <span>{fmt(total)}</span>
+      <span className="font-[family-name:var(--font-ed-alt)] text-xs leading-4 tabular-nums text-ed-dim">
+        {fmt(total)}
+      </span>
     </div>
   );
 }

@@ -1,64 +1,43 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button, Chip } from "@heroui/react";
-import { cn } from "@/lib/utils";
+import { toast } from "@heroui/react";
+import { patch } from "@/lib/client";
 import {
-  AudioIcon,
-  ChevronLeftIcon,
-  DownloadIcon,
+  ArrowLeftIcon,
   LayersIcon,
-  MoonIcon,
+  PencilIcon,
   SaveIcon,
-  SettingsIcon,
-  SunIcon,
-  VideoIcon,
 } from "@/components/ui/icons";
-import { useTheme } from "@/components/theme/theme-provider";
-import type { SaveStatus } from "../use-editor-state";
-import type { CreationDTO } from "@/types";
+import type { Caption, CreationDTO } from "@/types";
 import { PropertiesPanel } from "./properties-panel";
+import { EditorButton } from "./ui";
 import type { PanelTab } from "./use-editor-ui";
 
-const STATUS: Record<SaveStatus, { label: string; color: "default" | "warning" | "success" | "danger" }> = {
-  idle: { label: "Tersimpan", color: "default" },
-  saving: { label: "Menyimpan…", color: "warning" },
-  saved: { label: "Tersimpan", color: "success" },
-  error: { label: "Gagal menyimpan", color: "danger" },
-  conflict: { label: "Konflik", color: "danger" },
-};
-
-const TYPE_META: Record<CreationDTO["type"], { label: string; icon: ReactNode }> = {
-  image: { label: "Gambar", icon: <LayersIcon width={15} height={15} /> },
-  carousel: { label: "Carousel", icon: <LayersIcon width={15} height={15} /> },
-  video: { label: "Video", icon: <VideoIcon width={15} height={15} /> },
-  audio: { label: "Audio", icon: <AudioIcon width={15} height={15} /> },
-  article: { label: "Artikel", icon: <SettingsIcon width={15} height={15} /> },
-};
-
-/** Props chrome yang dibangun EditorShell dan dipakai semua tipe editor. */
+/**
+ * Props chrome yang dibangun EditorShell dan dipakai semua tipe editor.
+ * Disesuaikan dengan Figma "Video Editor" (node 660-13750): tanpa chip
+ * status, tombol muat ulang, maupun blok caption — autosave tetap
+ * berjalan senyap; banner konflik ditampilkan terpisah via `conflictBanner`.
+ */
 export interface FrameChrome {
   creation: CreationDTO;
   title: string;
-  status: SaveStatus;
   backHref?: string;
   onBack: () => void;
   onSave: () => void;
   onExport: () => void;
-  reload: () => void;
-  reloading: boolean;
   panelTab: PanelTab;
   onPanelTab: (t: PanelTab) => void;
   watermark: ReactNode;
   voiceover: ReactNode;
-  /** CaptionPanel — dirender otomatis di bawah tab Properties. */
-  caption?: ReactNode;
   conflictBanner?: ReactNode;
 }
 
 /**
- * Kerangka editor canvas: rail aset (kiri), header, stage (tengah),
- * panel Properties (kanan), dan timeline (bawah) — mengikuti geometri Figma.
+ * Kerangka editor canvas: rail aset (kiri, 256px), header (57px), stage
+ * (tengah), panel Properties (kanan, 356px), dan timeline (bawah) —
+ * mengikuti geometri & palet Figma "Video Editor".
  */
 export function EditorFrame({
   chrome,
@@ -73,112 +52,165 @@ export function EditorFrame({
   panel: ReactNode;
   timeline?: ReactNode;
 }) {
-  const { creation, title, status, onBack, onSave, onExport, reload, reloading, panelTab, onPanelTab, watermark, voiceover, caption, conflictBanner } = chrome;
+  const { creation, title, onBack, onSave, onExport, panelTab, onPanelTab, watermark, voiceover, conflictBanner } =
+    chrome;
   const [railOpen, setRailOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-  const s = STATUS[status];
-  const meta = TYPE_META[creation.type];
+
+  // ── Edit judul inline (header) — persist ke caption pertama brief ────────
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  const [titleOverride, setTitleOverride] = useState<string | null>(null);
+  const shownTitle = titleOverride ?? title;
+
+  async function commitTitle() {
+    setEditing(false);
+    const next = draft.trim();
+    if (!next || next === shownTitle) {
+      setDraft(shownTitle);
+      return;
+    }
+    if (!creation.briefId || creation.captions.length === 0) {
+      // Tanpa brief terkait — judul hanya hidup di sesi ini.
+      setTitleOverride(next);
+      return;
+    }
+    const captions: Caption[] = creation.captions.map((c, i) => (i === 0 ? { ...c, text: next } : c));
+    try {
+      await patch(`/api/briefs/${creation.briefId}`, { captions });
+      setTitleOverride(next);
+      toast.success("Judul diperbarui.");
+    } catch (e) {
+      toast.danger((e as Error).message ?? "Gagal memperbarui judul.");
+      setDraft(shownTitle);
+    }
+  }
 
   return (
-    <div className="relative flex h-[calc(100dvh-7rem)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-zinc-200/60 bg-white/50 md:h-[calc(100dvh-3.5rem)] dark:border-white/10 dark:bg-zinc-950/30">
-      {/* Header */}
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200/60 px-4 py-2.5 dark:border-white/10">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Kembali"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            <ChevronLeftIcon width={18} height={18} />
-          </button>
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
-            {meta.icon}
-          </span>
-          <div className="min-w-0">
-            <h1 className="truncate text-sm font-semibold leading-tight">{title || "Editor konten"}</h1>
-            <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-              <Chip size="sm" color={s.color} variant="soft">
-                {s.label}
-              </Chip>
-              <span className="hidden sm:inline">{meta.label}</span>
+    <div
+      data-ed-theme="dark"
+      className="relative flex h-[calc(100dvh-7rem)] min-h-[420px] w-full flex-col overflow-hidden bg-ed-bg font-[family-name:var(--font-ed)] text-ed-text md:h-[calc(100dvh-2.5rem)]"
+    >
+      {/* Aksen latar belakang — dua elips ter-blur sesuai desain */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[-14px] top-[-347px] size-[406px] rounded-full bg-[#14B8A6] opacity-70"
+        style={{ filter: "blur(182px)" }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-[985px] top-[632px] size-[406px] rounded-full bg-[#E1306C] opacity-30"
+        style={{ filter: "blur(182px)" }}
+      />
+
+      <div className="relative flex min-h-0 flex-1">
+        {/* Rail aset (kiri, 256px) — desktop lg+ */}
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-ed-line-2 bg-ed-panel lg:flex">{rail}</aside>
+
+        {/* Kolom kanan: header + (stage | panel) */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Header (57px) */}
+          <header className="flex h-[57px] shrink-0 items-center justify-between gap-3 border-b border-ed-line-2 bg-ed-header px-4 backdrop-blur-[10px]">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Kembali"
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text"
+              >
+                <ArrowLeftIcon width={16} height={16} />
+              </button>
+              <span aria-hidden="true" className="h-[26px] w-px shrink-0 bg-ed-line-strong" />
+              {editing ? (
+                <input
+                  value={draft}
+                  autoFocus
+                  aria-label="Judul konten"
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={() => void commitTitle()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void commitTitle();
+                    if (e.key === "Escape") {
+                      setDraft(shownTitle);
+                      setEditing(false);
+                    }
+                  }}
+                  className="h-7 w-full min-w-0 max-w-80 rounded-md border border-ed-input-b bg-ed-elev px-2 text-sm font-medium text-ed-text outline-none"
+                />
+              ) : (
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <h1 className="truncate text-sm font-medium leading-5 text-ed-text">
+                    {shownTitle || "Editor konten"}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraft(shownTitle);
+                      setEditing(true);
+                    }}
+                    aria-label="Edit judul"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text"
+                  >
+                    <PencilIcon width={16} height={16} />
+                  </button>
+                </div>
+              )}
             </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <EditorButton variant="default" onClick={onSave} icon={<SaveIcon width={16} height={16} />}>
+                Simpan draft
+              </EditorButton>
+              <EditorButton variant="light" onClick={onExport} className="font-semibold">
+                Publish Content
+              </EditorButton>
+              <button
+                type="button"
+                onClick={() => setPanelOpen(true)}
+                aria-label="Buka properties"
+                className="flex size-7 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text xl:hidden"
+              >
+                <LayersIcon width={16} height={16} />
+              </button>
+            </div>
+          </header>
+
+          {/* Body: stage (tengah) + panel Properties (kanan, 356px) */}
+          <div className="flex min-h-0 flex-1">
+            <div className="flex min-w-0 flex-1 flex-col">
+              {conflictBanner}
+              <div className="min-h-0 flex-1 overflow-y-auto">{stage}</div>
+              {timeline}
+            </div>
+
+            <PropertiesPanel
+              tab={panelTab}
+              onTab={onPanelTab}
+              watermark={watermark}
+              voiceover={voiceover}
+              className="hidden xl:flex border-l border-ed-line bg-ed-panel"
+            >
+              {panel}
+            </PropertiesPanel>
           </div>
         </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            isIconOnly
-            aria-label="Ganti tema"
-            onPress={() => setTheme(isDark ? "light" : "dark")}
-          >
-            {isDark ? <SunIcon width={16} height={16} /> : <MoonIcon width={16} height={16} />}
-          </Button>
-          <Button size="sm" variant="secondary" onPress={reload} isDisabled={reloading}>
-            <DownloadIcon width={14} height={14} />
-            <span className="hidden md:inline">{reloading ? "Memuat…" : "Muat ulang"}</span>
-          </Button>
-          <Button size="sm" variant="secondary" onPress={onSave}>
-            <SaveIcon width={14} height={14} />
-            <span className="hidden sm:inline">Simpan draft</span>
-          </Button>
-          <Button size="sm" variant="primary" onPress={onExport}>
-            Publish Content
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            isIconOnly
-            aria-label="Buka properties"
-            className="xl:hidden"
-            onPress={() => setPanelOpen(true)}
-          >
-            <SettingsIcon width={16} height={16} />
-          </Button>
-        </div>
-      </header>
-
-      {/* Body */}
-      <div className="flex min-h-0 flex-1">
-        {/* Rail aset (kiri) — desktop lg+ */}
-        <div className="hidden w-64 shrink-0 border-r border-zinc-200/60 bg-white/40 dark:border-white/10 dark:bg-zinc-900/30 lg:block">
-          {rail}
-        </div>
-
-        {/* Kolom tengah: stage + timeline */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          {conflictBanner}
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">{stage}</div>
-          {timeline}
-        </div>
-
-        {/* Panel Properties (kanan) — desktop xl+ */}
-        <PropertiesPanel
-          tab={panelTab}
-          onTab={onPanelTab}
-          watermark={watermark}
-          voiceover={voiceover}
-          className="hidden xl:flex"
-        >
-          {panel}
-          {panelTab === "properties" ? caption : null}
-        </PropertiesPanel>
       </div>
 
       {/* Rail drawer (mobile/tablet < lg) */}
       {railOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setRailOpen(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl dark:bg-zinc-900">
-            <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/60 px-3 py-2 dark:border-white/10">
+          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-ed-panel shadow-xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-ed-line-2 px-3 py-2">
               <span className="text-sm font-semibold">Aset</span>
-              <Button size="sm" variant="ghost" isIconOnly aria-label="Tutup" onPress={() => setRailOpen(false)}>
+              <button
+                type="button"
+                onClick={() => setRailOpen(false)}
+                aria-label="Tutup"
+                className="flex size-7 items-center justify-center rounded-md bg-ed-elev text-ed-dim"
+              >
                 ✕
-              </Button>
+              </button>
             </div>
             <div className="min-h-0 flex-1">{rail}</div>
           </div>
@@ -189,7 +221,7 @@ export function EditorFrame({
       {panelOpen ? (
         <div className="fixed inset-0 z-50 xl:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setPanelOpen(false)} />
-          <div className="absolute inset-y-0 right-0 flex w-[356px] max-w-full flex-col bg-white shadow-xl dark:bg-zinc-900">
+          <div className="absolute inset-y-0 right-0 flex w-[356px] max-w-full flex-col bg-ed-panel shadow-xl">
             <PropertiesPanel
               tab={panelTab}
               onTab={onPanelTab}
@@ -202,7 +234,7 @@ export function EditorFrame({
             <button
               type="button"
               onClick={() => setPanelOpen(false)}
-              className="shrink-0 border-t border-zinc-200/60 px-4 py-2 text-sm font-medium text-zinc-600 dark:border-white/10 dark:text-zinc-300"
+              className="shrink-0 border-t border-ed-line-2 px-4 py-2 text-sm font-medium text-ed-dim"
             >
               Tutup
             </button>
@@ -215,7 +247,7 @@ export function EditorFrame({
         type="button"
         onClick={() => setRailOpen(true)}
         aria-label="Buka aset"
-        className="absolute bottom-3 left-3 z-40 flex size-11 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-transform hover:scale-105 lg:hidden"
+        className="absolute bottom-3 left-3 z-40 flex size-11 items-center justify-center rounded-full bg-ed-accent text-white shadow-lg transition-transform hover:scale-105 lg:hidden"
       >
         <LayersIcon width={18} height={18} />
       </button>

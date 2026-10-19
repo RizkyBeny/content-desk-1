@@ -6,14 +6,12 @@ import { Button, toast } from "@heroui/react";
 import { apiFetch } from "@/lib/client";
 import { useEditorState } from "./use-editor-state";
 import { useAssetUrls } from "./use-asset-urls";
-import { CaptionPanel } from "./caption-panel";
 import { ImageEditor } from "./image-editor";
 import { CarouselEditor } from "./carousel-editor";
 import { ArticleEditor } from "./article-editor";
 import { AudioEditor } from "./audio-editor";
 import { VideoEditor } from "./video-editor";
 import { useEditorUi } from "./frame/use-editor-ui";
-import { SectionBlock } from "./frame/ui";
 import { VoiceOverPanel, WatermarkPanel } from "./frame/sections";
 import type { FrameChrome } from "./frame/editor-frame";
 import type { TypeEditorProps } from "./frame/types";
@@ -67,14 +65,11 @@ function EditorInner({
 
   const chrome: FrameChrome = {
     creation,
-    title: creation.captions[0]?.text?.slice(0, 40) || "Editor konten",
-    status: controller.status,
+    title: creation.captions[0]?.text || "Editor konten",
     backHref,
     onBack: () => router.push(backHref ?? "/studio"),
     onSave: () => void controller.save(),
     onExport: () => toast.info("Ekspor tersedia di tahap berikutnya."),
-    reload,
-    reloading,
     panelTab: ui.panelTab,
     onPanelTab: (t) => patchUi({ panelTab: t }),
     watermark: <WatermarkPanel ui={ui} patchUi={patchUi} />,
@@ -85,12 +80,6 @@ function EditorInner({
         onGenerate={() => toast.info("Voice over akan dihasilkan di tahap berikutnya.")}
       />
     ),
-    caption:
-      creation.briefId || creation.captions.length > 0 ? (
-        <SectionBlock title="Caption" description="Rekomendasi caption dari brief — bisa diedit dan disalin.">
-          <CaptionPanel briefId={creation.briefId} captions={creation.captions} />
-        </SectionBlock>
-      ) : undefined,
     conflictBanner:
       controller.status === "conflict" ? (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-300/60 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">

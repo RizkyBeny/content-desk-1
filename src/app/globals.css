@@ -346,3 +346,151 @@ body {
     0 2px 8px 0 rgba(0, 0, 0, 0.06),
     0 14px 28px 0 rgba(0, 0, 0, 0.08);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Editor canvas (Figma "Video Editor" — node 660-13750).
+   Palet dark adalah default editor; varian light di-[data-ed-theme="light"].
+   ───────────────────────────────────────────────────────────────────────── */
+
+@theme inline {
+  --color-ed-bg: var(--ed-bg);
+  --color-ed-panel: var(--ed-panel);
+  --color-ed-elev: var(--ed-elev);
+  --color-ed-seg: var(--ed-seg);
+  --color-ed-tabbar: var(--ed-tabbar);
+  --color-ed-tabbar-line: var(--ed-tabbar-line);
+  --color-ed-tab-active: var(--ed-tab-active);
+  --color-ed-rail-active: var(--ed-rail-active);
+  --color-ed-tab-inactive: var(--ed-tab-inactive);
+  --color-ed-line: var(--ed-line);
+  --color-ed-line-2: var(--ed-line-2);
+  --color-ed-line-3: var(--ed-line-3);
+  --color-ed-line-strong: var(--ed-line-strong);
+  --color-ed-input-b: var(--ed-input-b);
+  --color-ed-text: var(--ed-text);
+  --color-ed-dim: var(--ed-dim);
+  --color-ed-title: var(--ed-title);
+  --color-ed-sub: var(--ed-sub);
+  --color-ed-active-bg: var(--ed-active-bg);
+  --color-ed-active-t: var(--ed-active-t);
+  --color-ed-header: var(--ed-header);
+  --color-ed-timeline: var(--ed-timeline);
+  --color-ed-ghost: var(--ed-ghost);
+  --color-ed-ghost-b: var(--ed-ghost-b);
+  --color-ed-tl-btn: var(--ed-tl-btn);
+  --color-ed-page: var(--ed-page);
+  --color-ed-page-b: var(--ed-page-b);
+  --color-ed-page-t: var(--ed-page-t);
+  --color-ed-light-btn: var(--ed-light-btn);
+  --color-ed-light-t: var(--ed-light-t);
+  --color-ed-play: var(--ed-play);
+  --color-ed-sel-b: var(--ed-sel-b);
+  --color-ed-accent: var(--ed-accent);
+  --color-ed-accent-soft: var(--ed-accent-soft);
+  --color-ed-danger: var(--ed-danger);
+  --color-ed-swatch-b: var(--ed-swatch-b);
+  --font-ed: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+  --font-ed-alt: var(--font-geist-sans), var(--font-inter), system-ui, sans-serif;
+}
+
+/* Dark (default editor) — nilai persis dari Figma */
+[data-ed-theme] {
+  color-scheme: dark;
+  --ed-bg: #111111;
+  --ed-panel: #161616;
+  --ed-elev: #1e1e1e;
+  --ed-seg: #1e1e1e;
+  --ed-tabbar: #1a1a1a;
+  --ed-tabbar-line: transparent;
+  --ed-tab-active: #e8e8e8;
+  --ed-rail-active: #fafafa;
+  --ed-tab-inactive: rgba(229, 229, 229, 0.7);
+  --ed-line: #202020;
+  --ed-line-2: #222222;
+  --ed-line-3: #222224;
+  --ed-line-strong: #2e2e2e;
+  --ed-input-b: #2a2a2a;
+  --ed-text: #e5e5e5;
+  --ed-dim: rgba(229, 229, 229, 0.7);
+  --ed-title: #e8e8e8;
+  --ed-sub: #d4d4d4;
+  --ed-active-bg: #ffffff;
+  --ed-active-t: #0a0a0a;
+  --ed-header: rgba(22, 22, 22, 0.8);
+  --ed-timeline: rgba(22, 22, 24, 0.8);
+  --ed-ghost: #252530;
+  --ed-ghost-b: #303040;
+  --ed-tl-btn: #1e1e22;
+  --ed-page: #1e1e24;
+  --ed-page-b: #2a2a32;
+  --ed-page-t: #525264;
+  --ed-light-btn: #efefef;
+  --ed-light-t: #111111;
+  --ed-play: #171717;
+  --ed-sel-b: #4a9eff;
+  --ed-accent: #1d4ed8;
+  --ed-accent-soft: rgba(26, 85, 216, 0.12);
+  --ed-danger: #a8383e;
+  --ed-swatch-b: #e5e5e5;
+  /* Geometri & tipografi panel (dark node 660-13752) */
+  --ed-ctl-r: 8px;
+  --ed-sec-title: 13px;
+  --ed-label-font: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+  --ed-tab-font: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+  --ed-panel-tab-size: 13px;
+  --ed-rail-tab-size: 14px;
+  --ed-switch-font: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
+  --ed-switch-weight: 600;
+  --ed-promo-hint: 11px;
+}
+
+/* Light — nilai persis dari node 362-16647 ("Final") */
+[data-ed-theme="light"] {
+  color-scheme: light;
+  --ed-bg: #f5f7ff;
+  --ed-panel: #fbfbff;
+  --ed-elev: #ffffff;
+  --ed-seg: #f5f5f5;
+  --ed-tabbar: transparent;
+  --ed-tabbar-line: #e7e7e7;
+  --ed-tab-active: #1877f2;
+  --ed-rail-active: #1877f2;
+  --ed-tab-inactive: #282828;
+  --ed-line: #e5e5e5;
+  --ed-line-2: #e5e5e5;
+  --ed-line-3: #e5e7eb;
+  --ed-line-strong: #d4d4d8;
+  --ed-input-b: #e5e5e5;
+  --ed-text: #171717;
+  --ed-dim: #737373;
+  --ed-title: #262626;
+  --ed-sub: #171717;
+  --ed-active-bg: #ffffff;
+  --ed-active-t: #0a0a0a;
+  --ed-header: rgba(255, 255, 255, 0.55);
+  --ed-timeline: rgba(255, 255, 255, 0.85);
+  --ed-ghost: #eef2ff;
+  --ed-ghost-b: #e0e7ff;
+  --ed-tl-btn: #f4f4f5;
+  --ed-page: #f4f4f5;
+  --ed-page-b: #e5e5e5;
+  --ed-page-t: #71717a;
+  --ed-light-btn: #18181b;
+  --ed-light-t: #fafafa;
+  --ed-play: #18181b;
+  --ed-sel-b: #2563eb;
+  --ed-accent: #2563eb;
+  --ed-accent-soft: rgba(26, 85, 216, 0.12);
+  --ed-danger: #c10007;
+  --ed-swatch-b: #e5e5e5;
+  /* Geometri & tipografi panel (light node 362-16647) */
+  --ed-ctl-r: 10px;
+  --ed-sec-title: 14px;
+  --ed-label-font: var(--font-geist-sans), var(--font-inter), system-ui, sans-serif;
+  --ed-tab-font: var(--font-geist-sans), var(--font-inter), system-ui, sans-serif;
+  --ed-panel-tab-size: 14px;
+  --ed-rail-tab-size: 14px;
+  --ed-switch-font: var(--font-geist-sans), var(--font-inter), system-ui, sans-serif;
+  --ed-switch-weight: 500;
+  --ed-promo-hint: 12px;
+}

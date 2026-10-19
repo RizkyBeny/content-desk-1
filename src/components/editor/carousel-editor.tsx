@@ -278,8 +278,6 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
       <CanvasEditorSection
         ratio={state.ratio}
         onRatio={(r) => controller.setState((s) => (s.type === "carousel" ? { ...s, ratio: r } : s))}
-        ui={ui}
-        patchUi={patchUi}
       />
 
       {active && (

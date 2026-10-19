@@ -19,15 +19,14 @@ import {
   AudioLatarSection,
   CanvasEditorSection,
   MediaConfigSection,
-  SubtitleSection,
   TypographySection,
   VideoPromoSection,
 } from "./frame/sections";
 import { SectionBlock, inputCls, labelCls, selectCls } from "./frame/ui";
 import type { TypeEditorProps } from "./frame/types";
-import type { Ratio, SceneObject, SubtitleCue, VideoEditorState } from "@/types";
+import type { Ratio, SceneObject, VideoEditorState } from "@/types";
 
-const RATIOS: Ratio[] = ["9:16", "16:9", "1:1"];
+const RATIOS: Ratio[] = ["16:9", "1:1", "9:16"];
 const RES: VideoEditorState["resolution"][] = ["720p", "1080p"];
 
 function uid(prefix: string) {
@@ -134,18 +133,7 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
     });
   }
 
-  function autoSubtitles() {
-    const cues: SubtitleCue[] = [];
-    let cursor = 0;
-    for (const s of scenes) {
-      const dur = Math.max(0, s.endSec - s.startSec);
-      const text = s.texts[0]?.text ?? "";
-      if (text) cues.push({ fromSec: Number(cursor.toFixed(2)), toSec: Number((cursor + dur).toFixed(2)), text });
-      cursor += dur;
-    }
-    controller.setState((s) => (s.type === "video" ? { ...s, subtitles: cues } : s));
-    toast.success(`${cues.length} subtitle dibuat dari teks on-screen.`);
-  }
+  // Auto-subtitles dihilangkan sesuai desain.
 
   function onPick(sel: MediaSelection) {
     const target = picker;
@@ -179,21 +167,18 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
         onSwapAsset={() => setPicker({ kind: "clip" })}
         swapLabel="Ganti Aset"
         right={
-          <span className="mr-1 hidden rounded-md bg-zinc-100 px-2 py-1 text-xs tabular-nums text-zinc-500 sm:inline dark:bg-zinc-800 dark:text-zinc-400">
+          <span className="mr-1 hidden font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim sm:inline">
             {state.resolution} · {scenes.length} scene · {formatTime(totalSec)}
           </span>
         }
       />
 
       <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
-        <div
-          className="relative overflow-hidden rounded-2xl bg-black shadow-lg"
-          style={fitFrame(state.ratio)}
-        >
+        <div className="relative overflow-hidden rounded-lg bg-black" style={fitFrame(state.ratio)}>
           {url ? (
-            <video src={url} className="h-full w-full object-cover" muted loop autoPlay playsInline controls />
+            <video src={url} className="h-full w-full object-cover" muted loop playsInline />
           ) : (
-            <div className="flex h-full items-center justify-center text-zinc-600">
+            <div className="flex h-full items-center justify-center text-ed-dim">
               <VideoIcon width={40} height={40} />
             </div>
           )}
@@ -262,114 +247,21 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
       <CanvasEditorSection
         ratio={state.ratio}
         onRatio={(r) => controller.setState((s) => (s.type === "video" ? { ...s, ratio: r } : s))}
-        ui={ui}
-        patchUi={patchUi}
-        durationSec={scene ? Math.round(scene.endSec - scene.startSec) : undefined}
-        onDuration={(v) => scene && patchScene(index, { endSec: scene.startSec + v })}
       />
 
-      {/* Kontrol scene aktif */}
-      <SectionBlock title={`Scene ${index + 1}`} description="Klip, durasi, dan teks on-screen scene ini.">
-        <div className="flex flex-wrap gap-1">
-          <Button size="sm" variant="secondary" onPress={() => setPicker({ kind: "clip" })}>
-            <VideoIcon width={14} height={14} /> Ganti klip
-          </Button>
-          <Button size="sm" variant="secondary" onPress={() => splitScene(index)} isDisabled={scenes.length >= 20}>
-            Split
-          </Button>
-          <Button size="sm" variant="secondary" onPress={() => duplicateScene(index)} aria-label="Duplikat scene">
-            <CopyIcon width={14} height={14} />
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            isIconOnly
-            aria-label="Naikkan scene"
-            isDisabled={index === 0}
-            onPress={() => moveScene(index, -1)}
-          >
-            ↑
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            isIconOnly
-            aria-label="Turunkan scene"
-            isDisabled={index === scenes.length - 1}
-            onPress={() => moveScene(index, 1)}
-          >
-            ↓
-          </Button>
-          <Button
-            size="sm"
-            variant="danger-soft"
-            isIconOnly
-            aria-label="Hapus scene"
-            isDisabled={scenes.length <= 1}
-            onPress={() => removeScene(index)}
-          >
-            <XIcon width={14} height={14} />
-          </Button>
-        </div>
+      <TypographySection
+        ui={ui}
+        patchUi={patchUi}
+        titleText={scene?.texts[0]?.text ?? ""}
+        onTitleText={(v) => setText(index, v)}
+      />
 
-        <label className="block">
-          <span className={`${labelCls} mb-1 flex items-center gap-1`}>
-            <TextIcon width={13} height={13} /> Teks on-screen
-          </span>
-          <textarea
-            value={scene?.texts[0]?.text ?? ""}
-            onChange={(e) => setText(index, e.target.value)}
-            rows={2}
-            placeholder="Teks yang muncul di video…"
-            className={`${inputCls} resize-none`}
-          />
-        </label>
-      </SectionBlock>
-
-      <TypographySection ui={ui} patchUi={patchUi} />
-      <MediaConfigSection ui={ui} patchUi={patchUi} />
-
-      {/* Narasi */}
-      <SectionBlock
-        title="Narasi"
-        description="Voice-over utama yang menimpa audio scene."
-        action={
-          <Button size="sm" variant="secondary" onPress={() => setPicker({ kind: "narration" })}>
-            Pilih
-          </Button>
-        }
-      >
-        {state.narration?.assetId ? (
-          <div className="space-y-2">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Narasi aktif.</p>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={state.narration.volume}
-              aria-label="Volume narasi"
-              onChange={(e) =>
-                controller.setState((s) =>
-                  s.type === "video" && s.narration
-                    ? { ...s, narration: { ...s.narration, volume: Number(e.target.value) } }
-                    : s,
-                )
-              }
-              className="h-1 w-full cursor-pointer appearance-none rounded-full bg-zinc-200 accent-indigo-600 dark:bg-zinc-700"
-            />
-            <button
-              type="button"
-              className="text-xs font-medium text-red-500 hover:text-red-600"
-              onClick={() => controller.setState((s) => (s.type === "video" ? { ...s, narration: null } : s))}
-            >
-              Hapus narasi
-            </button>
-          </div>
-        ) : (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">Belum ada narasi.</p>
-        )}
-      </SectionBlock>
+      <MediaConfigSection
+        ui={ui}
+        patchUi={patchUi}
+        durationSec={scene ? Math.max(1, Math.round(scene.endSec - scene.startSec)) : undefined}
+        onDuration={(v) => scene && patchScene(index, { endSec: scene.startSec + v })}
+      />
 
       <AudioLatarSection
         music={state.music}
@@ -377,11 +269,10 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
           controller.setState((s) => (s.type === "video" && s.music ? { ...s, music: { ...s.music, volume: v } } : s))
         }
         onClear={() => controller.setState((s) => (s.type === "video" ? { ...s, music: null } : s))}
+        onPick={() => setPicker({ kind: "music" })}
       />
 
       <VideoPromoSection ui={ui} patchUi={patchUi} />
-
-      <SubtitleSection state={state} controller={controller} onGenerate={autoSubtitles} />
     </>
   );
 

@@ -150,12 +150,7 @@ export function ImageEditor({ creation, controller, assetUrls, chrome, ui, patch
   // ── Panel Properties ────────────────────────────────────────────────────
   const panel = (
     <>
-      <CanvasEditorSection
-        ratio={state.ratio}
-        onRatio={(r) => patchSlide({ ratio: r })}
-        ui={ui}
-        patchUi={patchUi}
-      />
+      <CanvasEditorSection ratio={state.ratio} onRatio={(r) => patchSlide({ ratio: r })} />
 
       <SectionBlock title="Kartu" description="Latar, pas, dan filter dasar.">
         <SlideControls

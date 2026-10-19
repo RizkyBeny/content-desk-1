@@ -35,6 +35,7 @@ export interface EditorUiState {
 
   // Video promo (UI-only)
   promoOn: boolean;
+  promoSource: string;
   promoTransition: string;
   promoDurationSec: number;
 
@@ -61,7 +62,7 @@ export const DEFAULT_UI: EditorUiState = {
   textPlacement: "bottom",
   titleText: "",
   highlightOn: false,
-  highlightColor: "#4F46E5",
+  highlightColor: "#00B1B0",
   descOn: false,
   descText: "",
 
@@ -70,6 +71,7 @@ export const DEFAULT_UI: EditorUiState = {
   mediaDurationSec: 30,
 
   promoOn: false,
+  promoSource: "",
   promoTransition: "fade",
   promoDurationSec: 5,
 

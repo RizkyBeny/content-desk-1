@@ -390,6 +390,17 @@ export const AlignMiddleIcon = (p: IconProps) => (
   </svg>
 );
 
+/** lucide/align-center-horizontal — dipakai "Text Placement → Center". */
+export const AlignCenterHorizontalIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M2 12h20" />
+    <path d="M10 16v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4" />
+    <path d="M10 8V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4" />
+    <path d="M20 16v1a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-1" />
+    <path d="M14 8V7c0-1.1.9-2 2-2h2a2 2 0 0 1 2 2v1" />
+  </svg>
+);
+
 export const AlignBottomIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M4 20h16M8 14h8M6 8h12" />
@@ -418,5 +429,44 @@ export const SquareDashedIcon = (p: IconProps) => (
 export const ChatIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M20 12a7 7 0 0 1-7 7H8l-4 3v-4.5A7 7 0 0 1 11 5h2a7 7 0 0 1 7 7Z" />
+  </svg>
+);
+
+export const ArrowLeftIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M19 12H5" />
+    <path d="m12 19-7-7 7-7" />
+  </svg>
+);
+
+export const ExpandUpDownIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m8 9 4-4 4 4" />
+    <path d="m16 15-4 4-4-4" />
+  </svg>
+);
+
+export const ImageRemoveIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="9" cy="9" r="1.6" />
+    <path d="m3.5 17 4.5-4.5 2.5 2.5" />
+    <path d="M14.5 12.5h6" />
+  </svg>
+);
+
+export const Image01Icon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="9" cy="9" r="1.6" />
+    <path d="m3.5 17 4.5-4.5 3 3 3.5-3.5 6 6" />
+  </svg>
+);
+
+export const Upload05Icon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 16V4" />
+    <path d="m7 9 5-5 5 5" />
+    <path d="M20 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2" />
   </svg>
 );

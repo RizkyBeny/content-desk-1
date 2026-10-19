@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
@@ -18,6 +18,12 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "AI Content Creator Platform",
   description:
@@ -26,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="id" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${inter.variable}`}>
       <body className="relative min-h-dvh bg-[color:var(--background)] text-[color:var(--foreground)] antialiased">
         <ThemeScript />
         <ThemeProvider>
