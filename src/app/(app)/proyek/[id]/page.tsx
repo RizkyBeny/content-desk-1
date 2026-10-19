@@ -7,16 +7,21 @@ import type { Angle, BriefDTO, ContentType, RecommendedType } from "@/types";
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getSessionUser();
-  if (!user) redirect("/login");
+  let user;
+  if (process.env.AUTH_DISABLED === "true") {
+    user = { id: "dev", role: "admin", email: "dev@platform.local", name: "Dev User" } as any;
+  } else {
+    user = await getSessionUser();
+    if (!user) redirect("/login");
+  }
 
   let project;
   try {
-    project = await getProjectForUser(user, id);
+    project = await getProjectForUser(user as any, id);
   } catch {
     notFound();
   }
-  const brief = await getBriefByProject(user, id);
+  const brief = await getBriefByProject(user as any, id);
 
   return (
     <ProjectFlow

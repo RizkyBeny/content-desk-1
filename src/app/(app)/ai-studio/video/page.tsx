@@ -4,10 +4,16 @@ import { SpinnerBlock } from "@/components/ui/states";
 import { CreateStudio } from "@/components/create/create-studio";
 
 export default async function CreateVideoPage() {
-  const user = await getSessionUser();
+  let role: string | undefined;
+  if (process.env.AUTH_DISABLED === "true") {
+    role = "admin";
+  } else {
+    const user = await getSessionUser();
+    role = user?.role;
+  }
   return (
     <Suspense fallback={<SpinnerBlock label="Memuat…" />}>
-      <CreateStudio type="video" canModerate={user?.role === "admin"} />
+      <CreateStudio type="video" canModerate={role === "admin"} />
     </Suspense>
   );
 }
