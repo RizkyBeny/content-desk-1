@@ -1,10 +1,18 @@
 import { z } from "zod";
+import { dataMode, isMockData } from "@/lib/data-mode";
+
+/** Fallback AUTH_SECRET — hanya dipakai di mode mock (tanpa database). */
+const MOCK_AUTH_SECRET = "mock-mode-insecure-secret-0123456789abcdef";
 
 const schema = z.object({
-  DATABASE_URL: z.string().min(1, "DATABASE_URL wajib diisi"),
-  AUTH_SECRET: z.string().min(16, "AUTH_SECRET minimal 16 karakter"),
+  /** Opsional di mode mock; wajib non-kosong di mode database. */
+  DATABASE_URL: z.string().min(1).optional(),
+  /** Opsional di mode mock (ada fallback); wajib minimal 16 karakter di mode database. */
+  AUTH_SECRET: z.string().min(16).optional(),
   /** "true" = lewati login untuk development lokal (auto-login sebagai admin). */
   AUTH_DISABLED: z.enum(["true", "false"]).optional().default("false"),
+  /** "mock" = tanpa database (data in-memory dari fixture); "database" = Prisma asli. */
+  DATA_MODE: z.enum(["mock", "database"]).optional(),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
   REDIS_URL: z.string().optional().default(""),
@@ -40,6 +48,9 @@ const schema = z.object({
 });
 
 export type Env = z.infer<typeof schema> & {
+  DATA_MODE: "mock" | "database";
+  /** Selalu terisi: dari env di mode database, atau fallback di mode mock. */
+  AUTH_SECRET: string;
   QUEUE_DRIVER: "redis" | "inline";
   STORAGE_DRIVER: "local" | "s3";
 };
@@ -56,10 +67,35 @@ export function getEnv(): Env {
       .join("\n");
     throw new Error(`Konfigurasi environment tidak valid:\n${message}`);
   }
+  const mock = isMockData();
+
+  // DATABASE_URL & AUTH_SECRET: di mode mock keduanya boleh kosong (ada
+  // fallback), di mode database keduanya wajib.
+  const databaseUrl = parsed.data.DATABASE_URL ?? "";
+  const authSecret = parsed.data.AUTH_SECRET ?? (mock ? MOCK_AUTH_SECRET : "");
+  const missing: string[] = [];
+  if (!databaseUrl) missing.push("DATABASE_URL: wajib diisi");
+  if (authSecret.length < 16) missing.push("AUTH_SECRET: minimal 16 karakter");
+  if (missing.length && !mock) {
+    throw new Error(`Konfigurasi environment tidak valid:\n${missing.join("\n")}`);
+  }
+  if (missing.length) {
+    console.warn(
+      `[env] Mode mock (tanpa database): ${missing.join(", ")} — memakai fallback bawaan.`,
+    );
+  }
+
   const queueDriver: "redis" | "inline" =
     parsed.data.QUEUE_DRIVER ?? (parsed.data.REDIS_URL ? "redis" : "inline");
   const storageDriver: "local" | "s3" = parsed.data.STORAGE_DRIVER ?? "local";
-  cached = { ...parsed.data, QUEUE_DRIVER: queueDriver, STORAGE_DRIVER: storageDriver };
+  cached = {
+    ...parsed.data,
+    DATABASE_URL: databaseUrl,
+    AUTH_SECRET: authSecret,
+    DATA_MODE: parsed.data.DATA_MODE ?? dataMode(),
+    QUEUE_DRIVER: queueDriver,
+    STORAGE_DRIVER: storageDriver,
+  };
   return cached;
 }
 

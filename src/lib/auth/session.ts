@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { hashToken, randomToken } from "@/lib/crypto";
+import { authDisabled } from "@/lib/data-mode";
 import type { Role } from "@/types";
 
 export const SESSION_COOKIE = "acp_session";
@@ -71,10 +72,6 @@ async function readSessionUser(): Promise<SessionUser | null> {
     return null;
   }
   return toSessionUser(session.user);
-}
-
-function authDisabled(): boolean {
-  return process.env.AUTH_DISABLED === "true";
 }
 
 /** User pengganti saat auth dilewati: admin seed, fallback ke user pertama. Di-cache per instance server. */

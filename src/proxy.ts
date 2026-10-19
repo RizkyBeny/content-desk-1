@@ -1,16 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { authDisabled } from "@/lib/data-mode";
 
 const SESSION_COOKIE = "acp_session";
 const PROTECTED = ["/insight", "/proyek", "/studio", "/desain", "/aset", "/pengaturan"];
 
-/** Development-only: AUTH_DISABLED="true" melewati login sepenuhnya. */
-const authDisabled = process.env.AUTH_DISABLED === "true";
-
+/**
+ * Login dilewati saat mode mock (DATA_MODE=mock, tanpa database) atau saat
+ * AUTH_DISABLED="true" diset eksplisit.
+ */
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
 
-  if (authDisabled) {
+  if (authDisabled()) {
     if (pathname === "/login") {
       const url = req.nextUrl.clone();
       url.pathname = "/insight";

@@ -1,12 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { getEnv } from "@/lib/env";
+import { isMockData } from "@/lib/data-mode";
 import { fileUrl } from "./sign";
 import { guessContentType } from "./mime";
 import type { StorageAdapter, StorageObject, StorageStat } from "./types";
 
 function root(): string {
-  return path.resolve(process.cwd(), getEnv().UPLOAD_DIR);
+  const base =
+    isMockData() && !process.env.UPLOAD_DIR
+      ? "/tmp/content-desk-uploads"
+      : getEnv().UPLOAD_DIR;
+  return path.resolve(process.cwd(), base);
 }
 
 function resolveKey(key: string): string {
@@ -38,6 +43,10 @@ export const localStorage: StorageAdapter = {
   driver: "local",
 
   async put(key, data, contentType): Promise<StorageObject> {
+    if (key && key.startsWith("seed/")) {
+      // Jangan menulis ke public/; anggap berhasil untuk seed keys.
+      return { key, size: data.length, contentType };
+    }
     const full = resolveKey(key);
     await fs.mkdir(path.dirname(full), { recursive: true });
     await fs.writeFile(full, data);
@@ -46,6 +55,14 @@ export const localStorage: StorageAdapter = {
   },
 
   async get(key) {
+    if (key && key.startsWith("seed/")) {
+      const publicPath = path.resolve(process.cwd(), "public", key);
+      try {
+        return await fs.readFile(publicPath);
+      } catch {
+        return null;
+      }
+    }
     try {
       return await fs.readFile(resolveKey(key));
     } catch {
@@ -54,12 +71,21 @@ export const localStorage: StorageAdapter = {
   },
 
   async delete(key) {
+    if (key && key.startsWith("seed/")) return;
     const full = resolveKey(key);
     await fs.rm(full, { force: true });
     await fs.rm(`${full}.meta`, { force: true });
   },
 
   async exists(key) {
+    if (key && key.startsWith("seed/")) {
+      try {
+        await fs.access(path.resolve(process.cwd(), "public", key));
+        return true;
+      } catch {
+        return false;
+      }
+    }
     try {
       await fs.access(resolveKey(key));
       return true;
@@ -69,17 +95,27 @@ export const localStorage: StorageAdapter = {
   },
 
   async stat(key) {
-    const full = resolveKey(key);
+    if (key && key.startsWith("seed/")) {
+      const publicPath = path.resolve(process.cwd(), "public", key);
+      try {
+        const buf = await fs.readFile(publicPath);
+        return { size: buf.length, contentType: guessContentType(key) };
+      } catch {
+        return null;
+      }
+    }
     try {
-      const info = await fs.stat(full);
       const meta = await readMeta(key);
-      return { size: info.size, contentType: meta?.contentType ?? guessContentType(key) };
+      if (meta) return meta;
+      const buf = await fs.readFile(resolveKey(key));
+      return { size: buf.length, contentType: guessContentType(key) };
     } catch {
       return null;
     }
   },
 
   url(key, ttlSeconds) {
+    if (key && key.startsWith("seed/")) return `/${key}`;
     return fileUrl(key, ttlSeconds);
   },
 };

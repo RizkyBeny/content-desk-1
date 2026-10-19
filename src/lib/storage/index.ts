@@ -1,11 +1,14 @@
 import crypto from "node:crypto";
 import { getEnv } from "@/lib/env";
+import { isMockData } from "@/lib/data-mode";
 import { localStorage } from "./local";
 import { s3Storage } from "./s3";
 import type { StorageAdapter } from "./types";
 
 export function getStorage(): StorageAdapter {
-  return getEnv().STORAGE_DRIVER === "s3" ? s3Storage : localStorage;
+  const env = getEnv();
+  if (env.STORAGE_DRIVER === "s3") return s3Storage;
+  return localStorage;
 }
 
 /** Build a namespaced, collision-resistant storage key. */

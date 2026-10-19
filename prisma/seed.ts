@@ -107,9 +107,17 @@ async function seedQuotaConfig() {
   console.info("QuotaConfig siap.");
 }
 
-main()
-  .catch((err) => {
-    console.error("Seed error:", err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// Auto-jalan HANYA saat dieksekusi langsung (`tsx prisma/seed.ts`), bukan saat
+// di-import — mode mock (DATA_MODE=mock) memanggil main() dari
+// src/lib/db/demo-data.ts tanpa ingin menjalankan blok ini.
+const invokedDirectly = Boolean(
+  process.argv[1] && /[/\\]seed\.(ts|js|mts|mjs)$/.test(process.argv[1]),
+);
+if (invokedDirectly) {
+  main()
+    .catch((err) => {
+      console.error("Seed error:", err);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}
