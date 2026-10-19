@@ -1,0 +1,103 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ai_content_platform
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: sh -c "npx prisma migrate deploy && node server.js"
+    environment:
+      DATABASE_URL: mysql://root:root@mysql:3306/ai_content_platform
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: ai-content
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-long-random-string-min-32-chars}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      SOCIAL_PROVIDER: ${SOCIAL_PROVIDER:-mock}
+      TREND_PROVIDER: ${TREND_PROVIDER:-mock}
+      STT_PROVIDER: ${STT_PROVIDER:-mock}
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: npm run worker:prod
+    environment:
+      DATABASE_URL: mysql://root:root@mysql:3306/ai_content_platform
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: ai-content
+      S3_ACCESS_KEY_ID: minioadmin
+      S3_SECRET_ACCESS_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-long-random-string-min-32-chars}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      SOCIAL_PROVIDER: ${SOCIAL_PROVIDER:-mock}
+      TREND_PROVIDER: ${TREND_PROVIDER:-mock}
+      STT_PROVIDER: ${STT_PROVIDER:-mock}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  redis_data:
+  minio_data:

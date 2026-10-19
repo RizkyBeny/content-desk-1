@@ -1,0 +1,348 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+:root {
+  color-scheme: light;
+  --background: oklch(0.985 0.002 286.35);
+  --foreground: oklch(0.2103 0.0059 285.89);
+  --surface-glass: oklch(1 0 0 / 0.72);
+  --surface-glass-border: oklch(0.92 0.004 286.32 / 0.45);
+  --surface-glass-strong: oklch(1 0 0 / 0.88);
+  --frosted-glass-bg: #ffffffCC;
+  --frosted-glass-border: rgba(255, 255, 255, 0.3);
+  --frosted-glass-inset: inset 0 0 30px rgba(0, 0, 0, 0.2);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(12% 0.005 285.823);
+  --foreground: oklch(0.9911 0 0);
+  --surface-glass: oklch(0.2103 0.0059 285.89 / 0.6);
+  --surface-glass-border: oklch(0.92 0.004 286.32 / 0.12);
+  --surface-glass-strong: oklch(0.2103 0.0059 285.89 / 0.78);
+  --frosted-glass-bg: #18181BCC;
+  --frosted-glass-border: rgba(255, 255, 255, 0.12);
+  --frosted-glass-inset: inset 0 0 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Logo-inspired purple gradient for primary accents */
+:root,
+:host {
+  --accent: oklch(0.62 0.19 275);
+  --accent-foreground: oklch(0.9911 0 0);
+  --accent-hover: color-mix(in oklab, oklch(0.62 0.19 275) 90%, white 10%);
+}
+
+.dark,
+:root.dark,
+:host(.dark) {
+  --accent: oklch(0.62 0.19 275);
+  --accent-foreground: oklch(0.9911 0 0);
+  --accent-hover: color-mix(in oklab, oklch(0.62 0.19 275) 90%, white 10%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Visible, consistent keyboard focus ring across the app (FR-A11Y) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: color-mix(in oklch, var(--accent, oklch(0.6 0.2 280)) 20%, transparent);
+}
+
+@utility glass {
+  backdrop-filter: blur(19.2px) saturate(140%);
+  -webkit-backdrop-filter: blur(19.2px) saturate(140%);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--surface-glass-border);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.08) inset,
+    0 2px 8px 0 rgba(0, 0, 0, 0.06),
+    0 14px 28px 0 rgba(0, 0, 0, 0.08);
+}
+
+@utility glass-strong {
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--surface-glass-border);
+}
+
+@utility glass-panel {
+  backdrop-filter: blur(19.2px) saturate(140%);
+  -webkit-backdrop-filter: blur(19.2px) saturate(140%);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: 0.75rem;
+}
+
+@utility glass-card {
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.08) inset,
+    0 2px 8px 0 rgba(0, 0, 0, 0.06),
+    0 14px 28px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Skeleton loading */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in oklch, var(--foreground) 8%, transparent);
+  border-radius: 0.75rem;
+}
+
+.skeleton--shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--foreground) 7%, transparent),
+    transparent
+  );
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Entry animation untuk kartu carousel (Template) — dipicu saat mount/pergantian slide */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-in {
+  animation: card-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-in {
+    animation: none;
+  }
+}
+
+/* Lightweight shimmer for in-progress generation tiles and gallery skeletons */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--foreground) 7%, transparent),
+    transparent
+  );
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Animated running-gradient border (on hover + when selected) */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.angle-card {
+  position: relative;
+  transition:
+    box-shadow 0.35s ease,
+    transform 0.35s ease;
+}
+
+.angle-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, oklch(0.62 0.19 275) 30%, transparent),
+    0 10px 30px -6px color-mix(in oklch, oklch(0.62 0.19 275) 45%, transparent),
+    0 0 26px -4px color-mix(in oklch, oklch(0.72 0.15 220) 40%, transparent);
+}
+
+.angle-card::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0deg,
+    oklch(0.62 0.19 275) 70deg,
+    oklch(0.72 0.17 320) 130deg,
+    oklch(0.72 0.15 220) 190deg,
+    transparent 260deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: spin-border 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.angle-card:hover::before,
+.angle-card.angle-active::before {
+  opacity: 1;
+}
+
+.angle-active {
+  box-shadow: 0 0 18px -2px color-mix(in oklch, oklch(0.62 0.19 275) 45%, transparent);
+}
+
+.brief-clamp {
+  position: relative;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.brief-clamp::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2.6em;
+  pointer-events: none;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 70%);
+  mask-image: linear-gradient(to bottom, transparent, #000 70%);
+}
+
+@keyframes spin-border {
+  to {
+    --angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .skeleton--shimmer::after,
+  .shimmer::after,
+  .angle-card::before {
+    animation: none;
+  }
+
+  /* Decorative motion (fades, slides, scale, pulse) is disabled; spinners and
+     other essential loading feedback keep running. */
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes blob-float-a {
+  0% { transform: translate3d(-10px, -8px, 0) scale(1); }
+  33% { transform: translate3d(30px, -18px, 0) scale(1.08); }
+  66% { transform: translate3d(10px, 14px, 0) scale(1.04); }
+  100% { transform: translate3d(-6px, 10px, 0) scale(1.1); }
+}
+@keyframes blob-float-b {
+  0% { transform: translate3d(12px, 10px, 0) scale(1); }
+  25% { transform: translate3d(-28px, 16px, 0) scale(1.12); }
+  50% { transform: translate3d(-10px, -22px, 0) scale(1.06); }
+  75% { transform: translate3d(16px, -14px, 0) scale(1.1); }
+  100% { transform: translate3d(8px, 6px, 0) scale(1.14); }
+}
+@keyframes blob-float-c {
+  0% { transform: translate3d(8px, -6px, 0) scale(1); }
+  30% { transform: translate3d(-18px, -16px, 0) scale(1.08); }
+  60% { transform: translate3d(-6px, 24px, 0) scale(1.12); }
+  100% { transform: translate3d(14px, 8px, 0) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-animate],
+  .animate-pulse,
+  .animate-spin {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* iOS/macOS-style translucent chrome for app shell (sidebar, rail, bars) */
+
+/* frosted glass per spec */
+@utility frosted-glass {
+  backdrop-filter: blur(24px) saturate(177%);
+  -webkit-backdrop-filter: blur(24px) saturate(177%);
+  border-radius: 12px;
+  border: 1px solid var(--frosted-glass-border);
+  box-shadow: var(--frosted-glass-inset);
+  background-image: none;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Frosted-glass field well for text inputs (create composer + config panels) */
+@utility glass-sidebar {
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--surface-glass-border);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.08) inset,
+    0 2px 8px 0 rgba(0, 0, 0, 0.06),
+    0 14px 28px 0 rgba(0, 0, 0, 0.08);
+}

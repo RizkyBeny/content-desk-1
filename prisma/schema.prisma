@@ -1,0 +1,336 @@
+// AI Content Creator Platform — Prisma schema (MySQL 8)
+// Core models follow the PRD data model. Deviations (documented in README):
+//  - DataConnection owners use a join table `ConnectionOwner` instead of a JSON
+//    array, so creator-scoped queries work reliably on MySQL.
+//  - Added `Session`, `Invite`, `AiCache` for auth + AI insight caching.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("creator") // 'admin' | 'creator'
+  theme        String   @default("system") // 'light' | 'dark' | 'system'
+  niche        String?  @db.Text
+  nicheCategories Json?
+  contentLang  String   @default("id") // 'id' | 'en'
+  avatarUrl    String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions      Session[]
+  invitesSent   Invite[]          @relation("InviteInviter")
+  projects      Project[]
+  assets        Asset[]
+  references    ReferenceInput[]
+  connectionLinks ConnectionOwner[]
+  generations     Generation[]
+  quotaUsage      QuotaUsage[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?  @db.Text
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Invite {
+  id          String    @id @default(uuid())
+  email       String
+  role        String    @default("creator")
+  tokenHash   String    @unique
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  invitedBy User @relation("InviteInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONN — Data connections & metrics
+// ─────────────────────────────────────────────────────────────
+
+model DataConnection {
+  id             String    @id @default(uuid())
+  type           String // 'instagram'|'tiktok'|'x'|'facebook'|'youtube'|'internal'
+  displayName    String
+  accountHandle  String?
+  externalRef    String? // platform account id / internal endpoint ref used for mock seeding
+  accessToken    String?   @db.Text // encrypted
+  refreshToken   String?   @db.Text // encrypted
+  tokenExpiresAt DateTime?
+  config         Json? // internal: { url, apiKeyEncrypted, schedule }
+  status         String    @default("connected") // 'connected'|'syncing'|'error'|'expired'
+  lastSyncedAt   DateTime?
+  lastError      String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  owners   ConnectionOwner[]
+  metrics  ContentMetric[]
+
+  @@index([type])
+}
+
+model ConnectionOwner {
+  id           String @id @default(uuid())
+  connectionId String
+  userId       String
+
+  connection DataConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, userId])
+  @@index([userId])
+}
+
+model ContentMetric {
+  id             String   @id @default(uuid())
+  connectionId   String
+  externalId     String
+  source         String
+  format         String
+  title          String
+  thumbnailUrl   String?  @db.Text
+  url            String?  @db.Text
+  publishedAt    DateTime
+  reach          Int?
+  impressions    Int
+  engagement     Int
+  engagementRate Float
+  formatMetrics  Json
+  syncedAt       DateTime @default(now())
+
+  connection DataConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, externalId])
+  @@index([publishedAt])
+  @@index([source])
+}
+
+model TrendSignal {
+  id          String   @id @default(uuid())
+  provider    String // 'google_trends'|'youtube'|'x'
+  region      String   @default("ID")
+  keyword     String
+  category    String?
+  volumeScore Int // 0-100
+  rawPayload  Json?
+  fetchedAt   DateTime @default(now())
+
+  @@index([fetchedAt])
+  @@index([provider])
+}
+
+// ─────────────────────────────────────────────────────────────
+// FLOW — Projects, briefs, references, creations, exports
+// ─────────────────────────────────────────────────────────────
+
+model Project {
+  id          String   @id @default(uuid())
+  userId      String
+  origin      String // 'flow' | 'standalone'
+  topicTitle  String?  @db.Text
+  topicSource String? // 'trending' | 'custom'
+  topicInsight Json?
+  angleTitle  String?  @db.Text
+  angleDesc   String?  @db.Text
+  contentType String? // 'image'|'carousel'|'video'|'audio'|'article'
+  angles      Json? // Angle[] persisted for the topic (max 9 active)
+  selectedAngleId String?
+  recommendedTypes Json? // RecommendedType[]
+  status      String   @default("brief") // 'brief'|'generating'|'editing'|'exported'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brief      ContentBrief?
+  creations  Creation[]
+  references ReferenceInput[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ContentBrief {
+  id        String   @id @default(uuid())
+  projectId String   @unique
+  summary   Json
+  rows      Json
+  captions  Json
+  status    String   @default("draft") // 'draft' | 'siap'
+  versions  Json // up to 10 snapshots
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ReferenceInput {
+  id            String   @id @default(uuid())
+  userId        String
+  projectId     String?
+  kind          String // 'document'|'image'|'video'|'audio'|'url'
+  assetId       String?
+  url           String?  @db.Text
+  extractedText String?  @db.LongText
+  status        String   @default("processing") // 'processing'|'ready'|'failed'
+  createdAt     DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model Asset {
+  id          String   @id @default(uuid())
+  ownerId     String
+  type        String // 'image'|'video'|'audio'|'text'|'reference'
+  origin      String // 'upload'|'generated'|'reference'|'export'
+  name        String
+  fileUrl     String?  @db.Text
+  mimeType    String?
+  textContent String?  @db.LongText
+  tags        Json
+  visibility  String   @default("private") // 'private'|'workspace'
+  sizeBytes   BigInt?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([type])
+  @@index([origin])
+}
+
+model Creation {
+  id          String   @id @default(uuid())
+  projectId   String
+  type        String
+  editorState Json?
+  status      String   @default("generating") // 'generating'|'ready'|'failed'
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items   CreationItem[]
+
+  @@index([projectId])
+}
+
+model CreationItem {
+  id           String  @id @default(uuid())
+  creationId   String
+  briefRowRef  Int
+  mediaSource  String // 'creator_asset'|'asset_management'|'ai_generated'
+  assetId      String?
+  prompt       String? @db.Text
+  provider     String?
+  status       String  @default("queued") // 'queued'|'processing'|'completed'|'failed'
+  errorMessage String? @db.Text
+  versions     Json
+
+  creation Creation @relation(fields: [creationId], references: [id], onDelete: Cascade)
+
+  @@index([creationId])
+}
+
+model ExportJob {
+  id         String    @id @default(uuid())
+  creationId String
+  format     String
+  options    Json
+  status     String    @default("queued")
+  assetId    String?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([creationId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// AI cache (insight / topic recommendations) — FR-INS-7
+// ─────────────────────────────────────────────────────────────
+
+model AiCache {
+  key       String   @id
+  payload   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2 — Create Image/Video/Audio/Brief, shared gallery, kuota harian
+// ─────────────────────────────────────────────────────────────
+
+model Generation {
+  id                String    @id @default(uuid())
+  type              String // 'image'|'video'|'audio'|'brief'
+  userId            String
+  prompt            String    @db.Text
+  params            Json
+  provider          String
+  modelName         String
+  status            String    @default("queued") // 'queued'|'processing'|'completed'|'failed'
+  errorMessage      String?   @db.Text
+  fileUrl           String?   @db.Text // storage key hasil utama
+  thumbnailUrl      String?   @db.Text // storage key thumbnail/poster
+  waveform          Json? // 64 titik 0..1 utk tile audio
+  resultJson        Json? // hasil brief (summary/rows/captions)
+  width             Int?
+  height            Int?
+  durationSeconds   Float?
+  startFrameAssetId String?
+  createdAt         DateTime  @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+  deletedAt         DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([type, status, deletedAt, createdAt, id])
+  @@index([userId, type, status])
+}
+
+model QuotaUsage {
+  id     String @id @default(uuid())
+  userId String
+  type   String // 'image'|'video'|'audio'|'brief'
+  date   String // 'YYYY-MM-DD' (Asia/Jakarta)
+  used   Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, date])
+  @@index([userId, type, date])
+}
+
+model QuotaConfig {
+  type         String @id // 'image'|'video'|'audio'|'brief'
+  dailyLimit   Int
+  maxConcurrent Int
+}

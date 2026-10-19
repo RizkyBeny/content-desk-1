@@ -1,0 +1,99 @@
+{
+  "source": "https://unsplash.com/s/photos/abstract-background",
+  "provider": "Unsplash",
+  "license": "Unsplash License (https://unsplash.com/license) — free to use, no attribution required.",
+  "note": "Photographer names are not retrievable without the Unsplash API; all photos are hotlink-derived from images.unsplash.com and used as mock generation material.",
+  "params": "w=3840&h=3840&fit=max&q=80&fm=jpg",
+  "photos": [
+    {
+      "file": "abstract-01.jpg",
+      "id": "1550684848-fac1c5b4e853",
+      "url": "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-02.jpg",
+      "id": "1558591710-4b4a1ae0f04d",
+      "url": "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-03.jpg",
+      "id": "1541701494587-cb58502866ab",
+      "url": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-04.jpg",
+      "id": "1557672172-298e090bd0f1",
+      "url": "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-05.jpg",
+      "id": "1618005182384-a83a8bd57fbe",
+      "url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-06.jpg",
+      "id": "1620121692029-d088224ddc74",
+      "url": "https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-07.jpg",
+      "id": "1614850715649-1d0106293bd1",
+      "url": "https://images.unsplash.com/photo-1614850715649-1d0106293bd1?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-08.jpg",
+      "id": "1620641788421-7a1c342ea42e",
+      "url": "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-09.jpg",
+      "id": "1604076913837-52ab5629fba9",
+      "url": "https://images.unsplash.com/photo-1604076913837-52ab5629fba9?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-10.jpg",
+      "id": "1557682224-5b8590cd9ec5",
+      "url": "https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-11.jpg",
+      "id": "1618556450991-2f1af64e8191",
+      "url": "https://images.unsplash.com/photo-1618556450991-2f1af64e8191?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-12.jpg",
+      "id": "1567095761054-7a02e69e5c43",
+      "url": "https://images.unsplash.com/photo-1567095761054-7a02e69e5c43?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-13.jpg",
+      "id": "1550745165-9bc0b252726f",
+      "url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-14.jpg",
+      "id": "1554034483-04fda0d3507b",
+      "url": "https://images.unsplash.com/photo-1554034483-04fda0d3507b?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-15.jpg",
+      "id": "1543722530-d2c3201371e7",
+      "url": "https://images.unsplash.com/photo-1543722530-d2c3201371e7?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-16.jpg",
+      "id": "1517483000871-1dbf64a6e1c6",
+      "url": "https://images.unsplash.com/photo-1517483000871-1dbf64a6e1c6?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-17.jpg",
+      "id": "1502691876148-a84978e59af8",
+      "url": "https://images.unsplash.com/photo-1502691876148-a84978e59af8?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    },
+    {
+      "file": "abstract-18.jpg",
+      "id": "1534796636912-3b95b3ab5986",
+      "url": "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=3840&h=3840&fit=max&q=80&fm=jpg"
+    }
+  ]
+}
