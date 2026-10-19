@@ -76,14 +76,14 @@ export function AssetRail({
   }, [creation.type]);
 
   const suggested = useMemo(() => {
-    const ids = new Set(creation.items.map((i) => i.asset?.id).filter(Boolean) as string[]);
-    return assets.filter((a) => ids.has(a.id));
+    const ids = new Set((creation.items?.map((i) => i.asset?.id).filter(Boolean) as string[]) ?? []);
+    return (assets ?? []).filter((a) => ids.has(a.id));
   }, [assets, creation.items]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return assets;
-    return assets.filter((a) => a.name.toLowerCase().includes(q) || a.tags.some((t) => t.toLowerCase().includes(q)));
+    if (!q) return assets ?? [];
+    return (assets ?? []).filter((a) => a.name.toLowerCase().includes(q) || (a.tags ?? []).some((t) => t.toLowerCase().includes(q)));
   }, [assets, query]);
 
   const others = filtered.filter((a) => !suggested.some((s) => s.id === a.id));
