@@ -21,6 +21,15 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/**
+ * Halaman editor canvas (`/studio/[id]`, `/desain/[id]`) dirender full-bleed:
+ * tanpa max-width, padding, maupun scroll bawaan shell — hanya rute detail,
+ * bukan rute list `/studio` atau `/desain`.
+ */
+function isEditorRoute(pathname: string) {
+  return /^\/(studio|desain)\/[^/]+/.test(pathname);
+}
+
 function Brand() {
   return (
     <Link href="/insight" className="flex items-center gap-2.5">
@@ -272,11 +281,22 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
         </div>
       </header>
 
-      <main className="px-3 pt-10 pb-28 md:pl-20 lg:pl-64 lg:pr-6">
-        <div className="mx-auto w-full max-w-6xl">{children}</div>
+      <main
+        className={
+          isEditorRoute(pathname)
+            ? "px-3 pb-6 pt-4 md:pl-20 lg:pl-64 lg:pr-6"
+            : "px-3 pt-10 pb-28 md:pl-20 lg:pl-64 lg:pr-6"
+        }
+      >
+        <div className={isEditorRoute(pathname) ? "mx-auto w-full" : "mx-auto w-full max-w-6xl"}>{children}</div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 p-3 md:hidden">
+      <nav
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-30 p-3 md:hidden",
+          isEditorRoute(pathname) && "hidden",
+        )}
+      >
         <div className="glass-strong mx-auto flex max-w-md items-center justify-around rounded-xl p-1.5">
           {MOBILE_NAV.map((item) => {
             const active = item.href ? isActive(pathname, item.href) : false;

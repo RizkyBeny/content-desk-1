@@ -3,27 +3,46 @@
 import { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 import { Button, toast } from "@heroui/react";
-import { GlassCard, SectionHeader } from "@/components/ui/primitives";
 import { AudioIcon, PlayIcon, SparkIcon, VolumeIcon } from "@/components/ui/icons";
 import { apiFetch, post } from "@/lib/client";
 import { MediaSourcePicker, type MediaSelection } from "@/components/media/media-source-picker";
-import type { EditorController } from "./use-editor-state";
+import { EditorFrame } from "./frame/editor-frame";
+import { AssetRail } from "./frame/asset-rail";
+import { Playbar, StageBar } from "./frame/stage";
+import { TimelineBar, TimelineItem } from "./frame/timeline-bar";
+import { AudioLatarSection } from "./frame/sections";
+import { SectionBlock, inputCls, labelCls } from "./frame/ui";
+import type { TypeEditorProps } from "./frame/types";
 import type { AudioEditorState, AudioSegment, CreationDTO } from "@/types";
 
-function WaveformPlayer({ url }: { url: string | null }) {
+function WaveformPlayer({ url, fallbackTotal }: { url: string | null; fallbackTotal: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
+  const [time, setTime] = useState(0);
+  const [total, setTotal] = useState(fallbackTotal);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     if (!ref.current) return;
     const ws = WaveSurfer.create({
       container: ref.current,
-      height: 64,
+      height: 96,
       waveColor: "#a1a1aa",
-      progressColor: "#18181b",
-      cursorColor: "#18181b",
+      progressColor: "#6366f1",
+      cursorColor: "#6366f1",
     });
     wsRef.current = ws;
+    ws.on("timeupdate", (t) => setTime(t));
+    ws.on("play", () => setPlaying(true));
+    ws.on("pause", () => setPlaying(false));
+    ws.on("finish", () => {
+      setPlaying(false);
+      setTime(0);
+    });
+    ws.on("ready", () => {
+      const d = ws.getDuration();
+      if (d && Number.isFinite(d) && d > 0) setTotal(d);
+    });
     return () => {
       ws.destroy();
       wsRef.current = null;
@@ -31,62 +50,65 @@ function WaveformPlayer({ url }: { url: string | null }) {
   }, []);
 
   useEffect(() => {
+    setTime(0);
+    setTotal(fallbackTotal);
     if (wsRef.current && url) void wsRef.current.load(url);
-  }, [url]);
+  }, [url, fallbackTotal]);
 
   return (
-    <div className="rounded-xl border border-zinc-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-zinc-900/50">
-      <div ref={ref} />
-      {!url && <p className="py-4 text-center text-xs text-zinc-500">Audio belum tersedia.</p>}
-      {url && (
-        <button
-          type="button"
-          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-300"
-          onClick={() => wsRef.current?.playPause()}
-        >
-          <PlayIcon width={14} height={14} /> Putar / jeda
-        </button>
-      )}
+    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4">
+      <div className="w-full max-w-xl rounded-2xl border border-zinc-200/70 bg-white/60 p-4 dark:border-white/10 dark:bg-zinc-900/50">
+        <div ref={ref} />
+        {!url && <p className="py-6 text-center text-xs text-zinc-500">Audio belum tersedia — pilih aset untuk segmen ini.</p>}
+        {url && (
+          <button
+            type="button"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-zinc-600 dark:text-zinc-300"
+            onClick={() => wsRef.current?.playPause()}
+          >
+            <PlayIcon width={14} height={14} /> Putar / jeda waveform
+          </button>
+        )}
+      </div>
+      <Playbar
+        current={time}
+        total={total}
+        playing={playing}
+        onToggle={() => wsRef.current?.playPause()}
+      />
     </div>
   );
 }
 
-export function AudioEditor({
-  controller,
-  creation,
-  assetUrls,
-}: {
-  controller: EditorController;
-  creation: CreationDTO;
-  assetUrls: Record<string, string>;
-}) {
+export function AudioEditor({ creation, controller, assetUrls, chrome, ui, patchUi }: TypeEditorProps) {
   const state = controller.state as AudioEditorState;
   const [selected, setSelected] = useState(0);
   const [busyRef, setBusyRef] = useState<number | null>(null);
-  const [musicPicker, setMusicPicker] = useState(false);
+  const [picker, setPicker] = useState<null | { kind: "segment" | "music" }>(null);
 
-  const seg: AudioSegment | undefined = state.segments[selected];
+  const index = Math.min(selected, Math.max(0, state.segments.length - 1));
+  const seg: AudioSegment | undefined = state.segments[index];
   const itemFor = (segRef: number) => creation.items.find((i) => i.briefRowRef === segRef);
 
-  function patchSegment(index: number, patch: Partial<AudioSegment>, record = true) {
+  function patchSegment(i: number, patch: Partial<AudioSegment>, record = true) {
     controller.setState(
       (s) => {
         if (s.type !== "audio") return s;
-        const segments = s.segments.map((x, i) => (i === index ? { ...x, ...patch } : x));
+        const segments = s.segments.map((x, xi) => (xi === i ? { ...x, ...patch } : x));
         return { ...s, segments };
       },
       { record },
     );
   }
 
-  async function regenerate(index: number) {
-    const segment = state.segments[index];
+  async function regenerate(i: number) {
+    const segment = state.segments[i];
     const item = itemFor(segment.segRef);
     if (!item) {
       toast.warning("Item segmen tidak ditemukan.");
       return;
     }
-    setBusyRef(index);
+    setBusyRef(i);
     try {
       await post(`/api/creation-items/${item.id}/regenerate`, { prompt: segment.text });
       await pollForAsset(item.id, segment.segRef);
@@ -121,19 +143,81 @@ export function AudioEditor({
     }
   }
 
-  function onPickMusic(sel: MediaSelection) {
-    setMusicPicker(false);
+  function onPick(sel: MediaSelection) {
+    const kind = picker?.kind;
+    setPicker(null);
     const asset = sel.asset;
-    if (!asset || !asset.fileUrl) return;
-    controller.setState((s) =>
-      s.type === "audio" ? { ...s, music: { assetId: asset.id, src: asset.fileUrl, volume: 0.3 } } : s,
-    );
+    if (!asset) return;
+    if (kind === "music") {
+      if (!asset.fileUrl) return;
+      controller.setState((s) =>
+        s.type === "audio" ? { ...s, music: { assetId: asset.id, src: asset.fileUrl, volume: 0.3 } } : s,
+      );
+    } else {
+      patchSegment(index, { assetId: asset.id });
+      toast.success("Audio segmen diperbarui.");
+    }
   }
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-      <GlassCard className="space-y-2">
-        <SectionHeader title="Segmen" description={`${state.segments.length} segmen narasi`} />
+  // Klik aset di rail → audio segmen terpilih.
+  function pickFromRail(asset: { id: string }) {
+    patchSegment(index, { assetId: asset.id });
+    toast.success(`Aset diterapkan ke segmen ${seg?.segRef ?? ""}.`);
+  }
+
+  // ── Stage ───────────────────────────────────────────────────────────────
+  const stage = (
+    <div className="flex h-full min-h-0 flex-col">
+      <StageBar
+        controller={controller}
+        onSwapAsset={() => setPicker({ kind: "segment" })}
+        swapLabel="Ganti Aset"
+        right={
+          <span className="mr-1 hidden rounded-md bg-zinc-100 px-2 py-1 text-xs tabular-nums text-zinc-500 sm:inline dark:bg-zinc-800 dark:text-zinc-400">
+            {state.segments.length} segmen · {seg ? `${seg.durationSec}s` : "—"}
+          </span>
+        }
+      />
+      <div className="min-h-0 flex-1 pt-2">
+        <WaveformPlayer
+          key={seg?.id ?? "empty"}
+          url={seg?.assetId ? assetUrls[seg.assetId] ?? null : null}
+          fallbackTotal={seg?.durationSec ?? 30}
+        />
+      </div>
+    </div>
+  );
+
+  // ── Timeline (strip segmen) ─────────────────────────────────────────────
+  const timeline = (
+    <TimelineBar
+      zoom={ui.zoom}
+      onZoom={(v) => patchUi({ zoom: v })}
+      pageLabel={`Segmen ${index + 1}/${state.segments.length}`}
+      onVoiceOver={() => patchUi({ panelTab: "voiceover" })}
+      onAddBacksound={() => setPicker({ kind: "music" })}
+    >
+      {state.segments.map((s, i) => (
+        <TimelineItem
+          key={s.id}
+          active={i === index}
+          onClick={() => setSelected(i)}
+          label={`Segmen ${s.segRef}`}
+          sublabel={`${s.durationSec}s`}
+        >
+          <AudioIcon width={18} height={18} className="text-zinc-400" />
+        </TimelineItem>
+      ))}
+    </TimelineBar>
+  );
+
+  // ── Panel Properties ────────────────────────────────────────────────────
+  const panel = (
+    <>
+      <SectionBlock
+        title="Segmen"
+        description={`${state.segments.length} segmen narasi — pilih untuk mengedit.`}
+      >
         <div className="space-y-1">
           {state.segments.map((s, i) => (
             <button
@@ -141,7 +225,7 @@ export function AudioEditor({
               type="button"
               onClick={() => setSelected(i)}
               className={`w-full rounded-lg px-3 py-2 text-left text-xs transition-colors ${
-                i === selected
+                i === index
                   ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
                   : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200"
               }`}
@@ -152,104 +236,106 @@ export function AudioEditor({
             </button>
           ))}
         </div>
-      </GlassCard>
+      </SectionBlock>
 
-      <GlassCard className="space-y-4">
-        {seg ? (
-          <>
-            <SectionHeader
-              title={`Segmen ${seg.segRef}`}
-              description="Edit narasi lalu buat ulang audio segmen ini."
-            />
-            <WaveformPlayer url={seg.assetId ? assetUrls[seg.assetId] ?? null : null} />
-
+      {seg ? (
+        <SectionBlock
+          title={`Segmen ${seg.segRef}`}
+          description="Edit narasi lalu buat ulang audio segmen ini."
+          action={
+            <Button size="sm" variant="secondary" isDisabled={busyRef !== null} onPress={() => regenerate(index)}>
+              <SparkIcon width={14} height={14} />
+              {busyRef === index ? "Membuat…" : "Buat ulang"}
+            </Button>
+          }
+        >
+          <label className={labelCls}>
+            <span>Narasi segmen</span>
             <textarea
               value={seg.text}
-              onChange={(e) => patchSegment(selected, { text: e.target.value })}
+              onChange={(e) => patchSegment(index, { text: e.target.value })}
               rows={4}
-              className="w-full rounded-xl border border-zinc-200 bg-white/70 p-3 text-sm outline-none dark:border-white/10 dark:bg-zinc-900/50"
               placeholder="Narasi segmen…"
+              className={`${inputCls} mt-1 resize-none`}
             />
+          </label>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <label className="flex items-center gap-2">
-                Nada
-                <input
-                  value={seg.tone}
-                  onChange={(e) => patchSegment(selected, { tone: e.target.value })}
-                  className="w-28 rounded-lg border border-zinc-200 bg-white/70 px-2 py-1 dark:border-white/10 dark:bg-zinc-900/50"
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                Kecepatan
-                <input
-                  type="range"
-                  min={0.75}
-                  max={1.5}
-                  step={0.05}
-                  value={seg.speed}
-                  onChange={(e) => patchSegment(selected, { speed: Number(e.target.value) })}
-                />
-                <span className="tabular-nums">{seg.speed.toFixed(2)}x</span>
-              </label>
-              <Button
-                size="sm"
-                variant="secondary"
-                isDisabled={busyRef !== null}
-                onPress={() => regenerate(selected)}
-              >
-                <SparkIcon width={14} height={14} />
-                {busyRef === selected ? "Membuat…" : "Buat ulang"}
-              </Button>
-            </div>
+          <label className={labelCls}>
+            <span>Nada</span>
+            <input
+              value={seg.tone}
+              onChange={(e) => patchSegment(index, { tone: e.target.value })}
+              className={`${inputCls} mt-1`}
+            />
+          </label>
 
-            <div className="space-y-2 border-t border-zinc-200/70 pt-4 dark:border-white/10">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <AudioIcon width={15} height={15} /> Musik latar
-                </span>
-                <Button size="sm" variant="secondary" onPress={() => setMusicPicker(true)}>
-                  Pilih musik
-                </Button>
-              </div>
-              {state.music?.assetId ? (
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1">
-                    <VolumeIcon width={13} height={13} />
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={state.music.volume}
-                      onChange={(e) =>
-                        controller.setState((s) =>
-                          s.type === "audio" && s.music
-                            ? { ...s, music: { ...s.music, volume: Number(e.target.value) } }
-                            : s,
-                        )
-                      }
-                    />
-                  </span>
-                  <button
-                    type="button"
-                    className="text-red-500"
-                    onClick={() => controller.setState((s) => (s.type === "audio" ? { ...s, music: null } : s))}
-                  >
-                    Hapus
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs text-zinc-500">Belum ada musik latar.</p>
-              )}
-            </div>
-          </>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="shrink-0 text-zinc-600 dark:text-zinc-300">Kecepatan</span>
+            <input
+              type="range"
+              min={0.75}
+              max={1.5}
+              step={0.05}
+              value={seg.speed}
+              aria-label="Kecepatan bicara"
+              onChange={(e) => patchSegment(index, { speed: Number(e.target.value) })}
+              className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-zinc-200 accent-indigo-600 dark:bg-zinc-700"
+            />
+            <span className="w-10 text-right tabular-nums text-xs text-zinc-500 dark:text-zinc-400">
+              {seg.speed.toFixed(2)}x
+            </span>
+          </div>
+        </SectionBlock>
+      ) : (
+        <SectionBlock title="Segmen">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Tidak ada segmen.</p>
+        </SectionBlock>
+      )}
+
+      {/* Musik latar — kontrol picker manual (Audio Latar di bawah) */}
+      <SectionBlock
+        title="Musik Latar"
+        description="Pilih musik latar untuk seluruh audio."
+        action={
+          <Button size="sm" variant="secondary" onPress={() => setPicker({ kind: "music" })}>
+            <VolumeIcon width={14} height={14} /> Pilih
+          </Button>
+        }
+      >
+        {state.music?.assetId ? (
+          <p className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <AudioIcon width={13} height={13} /> Musik latar aktif.
+          </p>
         ) : (
-          <p className="text-sm text-zinc-500">Tidak ada segmen.</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Belum ada musik latar.</p>
         )}
-      </GlassCard>
+      </SectionBlock>
 
-      <MediaSourcePicker open={musicPicker} onClose={() => setMusicPicker(false)} type="audio" onSelect={onPickMusic} />
-    </div>
+      <AudioLatarSection
+        music={state.music}
+        onVolume={(v) =>
+          controller.setState((s) => (s.type === "audio" && s.music ? { ...s, music: { ...s.music, volume: v } } : s))
+        }
+        onClear={() => controller.setState((s) => (s.type === "audio" ? { ...s, music: null } : s))}
+      />
+    </>
+  );
+
+  return (
+    <>
+      <EditorFrame
+        chrome={chrome}
+        rail={<AssetRail creation={creation} backHref={chrome.backHref} onPickAsset={pickFromRail} />}
+        stage={stage}
+        panel={panel}
+        timeline={timeline}
+      />
+      <MediaSourcePicker
+        open={picker !== null}
+        onClose={() => setPicker(null)}
+        type={picker?.kind === "music" ? "audio" : "audio"}
+        onSelect={onPick}
+      />
+    </>
   );
 }

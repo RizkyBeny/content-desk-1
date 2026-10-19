@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { getAIProvider } from "@/lib/adapters/ai";
 import { buildItemDefs } from "@/lib/services/creations";
 import { jakartaDate } from "@/lib/services/quota";
-import type { BriefRow, ContentType, MediaSource } from "@/types";
+import type { Angle, BriefRow, ContentType, MediaSource, RecommendedType } from "@/types";
 import type { MediaSourceInput } from "@/lib/services/creations";
 
 /**
@@ -14,7 +14,9 @@ import type { MediaSourceInput } from "@/lib/services/creations";
  *     kuota) — dipinjam dari `prisma/seed.ts` supaya bentuknya 100% identik
  *     dengan mode database (semua adapter di sana sudah mock, tanpa jaringan).
  *  2. Konten demo (aset, proyek, brief, creation, generation, pemakaian kuota)
- *     — fixture khusus mode mock supaya setiap halaman terisi penuh.
+ *     — fixture khusus mode mock supaya setiap halaman terisi penuh. Proyek
+ *     memakai ID tetap (`demo-*`) supaya link preview stabil antar cold start
+ *     dan antar function serverless (lihat `ProjectSpec.id`).
  *
  * Semua data hidup di memori proses: hilang saat proses restart (wajar untuk
  * demo front-end / deployment serverless).
@@ -49,11 +51,9 @@ export async function seedMockData(): Promise<void> {
   });
   if (!admin) return;
 
-  // Idempoten: kalau sudah pernah terisi (mis. ada yang membuat proyek nyata),
-  // jangan menumpuk fixture di atasnya.
-  if ((await prisma.project.count()) > 0) return;
-
   // ── 2. Konten demo ────────────────────────────────────────────────────────
+  // Idempoten di level record (per ID), bukan "berhenti kalau ada project":
+  // proyek demo ber-ID tetap harus ada apa pun yang terjadi di store ini.
   const assetIds = await seedAssets(admin.id);
   await seedProjects(admin.id, assetIds);
   await seedGenerations(admin.id);
@@ -86,13 +86,35 @@ async function seedAssets(ownerId: string): Promise<string[]> {
 // ─── Proyek + Brief + Creation ───────────────────────────────────────────────
 
 interface ProjectSpec {
+  /**
+   * ID tetap (bukan UUID acak).
+   *
+   * Mode mock menyimpan data in-memory per proses serverless — di Vercel,
+   * halaman `/proyek/[id]` dan route API adalah function terpisah dengan seed
+   * masing-masing. Dengan ID tetap, kedua function sepakat pada record yang
+   * sama dan link preview selalu bisa dibuka, berapa pun kali cold start.
+   */
+  id: string;
   topicTitle: string;
+  origin: "flow" | "standalone";
+  topicSource: "trending" | "custom";
+  /** angle terpilih — juga jadi angleTitle/angleDesc project */
   angleTitle: string;
   angleDesc: string;
   audience: string;
+  /**
+   * true → daftar angle ikut ditulis (JSON) sehingga langkah Angle langsung
+   * menampilkan kartu. false → biarkan kosong, halaman akan meng-generate
+   * angle lewat API (menguji alur asli dari nol).
+   */
+  seedAngles: boolean;
+  /** true → satu angle ditandai terpilih + ada rekomendasi jenis konten */
+  selected: boolean;
   platforms: string[];
   contentType: ContentType | null;
   status: string;
+  /** status brief saat dibuat; default "siap" */
+  briefStatus?: "draft" | "siap";
   /** jenis creation yang menyertainya (kalau ada) */
   creationType?: ContentType;
   /** sumber media per baris brief (index 0 = baris 1) */
@@ -100,24 +122,155 @@ interface ProjectSpec {
   itemCount?: number;
 }
 
+const ANGLE_REASONS = [
+  "Selaras gaya redaksi dan mudah diproduksi dalam batch.",
+  "Kategori ini biasanya direspons baik saat dikemas visual.",
+  "Sudut ini memancing interaksi (simpan/komentar) yang menaikkan Engagement Rate.",
+  "Format yang konsisten menghasilkan jangkauan organik tinggi.",
+  "Cocok untuk audiens yang mencari jawaban cepat dan praktis.",
+  "Membangun kredibilitas lewat data dan konteks yang mendalam.",
+  "Hook kuat di detik pertama untuk format video pendek.",
+  "Mudah dijadikan seri konten lanjutan.",
+];
+
+const ANGLE_TEMPLATES = [
+  "Data & angka di balik {topic}",
+  "Kutipan & poin penting seputar {topic}",
+  "Tanya-jawab seputar {topic}",
+  "Kronologi lengkap: {topic}",
+  "Mitos vs fakta: {topic}",
+  "Studi kasus nyata: {topic}",
+  "Prediksi & langkah praktis: {topic}",
+];
+
+/** Maksimal 3 jenis konten direkomendasikan (FR-ANG-5). */
+const DEMO_RECOMMENDATIONS: RecommendedType[] = [
+  { type: "video", reason: "Hook visual cepat cocok dengan sudut angle ini." },
+  { type: "carousel", reason: "Struktur poin-per-poin mudah disimpan dan dibagikan." },
+  { type: "image", reason: "Ringkasan satu layar untuk audiens yang berselancar cepat." },
+];
+
+/** 8 angle deterministik dengan id `ag-1` s.d. `ag-8` (sama dengan format AI mock). */
+function demoAngles(spec: ProjectSpec): Angle[] {
+  const list: Angle[] = [
+    {
+      id: "ag-1",
+      title: spec.angleTitle,
+      description: spec.angleDesc,
+      audience: spec.audience,
+      reason: ANGLE_REASONS[0],
+    },
+  ];
+  ANGLE_TEMPLATES.forEach((template, i) => {
+    const title = template.replace("{topic}", spec.topicTitle);
+    list.push({
+      id: `ag-${i + 2}`,
+      title,
+      description: `${title} — dijelaskan ringkas dengan contoh yang relevan untuk ${spec.audience}.`,
+      audience: spec.audience,
+      reason: ANGLE_REASONS[(i + 1) % ANGLE_REASONS.length],
+    });
+  });
+  return list;
+}
+
 const PROJECT_SPECS: ProjectSpec[] = [
+  // ── Tahap 1: belum ada angle → langkah Angle meng-generate lewat API ──────
   {
+    id: "demo-angle",
     topicTitle: "Pidato Presiden soal ekonomi digital",
+    origin: "flow",
+    topicSource: "trending",
     angleTitle: "5 hal yang belum banyak dibahas",
     angleDesc: "Sudut analisis mendalam untuk pembaca profesional muda",
     audience: "Profesional muda 20-35 tahun",
+    seedAngles: false,
+    selected: false,
     platforms: ["Instagram", "TikTok", "X"],
     contentType: null,
     status: "brief",
   },
+  // ── Tahap 2: angle dipilih → langkah Jenis Konten ─────────────────────────
   {
+    id: "demo-type",
     topicTitle: "Tren kerja hybrid 2026",
+    origin: "flow",
+    topicSource: "trending",
     angleTitle: "Kenapa kantor tetap dibutuhkan",
     angleDesc: "Studi kasus perusahaan Indonesia yang kembali WFO",
     audience: "HR dan manajer tim",
+    seedAngles: true,
+    selected: true,
     platforms: ["Instagram", "LinkedIn"],
+    contentType: null,
+    status: "brief",
+  },
+  // ── Tahap 3: brief masih draft → langkah Brief ────────────────────────────
+  {
+    id: "demo-brief",
+    topicTitle: "Regulasi PPN jasa digital",
+    origin: "flow",
+    topicSource: "custom",
+    angleTitle: "Yang perlu diketahui freelancer",
+    angleDesc: "Rangkuman faktual dengan contoh kasus",
+    audience: "Freelancer dan agensi kecil",
+    seedAngles: true,
+    selected: true,
+    platforms: ["Instagram", "X"],
+    contentType: "carousel",
+    status: "brief",
+    briefStatus: "draft",
+  },
+  // ── Tahap 4: brief siap, belum ada creation → tombol Generate aktif ───────
+  {
+    id: "demo-generate",
+    topicTitle: "AI untuk kreator konten pemula",
+    origin: "flow",
+    topicSource: "custom",
+    angleTitle: "Mulai dari nol dalam 7 hari",
+    angleDesc: "Panduan praktis langkah demi langkah",
+    audience: "Kreator konten pemula",
+    seedAngles: true,
+    selected: true,
+    platforms: ["Instagram", "TikTok"],
+    contentType: "carousel",
+    status: "brief",
+    briefStatus: "siap",
+  },
+  // ── Tahap 5: creation siap → stepper Generate membuka progress & editor ───
+  {
+    id: "demo-editor",
+    topicTitle: "Data center baru di Indonesia",
+    origin: "flow",
+    topicSource: "trending",
+    angleTitle: "Dampaknya untuk startup lokal",
+    angleDesc: "Analisis biaya cloud dan latency regional",
+    audience: "Founder dan CTO startup",
+    seedAngles: true,
+    selected: true,
+    platforms: ["YouTube", "X"],
+    contentType: "image",
+    status: "editing",
+    briefStatus: "siap",
+    creationType: "image",
+    sources: [{ source: "ai_generated", assetIndex: 3 }],
+    itemCount: 1,
+  },
+  // ── Proyek lanjutan: mengisi halaman Studio, Desain, dan Proyek ───────────
+  {
+    id: "demo-carousel",
+    topicTitle: "Strategi konten Ramadan untuk brand lokal",
+    origin: "standalone",
+    topicSource: "custom",
+    angleTitle: "Kampanye yang tidak terasa jualan",
+    angleDesc: "Sudut cerita manusiawi untuk audiens yang lelah iklan",
+    audience: "Tim brand dan agensi kreatif",
+    seedAngles: true,
+    selected: true,
+    platforms: ["Instagram", "TikTok"],
     contentType: "carousel",
     status: "editing",
+    briefStatus: "siap",
     creationType: "carousel",
     sources: [
       { source: "asset_management", assetIndex: 0 },
@@ -127,25 +280,19 @@ const PROJECT_SPECS: ProjectSpec[] = [
     itemCount: 3,
   },
   {
-    topicTitle: "AI untuk kreator konten pemula",
-    angleTitle: "Mulai dari nol dalam 7 hari",
-    angleDesc: "Panduan praktis langkah demi langkah",
-    audience: kreatorAudience(),
-    platforms: ["Instagram", "TikTok"],
-    contentType: "image",
-    status: "editing",
-    creationType: "image",
-    sources: [{ source: "ai_generated", assetIndex: 3 }],
-    itemCount: 1,
-  },
-  {
-    topicTitle: "Data center baru di Indonesia",
-    angleTitle: "Dampaknya untuk startup lokal",
-    angleDesc: "Analisis biaya cloud dan latency regional",
-    audience: "Founder dan CTO startup",
+    id: "demo-video",
+    topicTitle: "Cara memulai newsletter mingguan",
+    origin: "standalone",
+    topicSource: "custom",
+    angleTitle: "Konsisten 30 hari tanpa kehabisan ide",
+    angleDesc: "Sistem produksi sederhana untuk penulis solo",
+    audience: "Penulis dan blogger",
+    seedAngles: true,
+    selected: true,
     platforms: ["YouTube", "X"],
     contentType: "video",
     status: "generating",
+    briefStatus: "siap",
     creationType: "video",
     sources: [
       { source: "ai_generated", assetIndex: 4 },
@@ -155,57 +302,78 @@ const PROJECT_SPECS: ProjectSpec[] = [
     itemCount: 3,
   },
   {
+    id: "demo-audio",
     topicTitle: "Refleksi mingguan tim redaksi",
+    origin: "standalone",
+    topicSource: "custom",
     angleTitle: "Cerita di balik berita utama",
     angleDesc: "Narasi santai untuk format audio pendek",
     audience: "Pendengar podcast produktivitas",
+    seedAngles: true,
+    selected: true,
     platforms: ["Spotify", "YouTube"],
     contentType: "audio",
     status: "editing",
+    briefStatus: "siap",
     creationType: "audio",
     itemCount: 3,
   },
   {
-    topicTitle: "Regulasi PPN jasa digital",
-    angleTitle: "Yang perlu diketahui freelancer",
+    id: "demo-article",
+    topicTitle: "Panduan SEO untuk situs berita",
+    origin: "standalone",
+    topicSource: "custom",
+    angleTitle: "Yang perlu diketahui editor pemula",
     angleDesc: "Rangkuman faktual dengan contoh kasus",
-    audience: "Freelancer dan agensi kecil",
+    audience: "Redaktur dan content writer",
+    seedAngles: true,
+    selected: true,
     platforms: ["Website", "X (repost)"],
     contentType: "article",
     status: "exported",
+    briefStatus: "siap",
     creationType: "article",
     itemCount: 1,
   },
 ];
 
-function kreatorAudience(): string {
-  return "Kreator konten pemula";
-}
-
 async function seedProjects(adminId: string, assetIds: string[]): Promise<void> {
   const provider = getAIProvider();
 
   for (const spec of PROJECT_SPECS) {
+    // Idempoten per ID: aman dipanggil ulang tanpa menumpuk fixture.
+    if (await prisma.project.findUnique({ where: { id: spec.id } })) continue;
+
+    const angles = spec.seedAngles ? demoAngles(spec) : null;
+
     const project = await prisma.project.create({
       data: {
+        id: spec.id,
         userId: adminId,
-        origin: spec.topicTitle.includes("Pidato") ? "flow" : "standalone",
+        origin: spec.origin,
         topicTitle: spec.topicTitle,
-        topicSource: spec.topicTitle.includes("Pidato") ? "trending" : "custom",
+        topicSource: spec.topicSource,
         angleTitle: spec.angleTitle,
         angleDesc: spec.angleDesc,
         contentType: spec.contentType,
         status: spec.status,
+        ...(angles ? { angles: angles as unknown as Prisma.InputJsonValue } : {}),
+        ...(angles && spec.selected
+          ? {
+              selectedAngleId: angles[0].id,
+              recommendedTypes: DEMO_RECOMMENDATIONS as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
       },
     });
 
-    if (!spec.contentType || !spec.creationType) continue;
+    if (!spec.contentType) continue;
 
     // Brief lewat provider AI mock → baris & caption dijamin valid per jenis.
     const brief = await provider.generateBrief({
       topic: spec.topicTitle,
       angle: { title: spec.angleTitle, description: spec.angleDesc, audience: spec.audience },
-      contentType: spec.creationType,
+      contentType: spec.creationType ?? spec.contentType,
       summaryContext: {
         niche: "Produktivitas & karier remote",
         tone: "Informatif & faktual",
@@ -222,9 +390,11 @@ async function seedProjects(adminId: string, assetIds: string[]): Promise<void> 
         rows: brief.rows as unknown as Prisma.InputJsonValue,
         captions: brief.captions as unknown as Prisma.InputJsonValue,
         versions: [],
-        status: "siap",
+        status: spec.briefStatus ?? "siap",
       },
     });
+
+    if (!spec.creationType) continue;
 
     const sources: MediaSourceInput[] = (spec.sources ?? []).map((s, i) => ({
       briefRow: i + 1,

@@ -21,6 +21,7 @@
  * distinct, cursor Prisma, mode: "insensitive", JSON path filter.
  */
 import { randomUUID } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -264,25 +265,38 @@ type SeedState = "idle" | "running" | "done";
 let seedState: SeedState = "idle";
 let seedPromise: Promise<void> | null = null;
 
+/**
+ * Penanda konteks pemanggilan dari DALAM seed.
+ *
+ * Tanpa ini ada dua pilihan buruk: (a) query saat seed berjalan diloloskan
+ * begitu saja → data parsial (user belum ada → 307 /login, project belum ada
+ * → 404), atau (b) semua query menunggu seed → deadlock karena seed sendiri
+ * memanggil `prisma.*`. AsyncLocalStorage membedakan keduanya secara presisi.
+ */
+const insideSeed = new AsyncLocalStorage<boolean>();
+
 async function ensureSeeded(): Promise<void> {
-  // Saat seed sedang jalan, pemanggilan dari dalam seed sendiri tidak boleh
-  // menunggu promise-nya sendiri → deadlock. Baris selama "running" langsung
-  // lanjut (data parsial hanya mungkin beberapa ms saat proses start).
-  if (seedState !== "idle") return;
-  if (!seedHook) {
-    seedState = "done";
-    return;
-  }
-  seedState = "running";
-  seedPromise = Promise.resolve()
-    .then(() => seedHook!())
-    .catch((err) => {
-      console.error("[mock-db] seed gagal:", err);
-    })
-    .finally(() => {
+  // Pemanggil dari dalam seed tidak boleh menunggu promise-nya sendiri.
+  if (insideSeed.getStore()) return;
+
+  if (seedState === "idle") {
+    if (!seedHook) {
       seedState = "done";
-    });
-  await seedPromise;
+      return;
+    }
+    seedState = "running";
+    seedPromise = insideSeed
+      .run(true, () => Promise.resolve().then(() => seedHook!()))
+      .catch((err) => {
+        console.error("[mock-db] seed gagal:", err);
+      })
+      .finally(() => {
+        seedState = "done";
+      });
+  }
+
+  // Pemanggil luar menunggu seed selesai → tidak pernah melihat data parsial.
+  if (seedPromise) await seedPromise;
 }
 
 // ─── util ───────────────────────────────────────────────────────────────────

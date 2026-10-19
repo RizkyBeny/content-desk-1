@@ -360,6 +360,61 @@ export const LoaderIcon = (p: IconProps) => (
   </svg>
 );
 
+export const AlignLeftIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 6h16M4 12h10M4 18h13" />
+  </svg>
+);
+
+export const AlignCenterIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 6h16M7 12h10M6 18h12" />
+  </svg>
+);
+
+export const AlignRightIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 6h16M10 12h10M7 18h13" />
+  </svg>
+);
+
+export const AlignTopIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 4h16M8 10h8M6 16h12" />
+  </svg>
+);
+
+export const AlignMiddleIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 5h16M7 10h10M7 16h10M4 19h16" />
+  </svg>
+);
+
+export const AlignBottomIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 20h16M8 14h8M6 8h12" />
+  </svg>
+);
+
+export const CropLandscapeIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M6 2v16h16M2 6h16v16" />
+  </svg>
+);
+
+export const CropPortraitIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M2 6h16v16M6 2v16h16" />
+  </svg>
+);
+
+export const SquareDashedIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M5 3h2M17 3h2M21 5v2M21 17v2M19 21h-2M7 21H5M3 19v-2M3 7V5" />
+    <rect x="7" y="7" width="10" height="10" rx="1" />
+  </svg>
+);
+
 export const ChatIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M20 12a7 7 0 0 1-7 7H8l-4 3v-4.5A7 7 0 0 1 11 5h2a7 7 0 0 1 7 7Z" />
