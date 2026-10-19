@@ -3,6 +3,8 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL wajib diisi"),
   AUTH_SECRET: z.string().min(16, "AUTH_SECRET minimal 16 karakter"),
+  /** "true" = lewati login untuk development lokal (auto-login sebagai admin). */
+  AUTH_DISABLED: z.enum(["true", "false"]).optional().default("false"),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
   REDIS_URL: z.string().optional().default(""),

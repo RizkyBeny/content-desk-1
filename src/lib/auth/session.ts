@@ -49,6 +49,14 @@ export async function destroyCurrentSession(): Promise<void> {
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
+  const user = await readSessionUser();
+  if (user) return user;
+  if (authDisabled()) return devUser();
+  return null;
+}
+
+/** Baca session asli dari cookie `acp_session`. */
+async function readSessionUser(): Promise<SessionUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -62,7 +70,36 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
     return null;
   }
-  const u = session.user;
+  return toSessionUser(session.user);
+}
+
+function authDisabled(): boolean {
+  return process.env.AUTH_DISABLED === "true";
+}
+
+/** User pengganti saat auth dilewati: admin seed, fallback ke user pertama. Di-cache per instance server. */
+let devUserCache: SessionUser | null = null;
+async function devUser(): Promise<SessionUser | null> {
+  if (devUserCache) return devUserCache;
+  const user =
+    (await prisma.user.findFirst({ where: { role: "admin" }, orderBy: { createdAt: "asc" } })) ??
+    (await prisma.user.findFirst({ orderBy: { createdAt: "asc" } }));
+  if (!user) return null;
+  devUserCache = toSessionUser(user);
+  return devUserCache;
+}
+
+function toSessionUser(u: {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  theme: string;
+  contentLang: string;
+  niche: string | null;
+  nicheCategories: unknown;
+  avatarUrl: string | null;
+}): SessionUser {
   return {
     id: u.id,
     name: u.name,
