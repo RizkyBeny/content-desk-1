@@ -6,7 +6,7 @@ import { toast } from "@heroui/react";
 import { apiFetch, ClientError } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import type { GenerationDTO, GenerationParams, GenerationType, VideoParams } from "@/types";
-import { ATTACHMENT_ACCEPT_IMAGE, ATTACHMENT_ACCEPT_VIDEO, ATTACHMENT_MAX_IMAGE_MB, ATTACHMENT_MAX_VIDEO_MB, PAGE_DESCRIPTION, PAGE_TITLE, PLACEHOLDER, PROMPT_LIMITS, defaultParams } from "../../../config/generation";
+import { ATTACHMENT_ACCEPT_IMAGE, ATTACHMENT_ACCEPT_VIDEO, ATTACHMENT_MAX_IMAGE_MB, ATTACHMENT_MAX_VIDEO_MB, INSIGHT_VIDEO_SECTION, PAGE_DESCRIPTION, PAGE_TITLE, PLACEHOLDER, PROMPT_LIMITS, VIDEO_TOPIC_CHIPS, defaultParams } from "../../../config/generation";
 import { IMAGE_TEMPLATES } from "../../../config/templates";
 import { SectionHeader } from "@/components/ui/primitives";
 import { BentoGallery } from "./bento-gallery";
@@ -17,6 +17,7 @@ import { DetailModal } from "./detail-modal";
 import { HeroSection } from "./hero-section";
 import { InsightSection } from "./insight-section";
 import { GuidedImageFlow } from "./guided-image-flow";
+import { GuidedVideoFlow } from "./guided-video-flow";
 import { QuotaBadge } from "./quota-badge";
 import { ReferenceOutputGrid } from "./reference-output-grid";
 import { TopicChips } from "./topic-chips";
@@ -65,6 +66,7 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   const [attachment, setAttachment] = useState<ComposerAttachment | null>(null);
   const [guidedPhase, setGuidedPhase] = useState(false);
   const [guidedContext, setGuidedContext] = useState("");
+  const [guidedAttachment, setGuidedAttachment] = useState<ComposerAttachment | null>(null);
   const hydrated = useRef(false);
 
   const { items, quota, loading, loadingMore, hasMore, error, loadMore, refresh, submit, remove, retry } =
@@ -105,9 +107,10 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   async function handleSubmit() {
     const trimmed = prompt.trim();
     if (trimmed.length < 3) return;
-    // Image: masuk guided mode dulu (brief → step → final prompt → generate).
-    if (type === "image") {
+    // Image & Video: masuk guided mode dulu (brief → step → final prompt → generate).
+    if (type === "image" || type === "video") {
       setGuidedContext(trimmed);
+      setGuidedAttachment(attachment);
       setGuidedPhase(true);
       setPrompt("");
       setAttachment(null);
@@ -115,16 +118,7 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
     }
     setBusy(true);
     try {
-      let merged = params as GenerationParams;
-      if (attachment) {
-        if (type === "video") {
-          if (attachment.kind === "image") {
-            merged = { ...(params as VideoParams), startFrameAssetId: attachment.assetId } as GenerationParams;
-          } else if (attachment.kind === "video") {
-            merged = { ...(params as VideoParams), referenceAssetId: attachment.assetId } as GenerationParams;
-          }
-        }
-      }
+      const merged = params as GenerationParams;
       await submit(trimmed, merged);
       setPrompt("");
       setAttachment(null);
@@ -243,7 +237,7 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   }
 
   const Panel = CONFIG_PANEL[type] as PanelComponent;
-  const exhausted = quota ? quota.remaining <= 0 : false;
+  const exhausted = false;
 
   const completedImages =
     type === "image"
@@ -253,18 +247,16 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   if (type === "image") {
     if (guidedPhase) {
       return (
-        <div className="space-y-6 pb-6">
-          <HeroSection
-            title="Generate Image"
-            subtitle="Generate gambar kini makin mudah dengan mode panduan memberikan output yang lebih maksimal tanpa harus bikin prompt yang panjang"
-          />
-          <GuidedImageFlow
-            context={guidedContext}
-            quota={quota}
-            onExit={() => setGuidedPhase(false)}
-            onGenerated={() => refresh()}
-          />
-        </div>
+        <GuidedImageFlow
+          context={guidedContext}
+          attachment={guidedAttachment}
+          quota={quota}
+          onExit={() => {
+            setGuidedPhase(false);
+            setGuidedAttachment(null);
+          }}
+          onGenerated={() => refresh()}
+        />
       );
     }
 
@@ -279,8 +271,8 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
           value={prompt}
           onChange={setPrompt}
           onSubmit={handleSubmit}
-          busy={busy || exhausted}
-          exhausted={exhausted}
+          busy={busy}
+          exhausted={false}
           maxLength={PROMPT_LIMITS.image}
           placeholder={PLACEHOLDER.image}
           attachAccept={ATTACHMENT_ACCEPT_IMAGE}
@@ -313,6 +305,69 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
     );
   }
 
+  if (type === "video") {
+    if (guidedPhase) {
+      return (
+        <GuidedVideoFlow
+          context={guidedContext}
+          attachment={guidedAttachment}
+          quota={quota}
+          onExit={() => {
+            setGuidedPhase(false);
+            setGuidedAttachment(null);
+          }}
+          onGenerated={() => refresh()}
+        />
+      );
+    }
+
+    const completedVideos = items.filter((item) => item.status === "completed" && (item.thumbnailUrl || item.fileUrl));
+
+    return (
+      <div className="space-y-6 pb-6">
+        <HeroSection
+          title="Generate Video"
+          subtitle="Generate video kini makin mudah dengan mode panduan memberikan output yang lebih maksimal tanpa harus bikin prompt yang panjang"
+        />
+
+        <ComposerCard
+          value={prompt}
+          onChange={setPrompt}
+          onSubmit={handleSubmit}
+          busy={busy}
+          exhausted={false}
+          maxLength={PROMPT_LIMITS.video}
+          placeholder={PLACEHOLDER.video}
+          attachAccept={ATTACHMENT_ACCEPT_VIDEO}
+          attachment={attachment}
+          onAttachFile={handleAttachFile}
+          onRemoveAttachment={() => setAttachment(null)}
+          onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
+        />
+
+        <TopicChips chips={VIDEO_TOPIC_CHIPS} onSelect={setPrompt} />
+
+        <section className="space-y-5">
+          <InsightSection data={INSIGHT_VIDEO_SECTION} onSimilar={handleInsightSimilar} />
+          <SectionHeader title="Referensi Output" />
+          <ReferenceOutputGrid
+            generations={completedVideos}
+            templates={IMAGE_TEMPLATES}
+            onOpenGeneration={openItem}
+          />
+        </section>
+
+        <DetailModal
+          item={selected}
+          canModerate={canModerate}
+          onClose={closeModal}
+          onSimilar={handleSimilar}
+          onDeleted={(id) => void remove(id)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 py-2">
       <SectionHeader title={PAGE_TITLE[type]} description={PAGE_DESCRIPTION[type]} align="center" size="lg" />
@@ -324,7 +379,7 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
         maxLength={PROMPT_LIMITS[type]}
         placeholder={PLACEHOLDER[type]}
         label={PAGE_TITLE[type]}
-        busy={busy || exhausted}
+        busy={busy}
         attachAccept={ATTACHMENT_ACCEPT_VIDEO}
         onAttachFile={handleAttachFile}
         attachment={attachment}
@@ -333,13 +388,8 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
       >
         <ConfigRow>
           <Panel params={params} onChange={patch} />
-          <QuotaBadge quota={quota} className="ml-auto" />
         </ConfigRow>
       </Composer>
-
-      {exhausted ? (
-        <p className="text-center text-xs text-red-500">Kuota harian habis. Reset pukul 00.00 WIB.</p>
-      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold tracking-tight">Hasil Generate</h2>

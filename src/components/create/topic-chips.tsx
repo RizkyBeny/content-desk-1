@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { ChevronRightIcon } from "@/components/ui/icons";
-import { TOPIC_CHIPS } from "../../../config/generation";
+import { TOPIC_CHIPS, type TopicChip } from "../../../config/generation";
 
 const BADGE_TONE: Record<string, string> = {
   Panas: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
@@ -11,17 +11,23 @@ const BADGE_TONE: Record<string, string> = {
 };
 
 /**
- * Baris "Skill Chips" topik pada halaman Create Image (Figma node 776:23662).
+ * Baris "Skill Chips" topik pada halaman Create Image & Create Video.
  * Data statis dari config; klik chip mengisi prompt composer.
  */
-export function TopicChips({ onSelect }: { onSelect?: (label: string) => void }) {
+export function TopicChips({
+  chips = TOPIC_CHIPS,
+  onSelect,
+}: {
+  chips?: TopicChip[];
+  onSelect?: (label: string) => void;
+}) {
   return (
     <div
       role="group"
       aria-label="Topik yang sedang tren"
       className="mx-auto flex w-full max-w-[760px] flex-wrap items-center justify-center gap-2"
     >
-      {TOPIC_CHIPS.map((chip) => (
+      {chips.map((chip) => (
         <button
           key={chip.label}
           type="button"

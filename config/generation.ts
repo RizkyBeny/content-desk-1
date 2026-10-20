@@ -123,8 +123,10 @@ export function guidedImageParams(
   };
 }
 
-/** Skill chips statis untuk halaman Create Image (mengikuti Figma "Generate Image"). */
-export const TOPIC_CHIPS: { label: string; badge?: "Panas" | "Baru" | "Hot" }[] = [
+/** Skill chips statis untuk halaman Create Image & Create Video. */
+export type TopicChip = { label: string; badge?: "Panas" | "Baru" | "Hot" };
+
+export const TOPIC_CHIPS: TopicChip[] = [
   { label: "/ Nasional & Politik Terkini", badge: "Panas" },
   { label: "/ Jadwal Timnas & Liga 1", badge: "Baru" },
   { label: "/ Berita Viral Hari Ini", badge: "Hot" },
@@ -132,28 +134,35 @@ export const TOPIC_CHIPS: { label: string; badge?: "Panas" | "Baru" | "Hot" }[] 
   { label: "/ Update Gaya Hidup" },
 ];
 
-/** Placeholder section "Insights" pada halaman Create Image (Figma node 828:27420). */
-export const INSIGHT_SECTION: {
+/** Types untuk section "Insights" (Figma node 828:27420). */
+export type InsightTakeaway = {
+  rank: string;
+  title: string;
+  badge: string;
+  tone: "brand" | "green";
+  text: string;
+  stats: { icon: "views" | "engagement" | "post"; value: string }[];
+};
+
+export type InsightMetric = {
+  label: string;
+  format: string;
+  author: string;
+  authorTone: "brand" | "pink" | "green";
+  topic: string;
+  points: string[];
+  image: string;
+};
+
+export type InsightSectionData = {
   title: string;
   subtitle: string;
-  takeaways: {
-    rank: string;
-    title: string;
-    badge: string;
-    tone: "brand" | "green";
-    text: string;
-    stats: { icon: "views" | "engagement" | "post"; value: string }[];
-  }[];
-  metrics: {
-    label: string;
-    format: string;
-    author: string;
-    authorTone: "brand" | "pink" | "green";
-    topic: string;
-    points: string[];
-    image: string;
-  }[];
-} = {
+  takeaways: InsightTakeaway[];
+  metrics: InsightMetric[];
+};
+
+/** Section "Insights" pada halaman Create Image (Figma node 828:27420). */
+export const INSIGHT_SECTION: InsightSectionData = {
   title: "Konten Tertinggi",
   subtitle: "Ringkasan insight utama dari keseluruhan analisis pada periode ini",
   takeaways: [
@@ -222,6 +231,76 @@ export const INSIGHT_SECTION: {
   ],
 };
 
+/** Section "Insights" pada halaman Create Video dengan jenis Short Video & Tiktok Video. */
+export const INSIGHT_VIDEO_SECTION: InsightSectionData = {
+  title: "Konten Tertinggi",
+  subtitle: "Ringkasan insight utama dari keseluruhan analisis video pada periode ini",
+  takeaways: [
+    {
+      rank: "1",
+      title: "Short Video",
+      badge: "YoutubeShort",
+      tone: "brand",
+      text: "Short Video berdurasi singkat menjadi format paling efektif dalam meningkatkan jangkauan audiens dan retensi penonton secara cepat",
+      stats: [
+        { icon: "views", value: "842.k Views" },
+        { icon: "engagement", value: "245.k Engagement" },
+        { icon: "post", value: "186 Video" },
+      ],
+    },
+    {
+      rank: "2",
+      title: "Tiktok Video",
+      badge: "Explainer",
+      tone: "green",
+      text: "Tiktok Video berformat Explainer menarik interaksi mendalam dan diskusi hangat seputar topik berita dan edukasi visual",
+      stats: [
+        { icon: "views", value: "612.k Views" },
+        { icon: "engagement", value: "178.k Engagement" },
+        { icon: "post", value: "142 Video" },
+      ],
+    },
+  ],
+  metrics: [
+    {
+      label: "Impression Tertinggi",
+      format: "YouTube Short",
+      author: "KumparanNews",
+      authorTone: "green",
+      topic: "Update Kondisi Arus Mudik & Tol Baru",
+      points: ["Video Short menarik sekitar 350.000+ impresi", "Sebanyak 1.400 komentar diskusi pada topik ini"],
+      image: "/seed/unsplash/abstract-05.jpg",
+    },
+    {
+      label: "Most Loved",
+      format: "TikTok Explainer",
+      author: "KumparanOto",
+      authorTone: "pink",
+      topic: "Mengenal lebih jauh mengenai BYD Atto 2",
+      points: ["Topik video visual dinilai sangat interaktif", "Memperoleh likes 15.000+"],
+      image: "/seed/unsplash/abstract-06.jpg",
+    },
+    {
+      label: "Paling Banyak di Share",
+      format: "TikTok Video",
+      author: "KumparanNews",
+      authorTone: "brand",
+      topic: "Panduan Finansial & Investasi Pemula",
+      points: ["Topik video dengan durasi tonton penuh tertinggi", "Memperoleh share 5.000+"],
+      image: "/seed/unsplash/abstract-07.jpg",
+    },
+    {
+      label: "Paling Banyak di Repost",
+      format: "YouTube Short",
+      author: "KumparanMom",
+      authorTone: "brand",
+      topic: "Tips Nutrisi & Tumbuh Kembang Anak",
+      points: ["Format tips singkat dengan retensi penonton 85%", "Memperoleh bookmark & repost tinggi"],
+      image: "/seed/unsplash/abstract-08.jpg",
+    },
+  ],
+};
+
 // ─────────────────────────────────────────────────────────────
 // Video (FR-VID-1..5)
 // ─────────────────────────────────────────────────────────────
@@ -258,6 +337,52 @@ export const ATTACHMENT_ACCEPT_IMAGE = "image/jpeg,image/png,image/webp,image/gi
 export const ATTACHMENT_ACCEPT_VIDEO = "video/mp4,video/quicktime,video/webm";
 export const ATTACHMENT_ACCEPT_VIDEO_ONLY = "video/mp4,video/quicktime,video/webm";
 export const ATTACHMENT_ACCEPT_IMAGE_ONLY = "image/jpeg,image/png,image/webp,image/gif";
+
+export type VideoGuidedFormat = "landscape" | "portrait" | "square";
+export type VideoGuidedContentKind = "short" | "explainer" | "teaser";
+
+export const VIDEO_GUIDED_FORMATS: {
+  value: VideoGuidedFormat;
+  label: string;
+  aspectRatio: string;
+  hint?: string;
+}[] = [
+  { value: "landscape", label: "Landscape (16:9)", aspectRatio: "16:9", hint: "YouTube / Desktop" },
+  { value: "portrait", label: "Portrait (9:16)", aspectRatio: "9:16", hint: "TikTok / Reels / Shorts" },
+  { value: "square", label: "Square (1:1)", aspectRatio: "1:1", hint: "Feed Instagram" },
+];
+
+export const VIDEO_GUIDED_CONTENT_KINDS: {
+  value: VideoGuidedContentKind;
+  label: string;
+  hint?: string;
+  sceneCount: number;
+}[] = [
+  { value: "short", label: "Short Video (1 Scene)", hint: "Video Singkat 5-10s", sceneCount: 1 },
+  { value: "explainer", label: "Explainer Video (3 Scene)", hint: "Rangkaian 3 Adegan", sceneCount: 3 },
+  { value: "teaser", label: "Teaser Video (1 Scene)", hint: "Cuplikan Dinamis", sceneCount: 1 },
+];
+
+export function guidedVideoParams(
+  format: VideoGuidedFormat,
+  durationSeconds: number = 5,
+  resolution: "720p" | "1080p" = "720p",
+): VideoParams {
+  const option = VIDEO_GUIDED_FORMATS.find((item) => item.value === format) ?? VIDEO_GUIDED_FORMATS[0];
+  return {
+    aspectRatio: option.aspectRatio,
+    durationSeconds,
+    resolution,
+  };
+}
+
+export const VIDEO_TOPIC_CHIPS: TopicChip[] = [
+  { label: "/ Breaking News Video", badge: "Panas" },
+  { label: "/ Review Produk Viral", badge: "Baru" },
+  { label: "/ Edukasi Finansial Singkat", badge: "Hot" },
+  { label: "/ Tutorial & How-To Singkat" },
+  { label: "/ Video Fakta Unik Menarik" },
+];
 
 // ─────────────────────────────────────────────────────────────
 // Audio (FR-AUD-1..5)

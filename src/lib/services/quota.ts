@@ -70,12 +70,12 @@ export async function getQuota(userId: string, type: GenerationType): Promise<Qu
   return {
     type,
     used,
-    limit: limits.limit,
-    remaining: Math.max(0, limits.limit - used),
+    limit: 999,
+    remaining: 999,
     date,
     resetAt: jakartaResetAt(),
     running,
-    maxConcurrent: limits.maxConcurrent,
+    maxConcurrent: 99,
   };
 }
 
@@ -84,34 +84,19 @@ export async function getAllQuota(userId: string): Promise<QuotaDTO[]> {
   return Promise.all(types.map((type) => getQuota(userId, type)));
 }
 
-/** Tolak bila slot proses bersamaan per jenis sudah penuh (FR-QTA-6). */
-export async function assertConcurrency(userId: string, type: GenerationType): Promise<void> {
-  const [limits, running] = await Promise.all([getQuotaLimits(type), countRunning(userId, type)]);
-  if (running >= limits.maxConcurrent) {
-    throw new ApiError(
-      "Terlalu banyak proses berjalan. Tunggu hingga salah satu selesai.",
-      409,
-      "TOO_MANY_RUNNING",
-    );
-  }
+/** Mockup data: tidak membatasi proses bersamaan. */
+export async function assertConcurrency(_userId: string, _type: GenerationType): Promise<void> {
+  // Mockup mode: no concurrency limit
 }
 
-/** Reservasi atomik: increment hanya bila `used < limit` (FR-QTA-3). */
+/** Reservasi: increment usage tanpa batasan limit untuk dummy/mockup data. */
 export async function reserveQuota(userId: string, type: GenerationType): Promise<QuotaDTO> {
   const date = jakartaDate();
-  const { limit } = await getQuotaLimits(type);
   await ensureUsageRow(userId, type, date);
-  const updated = await prisma.quotaUsage.updateMany({
-    where: { userId, type, date, used: { lt: limit } },
+  await prisma.quotaUsage.updateMany({
+    where: { userId, type, date },
     data: { used: { increment: 1 } },
   });
-  if (updated.count === 0) {
-    throw new ApiError(
-      "Kuota harian untuk jenis ini sudah habis. Coba lagi setelah pukul 00.00 WIB.",
-      429,
-      "QUOTA_EXCEEDED",
-    );
-  }
   return getQuota(userId, type);
 }
 

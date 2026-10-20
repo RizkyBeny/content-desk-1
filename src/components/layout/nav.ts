@@ -23,7 +23,6 @@ export interface NavItem {
 export const CREATE_NAV: NavItem[] = [
   { href: "/ai-studio/image", label: "Create Image", icon: ImageIcon },
   { href: "/ai-studio/video", label: "Create Video", icon: VideoIcon },
-  { href: "/ai-studio/audio", label: "Create Audio", icon: AudioIcon },
   { href: "/ai-studio/brief", label: "Create Brief", icon: FileTextIcon },
 ];
 
@@ -38,8 +37,6 @@ export const NAV_ITEMS: NavItem[] = [
     children: CREATE_NAV,
   },
   { href: "/desain", label: "Desain", icon: StudioIcon, primary: true },
-  { href: "/aset", label: "Aset", icon: AssetIcon },
-  { href: "/pengaturan", label: "Pengaturan", icon: SettingsIcon },
 ];
 
 export const MOBILE_NAV = CREATE_NAV;

@@ -279,7 +279,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
   }
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh flex flex-col">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col gap-6 p-4 lg:flex">
         <div className="frosted-glass flex h-full flex-col gap-6 rounded-2xl p-4 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-white/10">
           <div className="flex items-center justify-between">
@@ -316,10 +316,10 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
         className={
           isEditorRoute(pathname)
             ? "px-3 pb-6 pt-4 md:pl-20 lg:pl-64 lg:pr-4 lg:pb-4"
-            : "px-3 pt-10 pb-28 md:pl-20 lg:pl-64 lg:pr-6"
+            : "flex flex-col flex-1 px-3 pt-6 pb-28 md:pl-20 md:pt-6 md:pb-8 lg:pl-64 lg:pr-6 lg:pt-4 lg:pb-4"
         }
       >
-        <div className={isEditorRoute(pathname) ? "mx-auto w-full" : "mx-auto w-full max-w-6xl"}>{children}</div>
+        <div className={isEditorRoute(pathname) ? "mx-auto w-full" : "mx-auto w-full max-w-6xl flex flex-col flex-1"}>{children}</div>
       </main>
 
       <nav

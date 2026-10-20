@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Button } from "@heroui/react";
 import { cn } from "@/lib/utils";
 import { ChatIcon, ChevronRightIcon, EyeIcon, FileTextIcon } from "@/components/ui/icons";
-import { INSIGHT_SECTION } from "../../../config/generation";
+import { INSIGHT_SECTION, type InsightSectionData } from "../../../config/generation";
 
 const TAKEAWAY_TONE: Record<string, string> = {
   brand: "bg-brand text-white",
@@ -25,14 +25,20 @@ const STAT_ICON: Record<string, React.ReactNode> = {
 };
 
 /**
- * Section "Insights" halaman Create Image (Figma node 828:27420).
+ * Section "Insights" halaman Create Image & Video (Figma node 828:27420).
  *
  * Card A "Konten Tertinggi": daftar takeaway dengan rank, judul highlight,
  * badge format, deskripsi, dan statistik (views/engagement/post).
  * Card B: grid 2×2 kartu metrik dengan badge author + teks topik + gambar.
  * Tombol "Buat Konten Serupa" mengisi prompt composer melalui `onSimilar`.
  */
-export function InsightSection({ onSimilar }: { onSimilar?: (topic: string) => void }) {
+export function InsightSection({
+  data = INSIGHT_SECTION,
+  onSimilar,
+}: {
+  data?: InsightSectionData;
+  onSimilar?: (topic: string) => void;
+}) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -50,12 +56,12 @@ export function InsightSection({ onSimilar }: { onSimilar?: (topic: string) => v
         {/* Card A — Konten Tertinggi */}
         <div className="glass-card flex flex-col gap-4 rounded-[14px] p-4 lg:col-span-5 lg:min-h-[470px]">
           <div className="flex flex-col gap-1">
-            <h3 className="text-[17px] font-bold leading-[25.5px] tracking-tight">{INSIGHT_SECTION.title}</h3>
-            <p className="text-xs leading-4 text-zinc-500 dark:text-zinc-400">{INSIGHT_SECTION.subtitle}</p>
+            <h3 className="text-[17px] font-bold leading-[25.5px] tracking-tight">{data.title}</h3>
+            <p className="text-xs leading-4 text-zinc-500 dark:text-zinc-400">{data.subtitle}</p>
           </div>
 
           <div className="flex flex-col gap-4">
-            {INSIGHT_SECTION.takeaways.map((item) => (
+            {data.takeaways.map((item) => (
               <div
                 key={item.title}
                 className="flex flex-1 flex-col gap-3 rounded-[10px] border border-zinc-200/60 p-4 dark:border-white/10"
@@ -100,7 +106,7 @@ export function InsightSection({ onSimilar }: { onSimilar?: (topic: string) => v
 
         {/* Card B — grid 2×2 kartu metrik */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-7">
-          {INSIGHT_SECTION.metrics.map((metric) => (
+          {data.metrics.map((metric) => (
             <div key={metric.label} className="glass-card flex flex-col gap-3 rounded-[10px] p-4">
               <div className="flex items-center justify-between gap-2 border-b border-zinc-900/5 pb-2.5 dark:border-white/10">
                 <span className="text-sm">{metric.label}</span>

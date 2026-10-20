@@ -65,7 +65,7 @@ export function ComposerCard({
   }, [value]);
 
   const trimmed = value.trim();
-  const canSubmit = trimmed.length >= 3 && !busy && !exhausted;
+  const canSubmit = trimmed.length >= 3 && !busy;
   const canAttach = Boolean(attachAccept && onAttachFile);
 
   function reject() {
@@ -83,7 +83,7 @@ export function ComposerCard({
 
   return (
     <section className="mx-auto w-full max-w-[760px]">
-      <div className="glass-panel angle-card flex flex-col gap-3 rounded-2xl p-4">
+      <div className="glass-panel angle-card flex flex-col gap-3 rounded-2xl p-4 transition-all duration-300">
         <label htmlFor="image-composer-input" className="sr-only">
           Prompt gambar
         </label>
@@ -101,9 +101,10 @@ export function ComposerCard({
             trySubmit();
           }}
           className={cn(
-            "w-full resize-none bg-transparent px-1 py-1 text-[15px] leading-6 outline-none dark:placeholder:text-zinc-500",
+            "w-full resize-none bg-transparent px-1 py-1 text-[15px] leading-6 outline-none border-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 dark:placeholder:text-zinc-500",
             rejected && "animate-pulse text-red-500",
           )}
+          style={{ outline: "none", boxShadow: "none" }}
         />
 
         {attachment ? (
@@ -115,7 +116,7 @@ export function ComposerCard({
           />
         ) : null}
 
-        <div className="flex items-center justify-between gap-2 border-t border-zinc-900/10 pt-3 dark:border-white/10">
+        <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3">
           <div className="flex min-w-0 items-center gap-2">
             {canAttach ? (
               <>
@@ -134,7 +135,7 @@ export function ComposerCard({
                   type="button"
                   onClick={() => attachInputRef.current?.click()}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/70 bg-white/60 px-3 py-1.5 text-xs text-zinc-600 transition-colors hover:bg-zinc-900/5 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-white/10 disabled:opacity-50"
                 >
                   <PlusIcon width={14} height={14} />
                   Lampirkan referensi
@@ -144,7 +145,7 @@ export function ComposerCard({
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-zinc-400">
               {value.length === 0 ? "Minimal 4 karakter" : `${value.length}/${maxLength}`}
             </span>
             <Button
@@ -152,7 +153,7 @@ export function ComposerCard({
               aria-label="Buat sekarang"
               isDisabled={!canSubmit}
               onPress={trySubmit}
-              className="rounded-full"
+              className="rounded-full bg-white text-zinc-900 hover:bg-zinc-200 transition-colors"
             >
               <SendIcon width={18} height={18} />
             </Button>
@@ -161,12 +162,6 @@ export function ComposerCard({
 
         {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
       </div>
-
-      {exhausted ? (
-        <p className="mt-3 text-center text-xs text-red-500" role="alert">
-          Kuota harian habis. Reset pukul 00.00 WIB.
-        </p>
-      ) : null}
     </section>
   );
 }
