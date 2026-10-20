@@ -83,7 +83,7 @@ export function ComposerCard({
 
   return (
     <section className="mx-auto w-full max-w-[760px]">
-      <div className="glass-panel flex flex-col gap-3 rounded-2xl p-4">
+      <div className="glass-panel angle-card flex flex-col gap-3 rounded-2xl p-4">
         <label htmlFor="image-composer-input" className="sr-only">
           Prompt gambar
         </label>

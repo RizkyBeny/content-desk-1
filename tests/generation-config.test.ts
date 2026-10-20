@@ -54,7 +54,7 @@ describe("generation config", () => {
     });
   });
 
-  it("maps existing ratios back to guided formats and disables carousel", () => {
+  it("maps existing ratios back to guided formats and enables carousel", () => {
     expect(guidedImageFormatFromRatio("1:1")).toBe("square");
     expect(guidedImageFormatFromRatio("16:9")).toBe("landscape");
     expect(guidedImageFormatFromRatio("9:16")).toBe("portrait");
@@ -63,7 +63,7 @@ describe("generation config", () => {
     expect(guidedImageFormatFromRatio("custom")).toBe("square");
     expect(IMAGE_GUIDED_CONTENT_KINDS).toEqual([
       { value: "single", label: "Single Image" },
-      { value: "carousel", label: "Carousel 3 Image", hint: "Segera hadir", disabled: true },
+      { value: "carousel", label: "Carousel 3 Image" },
     ]);
   });
 
