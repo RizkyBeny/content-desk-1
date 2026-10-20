@@ -98,7 +98,7 @@ export const IMAGE_GUIDED_CONTENT_KINDS: {
   disabled?: boolean;
 }[] = [
   { value: "single", label: "Single Image" },
-  { value: "carousel", label: "Carousel 3 Image", hint: "Segera hadir", disabled: true },
+  { value: "carousel", label: "Carousel 3 Image" },
 ];
 
 export function guidedImageFormatFromRatio(ratio: string | null | undefined): ImageGuidedFormat {
@@ -136,10 +136,19 @@ export const TOPIC_CHIPS: { label: string; badge?: "Panas" | "Baru" | "Hot" }[] 
 export const INSIGHT_SECTION: {
   title: string;
   subtitle: string;
-  takeaways: { badge: string; tone: "brand" | "green"; text: string }[];
+  takeaways: {
+    rank: string;
+    title: string;
+    badge: string;
+    tone: "brand" | "green";
+    text: string;
+    stats: { icon: "views" | "engagement" | "post"; value: string }[];
+  }[];
   metrics: {
     label: string;
     format: string;
+    author: string;
+    authorTone: "brand" | "pink" | "green";
     topic: string;
     points: string[];
     image: string;
@@ -149,20 +158,36 @@ export const INSIGHT_SECTION: {
   subtitle: "Ringkasan insight utama dari keseluruhan analisis pada periode ini",
   takeaways: [
     {
-      badge: "Quotes",
+      rank: "1",
+      title: "Konten Quotes",
+      badge: "Single Image",
       tone: "brand",
       text: "Konten Quotes masih menjadi format konten yang banyak diminati karena dinilai sangat relate dengan kebanyakan user",
+      stats: [
+        { icon: "views", value: "523.k Views" },
+        { icon: "engagement", value: "123.k Engagement" },
+        { icon: "post", value: "129 Post" },
+      ],
     },
     {
-      badge: "Infografis",
+      rank: "2",
+      title: "Konten Infografis",
+      badge: "Carousel",
       tone: "green",
       text: "Konten Infografis masih menjadi format konten yang banyak menarik perhatian terutama di Instagram dan Tiktok",
+      stats: [
+        { icon: "views", value: "523.k Views" },
+        { icon: "engagement", value: "123.k Engagement" },
+        { icon: "post", value: "129 Post" },
+      ],
     },
   ],
   metrics: [
     {
       label: "Impression Tertinggi",
       format: "Instagram Post",
+      author: "KumparanMom",
+      authorTone: "green",
       topic: "Biaya sekolah swasta di Jakarta",
       points: ["Kumparanmom menarik sekitar 150.000+ impresi", "Sebanyak 32 komentar setuju pada topik ini"],
       image: "/seed/unsplash/abstract-05.jpg",
@@ -170,22 +195,28 @@ export const INSIGHT_SECTION: {
     {
       label: "Most Loved",
       format: "Instagram Carousel",
+      author: "KumparanOto",
+      authorTone: "pink",
       topic: "Mengenal lebih jauh mengenai BYD Atto 2",
       points: ["Topik yang disajikan dinilai sedang hangat", "Memperoleh likes 2000+"],
       image: "/seed/unsplash/abstract-06.jpg",
     },
     {
       label: "Paling Banyak di Share",
-      format: "X Thread",
+      format: "Instagram Carousel",
+      author: "KumparanNews",
+      authorTone: "brand",
       topic: "IHSG kembali ke titik terendah",
       points: ["Topik yang memiliki impressi lebih dari 200.000+", "Memperoleh share 2000+ karena sentimen negatif"],
       image: "/seed/unsplash/abstract-07.jpg",
     },
     {
       label: "Paling Banyak di Repost",
-      format: "Instagram Reels",
-      topic: "Kenaikan harga bahan pokok",
-      points: ["Topik yang banyak dibahas di berbagai kanal", "Memperoleh repost 1500+ dalam 24 jam"],
+      format: "Instagram Carousel",
+      author: "KumparanNews",
+      authorTone: "brand",
+      topic: "IHSG kembali ke titik terendah",
+      points: ["Topik yang memiliki impressi lebih dari 200.000+", "Memperoleh share 2000+ karena sentimen negatif"],
       image: "/seed/unsplash/abstract-08.jpg",
     },
   ],

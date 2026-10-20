@@ -101,6 +101,13 @@ export const CheckIcon = (p: IconProps) => (
   </svg>
 );
 
+export const EyeIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 export const ChevronRightIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M9 6l6 6-6 6" />

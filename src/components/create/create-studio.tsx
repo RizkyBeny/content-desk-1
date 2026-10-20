@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@heroui/react";
 import { apiFetch, ClientError } from "@/lib/client";
 import { cn } from "@/lib/utils";
-import type { GenerationDTO, GenerationParams, GenerationType, ImageParams, VideoParams } from "@/types";
+import type { GenerationDTO, GenerationParams, GenerationType, VideoParams } from "@/types";
 import { ATTACHMENT_ACCEPT_IMAGE, ATTACHMENT_ACCEPT_VIDEO, ATTACHMENT_MAX_IMAGE_MB, ATTACHMENT_MAX_VIDEO_MB, PAGE_DESCRIPTION, PAGE_TITLE, PLACEHOLDER, PROMPT_LIMITS, defaultParams } from "../../../config/generation";
 import { IMAGE_TEMPLATES } from "../../../config/templates";
 import { SectionHeader } from "@/components/ui/primitives";
@@ -16,6 +16,7 @@ import { ConfigRow, CONFIG_PANEL } from "./config-panels";
 import { DetailModal } from "./detail-modal";
 import { HeroSection } from "./hero-section";
 import { InsightSection } from "./insight-section";
+import { GuidedImageFlow } from "./guided-image-flow";
 import { QuotaBadge } from "./quota-badge";
 import { ReferenceOutputGrid } from "./reference-output-grid";
 import { TopicChips } from "./topic-chips";
@@ -62,6 +63,8 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [attachment, setAttachment] = useState<ComposerAttachment | null>(null);
+  const [guidedPhase, setGuidedPhase] = useState(false);
+  const [guidedContext, setGuidedContext] = useState("");
   const hydrated = useRef(false);
 
   const { items, quota, loading, loadingMore, hasMore, error, loadMore, refresh, submit, remove, retry } =
@@ -102,13 +105,19 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   async function handleSubmit() {
     const trimmed = prompt.trim();
     if (trimmed.length < 3) return;
+    // Image: masuk guided mode dulu (brief → step → final prompt → generate).
+    if (type === "image") {
+      setGuidedContext(trimmed);
+      setGuidedPhase(true);
+      setPrompt("");
+      setAttachment(null);
+      return;
+    }
     setBusy(true);
     try {
       let merged = params as GenerationParams;
       if (attachment) {
-        if (type === "image") {
-          merged = { ...(params as ImageParams), referenceAssetId: attachment.assetId, referenceMode: attachment.mode } as GenerationParams;
-        } else if (type === "video") {
+        if (type === "video") {
           if (attachment.kind === "image") {
             merged = { ...(params as VideoParams), startFrameAssetId: attachment.assetId } as GenerationParams;
           } else if (attachment.kind === "video") {
@@ -242,6 +251,23 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
       : [];
 
   if (type === "image") {
+    if (guidedPhase) {
+      return (
+        <div className="space-y-6 pb-6">
+          <HeroSection
+            title="Generate Image"
+            subtitle="Generate gambar kini makin mudah dengan mode panduan memberikan output yang lebih maksimal tanpa harus bikin prompt yang panjang"
+          />
+          <GuidedImageFlow
+            context={guidedContext}
+            quota={quota}
+            onExit={() => setGuidedPhase(false)}
+            onGenerated={() => refresh()}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6 pb-6">
         <HeroSection
