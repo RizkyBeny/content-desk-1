@@ -123,6 +123,74 @@ export function guidedImageParams(
   };
 }
 
+/** Skill chips statis untuk halaman Create Image (mengikuti Figma "Generate Image"). */
+export const TOPIC_CHIPS: { label: string; badge?: "Panas" | "Baru" | "Hot" }[] = [
+  { label: "/ Nasional & Politik Terkini", badge: "Panas" },
+  { label: "/ Jadwal Timnas & Liga 1", badge: "Baru" },
+  { label: "/ Berita Viral Hari Ini", badge: "Hot" },
+  { label: "/ Kesehatan Keluarga" },
+  { label: "/ Update Gaya Hidup" },
+];
+
+/** Placeholder section "Insights" pada halaman Create Image (Figma node 828:27420). */
+export const INSIGHT_SECTION: {
+  title: string;
+  subtitle: string;
+  takeaways: { badge: string; tone: "brand" | "green"; text: string }[];
+  metrics: {
+    label: string;
+    format: string;
+    topic: string;
+    points: string[];
+    image: string;
+  }[];
+} = {
+  title: "Konten Tertinggi",
+  subtitle: "Ringkasan insight utama dari keseluruhan analisis pada periode ini",
+  takeaways: [
+    {
+      badge: "Quotes",
+      tone: "brand",
+      text: "Konten Quotes masih menjadi format konten yang banyak diminati karena dinilai sangat relate dengan kebanyakan user",
+    },
+    {
+      badge: "Infografis",
+      tone: "green",
+      text: "Konten Infografis masih menjadi format konten yang banyak menarik perhatian terutama di Instagram dan Tiktok",
+    },
+  ],
+  metrics: [
+    {
+      label: "Impression Tertinggi",
+      format: "Instagram Post",
+      topic: "Biaya sekolah swasta di Jakarta",
+      points: ["Kumparanmom menarik sekitar 150.000+ impresi", "Sebanyak 32 komentar setuju pada topik ini"],
+      image: "/seed/unsplash/abstract-05.jpg",
+    },
+    {
+      label: "Most Loved",
+      format: "Instagram Carousel",
+      topic: "Mengenal lebih jauh mengenai BYD Atto 2",
+      points: ["Topik yang disajikan dinilai sedang hangat", "Memperoleh likes 2000+"],
+      image: "/seed/unsplash/abstract-06.jpg",
+    },
+    {
+      label: "Paling Banyak di Share",
+      format: "X Thread",
+      topic: "IHSG kembali ke titik terendah",
+      points: ["Topik yang memiliki impressi lebih dari 200.000+", "Memperoleh share 2000+ karena sentimen negatif"],
+      image: "/seed/unsplash/abstract-07.jpg",
+    },
+    {
+      label: "Paling Banyak di Repost",
+      format: "Instagram Reels",
+      topic: "Kenaikan harga bahan pokok",
+      points: ["Topik yang banyak dibahas di berbagai kanal", "Memperoleh repost 1500+ dalam 24 jam"],
+      image: "/seed/unsplash/abstract-08.jpg",
+    },
+  ],
+};
+
 // ─────────────────────────────────────────────────────────────
 // Video (FR-VID-1..5)
 // ─────────────────────────────────────────────────────────────
@@ -267,7 +335,7 @@ export const PROMPT_LIMITS: Record<GenerationType, number> = {
 };
 
 export const PLACEHOLDER: Record<GenerationType, string> = {
-  image: "Deskripsikan gambar yang ingin dibuat…",
+  image: "Bikinkan gambar tentang suasana gedung DPR",
   video: "Deskripsikan video yang ingin dibuat…",
   audio: "Tulis naskah yang akan diucapkan…",
   brief: "Tulis topik atau instruksi untuk content brief…",

@@ -300,6 +300,13 @@ export const SaveIcon = (p: IconProps) => (
   </svg>
 );
 
+export const SendIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 19V5" />
+    <path d="m5 12 7-7 7 7" />
+  </svg>
+);
+
 export const ChevronLeftIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="m15 5-7 7 7 7" />

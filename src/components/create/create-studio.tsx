@@ -7,18 +7,18 @@ import { apiFetch, ClientError } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import type { GenerationDTO, GenerationParams, GenerationType, ImageParams, VideoParams } from "@/types";
 import { ATTACHMENT_ACCEPT_IMAGE, ATTACHMENT_ACCEPT_VIDEO, ATTACHMENT_MAX_IMAGE_MB, ATTACHMENT_MAX_VIDEO_MB, PAGE_DESCRIPTION, PAGE_TITLE, PLACEHOLDER, PROMPT_LIMITS, defaultParams } from "../../../config/generation";
+import { IMAGE_TEMPLATES } from "../../../config/templates";
 import { SectionHeader } from "@/components/ui/primitives";
 import { BentoGallery } from "./bento-gallery";
 import { Composer, type ComposerAttachment } from "./composer";
+import { ComposerCard } from "./composer-card";
 import { ConfigRow, CONFIG_PANEL } from "./config-panels";
 import { DetailModal } from "./detail-modal";
-import {
-  GuidedImageComposer,
-  type GuidedImageSeed,
-  type GuidedImageSubmission,
-} from "./guided-image-composer";
+import { HeroSection } from "./hero-section";
+import { InsightSection } from "./insight-section";
 import { QuotaBadge } from "./quota-badge";
-import { TemplateCarousel } from "./template-carousel";
+import { ReferenceOutputGrid } from "./reference-output-grid";
+import { TopicChips } from "./topic-chips";
 import { useGenerations } from "./use-generations";
 
 const STORAGE_PREFIX = "aistudio:config:";
@@ -62,8 +62,6 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [attachment, setAttachment] = useState<ComposerAttachment | null>(null);
-  const [imageSeed, setImageSeed] = useState<GuidedImageSeed | null>(null);
-  const [imageSeedKey, setImageSeedKey] = useState(0);
   const hydrated = useRef(false);
 
   const { items, quota, loading, loadingMore, hasMore, error, loadMore, refresh, submit, remove, retry } =
@@ -123,33 +121,6 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
       setAttachment(null);
     } catch (err) {
       toast.danger(err instanceof ClientError ? err.message : "Gagal mengirim permintaan.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleGuidedImageSubmit({
-    prompt: imagePrompt,
-    params: imageParams,
-    attachment: imageAttachment,
-  }: GuidedImageSubmission): Promise<boolean> {
-    const trimmed = imagePrompt.trim();
-    if (trimmed.length < 3) return false;
-    setBusy(true);
-    try {
-      const merged: ImageParams = imageAttachment
-        ? {
-            ...imageParams,
-            referenceAssetId: imageAttachment.assetId,
-            referenceMode: imageAttachment.mode,
-          }
-        : imageParams;
-      await submit(trimmed, merged);
-      setAttachment(null);
-      return true;
-    } catch (err) {
-      toast.danger(err instanceof ClientError ? err.message : "Gagal mengirim permintaan.");
-      return false;
     } finally {
       setBusy(false);
     }
@@ -246,80 +217,103 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   }
 
   function handleSimilar(item: GenerationDTO) {
-    if (type === "image") {
-      const imageParams = item.params as ImageParams;
-      setImageSeed({
-        description: item.prompt,
-        aspectRatio: imageParams.aspectRatio,
-        contentKind: "single",
-        quality: imageParams.quality,
-        startAtReview: true,
-      });
-      setImageSeedKey((key) => key + 1);
-      setAttachment(null);
-      closeModal();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      toast.success("Referensi dimuat. Periksa ringkasan lalu mulai generate.");
-      return;
-    }
     setPrompt(item.prompt);
     setParams({ ...(item.params as GenerationParams) });
     saveConfig(type, item.params as GenerationParams);
+    setAttachment(null);
     closeModal();
     window.scrollTo({ top: 0, behavior: "smooth" });
-    toast.success("Pengaturan disalin. Periksa lalu tekan Buat.");
+    toast.success("Pengaturan disalin. Periksa lalu tekan kirim.");
+  }
+
+  function handleInsightSimilar(topic: string) {
+    setPrompt(topic);
+    setAttachment(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.success("Topik dimuat ke composer. Periksa lalu tekan kirim.");
   }
 
   const Panel = CONFIG_PANEL[type] as PanelComponent;
   const exhausted = quota ? quota.remaining <= 0 : false;
 
-  return (
-    <div className="space-y-4 py-2">
-      {type === "image" ? (
-        <GuidedImageComposer
-          key={imageSeedKey}
-          busy={busy}
-          quota={quota}
+  const completedImages =
+    type === "image"
+      ? items.filter((item) => item.status === "completed" && (item.thumbnailUrl || item.fileUrl))
+      : [];
+
+  if (type === "image") {
+    return (
+      <div className="space-y-6 pb-6">
+        <HeroSection
+          title="Generate Image"
+          subtitle="Generate gambar kini makin mudah dengan mode panduan memberikan output yang lebih maksimal tanpa harus bikin prompt yang panjang"
+        />
+
+        <ComposerCard
+          value={prompt}
+          onChange={setPrompt}
+          onSubmit={handleSubmit}
+          busy={busy || exhausted}
           exhausted={exhausted}
-          seed={imageSeed}
-          attachment={attachment}
+          maxLength={PROMPT_LIMITS.image}
+          placeholder={PLACEHOLDER.image}
           attachAccept={ATTACHMENT_ACCEPT_IMAGE}
+          attachment={attachment}
           onAttachFile={handleAttachFile}
           onRemoveAttachment={() => setAttachment(null)}
           onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
-          onSubmit={handleGuidedImageSubmit}
         />
-      ) : (
-        <>
-          <SectionHeader title={PAGE_TITLE[type]} description={PAGE_DESCRIPTION[type]} align="center" size="lg" />
 
-          <Composer
-            value={prompt}
-            onChange={setPrompt}
-            onSubmit={handleSubmit}
-            maxLength={PROMPT_LIMITS[type]}
-            placeholder={PLACEHOLDER[type]}
-            label={PAGE_TITLE[type]}
-            busy={busy || exhausted}
-            attachAccept={ATTACHMENT_ACCEPT_VIDEO}
-            onAttachFile={handleAttachFile}
-            attachment={attachment}
-            onRemoveAttachment={() => setAttachment(null)}
-            onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
-          >
-            <ConfigRow>
-              <Panel params={params} onChange={patch} />
-              <QuotaBadge quota={quota} className="ml-auto" />
-            </ConfigRow>
-          </Composer>
+        <TopicChips onSelect={setPrompt} />
 
-          {exhausted ? (
-            <p className="text-center text-xs text-red-500">Kuota harian habis. Reset pukul 00.00 WIB.</p>
-          ) : null}
-        </>
-      )}
+        <section className="space-y-5">
+          <InsightSection onSimilar={handleInsightSimilar} />
+          <SectionHeader title="Referensi Output" />
+          <ReferenceOutputGrid
+            generations={completedImages}
+            templates={IMAGE_TEMPLATES}
+            onOpenGeneration={openItem}
+          />
+        </section>
 
-      {type === "image" ? <TemplateCarousel onApply={handleSimilar} /> : null}
+        <DetailModal
+          item={selected}
+          canModerate={canModerate}
+          onClose={closeModal}
+          onSimilar={handleSimilar}
+          onDeleted={(id) => void remove(id)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 py-2">
+      <SectionHeader title={PAGE_TITLE[type]} description={PAGE_DESCRIPTION[type]} align="center" size="lg" />
+
+      <Composer
+        value={prompt}
+        onChange={setPrompt}
+        onSubmit={handleSubmit}
+        maxLength={PROMPT_LIMITS[type]}
+        placeholder={PLACEHOLDER[type]}
+        label={PAGE_TITLE[type]}
+        busy={busy || exhausted}
+        attachAccept={ATTACHMENT_ACCEPT_VIDEO}
+        onAttachFile={handleAttachFile}
+        attachment={attachment}
+        onRemoveAttachment={() => setAttachment(null)}
+        onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
+      >
+        <ConfigRow>
+          <Panel params={params} onChange={patch} />
+          <QuotaBadge quota={quota} className="ml-auto" />
+        </ConfigRow>
+      </Composer>
+
+      {exhausted ? (
+        <p className="text-center text-xs text-red-500">Kuota harian habis. Reset pukul 00.00 WIB.</p>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold tracking-tight">Hasil Generate</h2>
