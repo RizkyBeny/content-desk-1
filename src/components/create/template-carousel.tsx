@@ -85,8 +85,8 @@ export function TemplateCarousel({ onApply }: { onApply: (item: GenerationDTO) =
   return (
     <div className="space-y-4">
       <SectionHeader
-        title="Template"
-        description="Pilih template untuk melihat detail dan menggunakannya sebagai inspirasi."
+        title="Referensi Output"
+        description="Pilih referensi untuk melihat detail dan menggunakannya sebagai inspirasi."
       />
       <div className="relative">
         <div ref={viewportRef} className="overflow-hidden">

@@ -77,6 +77,52 @@ export function approximateRatio(width: number, height: number): string {
   return `≈ ${Math.round(width / divisor)}:${Math.round(height / divisor)}`;
 }
 
+export type ImageGuidedFormat = "square" | "landscape" | "portrait" | "instagram";
+export type ImageGuidedContentKind = "single" | "carousel";
+
+export const IMAGE_GUIDED_FORMATS: {
+  value: ImageGuidedFormat;
+  label: string;
+  aspectRatio: string;
+}[] = [
+  { value: "square", label: "Square (1:1)", aspectRatio: "1:1" },
+  { value: "landscape", label: "Landscape (16:9)", aspectRatio: "16:9" },
+  { value: "portrait", label: "Portrait (9:16)", aspectRatio: "9:16" },
+  { value: "instagram", label: "Instagram Post (4:5)", aspectRatio: "4:5" },
+];
+
+export const IMAGE_GUIDED_CONTENT_KINDS: {
+  value: ImageGuidedContentKind;
+  label: string;
+  hint?: string;
+  disabled?: boolean;
+}[] = [
+  { value: "single", label: "Single Image" },
+  { value: "carousel", label: "Carousel 3 Image", hint: "Segera hadir", disabled: true },
+];
+
+export function guidedImageFormatFromRatio(ratio: string | null | undefined): ImageGuidedFormat {
+  if (ratio === "16:9") return "landscape";
+  if (ratio === "9:16" || ratio === "3:4") return "portrait";
+  if (ratio === "4:5") return "instagram";
+  return "square";
+}
+
+export function guidedImageParams(
+  format: ImageGuidedFormat,
+  quality: ImageParams["quality"] = "medium",
+): Pick<ImageParams, "aspectRatio" | "quality" | "dimensionPreset" | "width" | "height"> {
+  const option = IMAGE_GUIDED_FORMATS.find((item) => item.value === format) ?? IMAGE_GUIDED_FORMATS[0];
+  const size = imageTargetSize({ aspectRatio: option.aspectRatio, dimensionPreset: "medium" });
+  return {
+    aspectRatio: option.aspectRatio,
+    quality,
+    dimensionPreset: "medium",
+    width: size.width,
+    height: size.height,
+  };
+}
+
 // ─────────────────────────────────────────────────────────────
 // Video (FR-VID-1..5)
 // ─────────────────────────────────────────────────────────────

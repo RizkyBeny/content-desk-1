@@ -12,6 +12,11 @@ import { BentoGallery } from "./bento-gallery";
 import { Composer, type ComposerAttachment } from "./composer";
 import { ConfigRow, CONFIG_PANEL } from "./config-panels";
 import { DetailModal } from "./detail-modal";
+import {
+  GuidedImageComposer,
+  type GuidedImageSeed,
+  type GuidedImageSubmission,
+} from "./guided-image-composer";
 import { QuotaBadge } from "./quota-badge";
 import { TemplateCarousel } from "./template-carousel";
 import { useGenerations } from "./use-generations";
@@ -57,6 +62,8 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [attachment, setAttachment] = useState<ComposerAttachment | null>(null);
+  const [imageSeed, setImageSeed] = useState<GuidedImageSeed | null>(null);
+  const [imageSeedKey, setImageSeedKey] = useState(0);
   const hydrated = useRef(false);
 
   const { items, quota, loading, loadingMore, hasMore, error, loadMore, refresh, submit, remove, retry } =
@@ -116,6 +123,33 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
       setAttachment(null);
     } catch (err) {
       toast.danger(err instanceof ClientError ? err.message : "Gagal mengirim permintaan.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleGuidedImageSubmit({
+    prompt: imagePrompt,
+    params: imageParams,
+    attachment: imageAttachment,
+  }: GuidedImageSubmission): Promise<boolean> {
+    const trimmed = imagePrompt.trim();
+    if (trimmed.length < 3) return false;
+    setBusy(true);
+    try {
+      const merged: ImageParams = imageAttachment
+        ? {
+            ...imageParams,
+            referenceAssetId: imageAttachment.assetId,
+            referenceMode: imageAttachment.mode,
+          }
+        : imageParams;
+      await submit(trimmed, merged);
+      setAttachment(null);
+      return true;
+    } catch (err) {
+      toast.danger(err instanceof ClientError ? err.message : "Gagal mengirim permintaan.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -212,6 +246,22 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   }
 
   function handleSimilar(item: GenerationDTO) {
+    if (type === "image") {
+      const imageParams = item.params as ImageParams;
+      setImageSeed({
+        description: item.prompt,
+        aspectRatio: imageParams.aspectRatio,
+        contentKind: "single",
+        quality: imageParams.quality,
+        startAtReview: true,
+      });
+      setImageSeedKey((key) => key + 1);
+      setAttachment(null);
+      closeModal();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast.success("Referensi dimuat. Periksa ringkasan lalu mulai generate.");
+      return;
+    }
     setPrompt(item.prompt);
     setParams({ ...(item.params as GenerationParams) });
     saveConfig(type, item.params as GenerationParams);
@@ -225,31 +275,49 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
 
   return (
     <div className="space-y-4 py-2">
-      <SectionHeader title={PAGE_TITLE[type]} description={PAGE_DESCRIPTION[type]} align="center" size="lg" />
+      {type === "image" ? (
+        <GuidedImageComposer
+          key={imageSeedKey}
+          busy={busy}
+          quota={quota}
+          exhausted={exhausted}
+          seed={imageSeed}
+          attachment={attachment}
+          attachAccept={ATTACHMENT_ACCEPT_IMAGE}
+          onAttachFile={handleAttachFile}
+          onRemoveAttachment={() => setAttachment(null)}
+          onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
+          onSubmit={handleGuidedImageSubmit}
+        />
+      ) : (
+        <>
+          <SectionHeader title={PAGE_TITLE[type]} description={PAGE_DESCRIPTION[type]} align="center" size="lg" />
 
-      <Composer
-        value={prompt}
-        onChange={setPrompt}
-        onSubmit={handleSubmit}
-        maxLength={PROMPT_LIMITS[type]}
-        placeholder={PLACEHOLDER[type]}
-        label={PAGE_TITLE[type]}
-        busy={busy || exhausted}
-        attachAccept={type === "image" ? ATTACHMENT_ACCEPT_IMAGE : ATTACHMENT_ACCEPT_VIDEO}
-        onAttachFile={handleAttachFile}
-        attachment={attachment}
-        onRemoveAttachment={() => setAttachment(null)}
-        onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
-      >
-        <ConfigRow>
-          <Panel params={params} onChange={patch} />
-          <QuotaBadge quota={quota} className="ml-auto" />
-        </ConfigRow>
-      </Composer>
+          <Composer
+            value={prompt}
+            onChange={setPrompt}
+            onSubmit={handleSubmit}
+            maxLength={PROMPT_LIMITS[type]}
+            placeholder={PLACEHOLDER[type]}
+            label={PAGE_TITLE[type]}
+            busy={busy || exhausted}
+            attachAccept={ATTACHMENT_ACCEPT_VIDEO}
+            onAttachFile={handleAttachFile}
+            attachment={attachment}
+            onRemoveAttachment={() => setAttachment(null)}
+            onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
+          >
+            <ConfigRow>
+              <Panel params={params} onChange={patch} />
+              <QuotaBadge quota={quota} className="ml-auto" />
+            </ConfigRow>
+          </Composer>
 
-      {exhausted ? (
-        <p className="text-center text-xs text-red-500">Kuota harian habis. Reset pukul 00.00 WIB.</p>
-      ) : null}
+          {exhausted ? (
+            <p className="text-center text-xs text-red-500">Kuota harian habis. Reset pukul 00.00 WIB.</p>
+          ) : null}
+        </>
+      )}
 
       {type === "image" ? <TemplateCarousel onApply={handleSimilar} /> : null}
 

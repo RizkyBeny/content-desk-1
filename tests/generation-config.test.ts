@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   BRIEF_ROW_COUNTS,
+  IMAGE_GUIDED_CONTENT_KINDS,
+  IMAGE_GUIDED_FORMATS,
   IMAGE_RATIOS,
   IMAGE_QUALITIES,
   VIDEO_RATIOS,
@@ -10,6 +12,8 @@ import {
   DEFAULT_MAX_CONCURRENT,
   approximateRatio,
   defaultParams,
+  guidedImageFormatFromRatio,
+  guidedImageParams,
   imageTargetSize,
   isGenerationType,
   labelFor,
@@ -26,6 +30,41 @@ describe("generation config", () => {
     expect(imageTargetSize({ aspectRatio: "1:1", dimensionPreset: "medium" })).toEqual({ width: 1024, height: 1024 });
     expect(imageTargetSize({ aspectRatio: "16:9", dimensionPreset: "large" })).toEqual({ width: 1920, height: 1080 });
     expect(imageTargetSize({ aspectRatio: "custom", width: 1200, height: 800 })).toEqual({ width: 1200, height: 800 });
+  });
+
+  it("maps guided image formats to params", () => {
+    expect(IMAGE_GUIDED_FORMATS.map((format) => [format.value, format.aspectRatio])).toEqual([
+      ["square", "1:1"],
+      ["landscape", "16:9"],
+      ["portrait", "9:16"],
+      ["instagram", "4:5"],
+    ]);
+    expect(guidedImageParams("square")).toMatchObject({
+      aspectRatio: "1:1",
+      quality: "medium",
+      dimensionPreset: "medium",
+      width: 1024,
+      height: 1024,
+    });
+    expect(guidedImageParams("landscape", "high")).toMatchObject({
+      aspectRatio: "16:9",
+      quality: "high",
+      width: 1280,
+      height: 720,
+    });
+  });
+
+  it("maps existing ratios back to guided formats and disables carousel", () => {
+    expect(guidedImageFormatFromRatio("1:1")).toBe("square");
+    expect(guidedImageFormatFromRatio("16:9")).toBe("landscape");
+    expect(guidedImageFormatFromRatio("9:16")).toBe("portrait");
+    expect(guidedImageFormatFromRatio("3:4")).toBe("portrait");
+    expect(guidedImageFormatFromRatio("4:5")).toBe("instagram");
+    expect(guidedImageFormatFromRatio("custom")).toBe("square");
+    expect(IMAGE_GUIDED_CONTENT_KINDS).toEqual([
+      { value: "single", label: "Single Image" },
+      { value: "carousel", label: "Carousel 3 Image", hint: "Segera hadir", disabled: true },
+    ]);
   });
 
   it("resolves video output sizes per ratio and resolution", () => {
