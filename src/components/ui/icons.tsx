@@ -470,3 +470,19 @@ export const Upload05Icon = (p: IconProps) => (
     <path d="M20 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2" />
   </svg>
 );
+
+export const PanelLeftIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M9 4v16" />
+    <path d="M5.5 8h1M5.5 12h1M5.5 16h1" />
+  </svg>
+);
+
+export const MoreHorizontalIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="5" cy="12" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="19" cy="12" r="1" />
+  </svg>
+);

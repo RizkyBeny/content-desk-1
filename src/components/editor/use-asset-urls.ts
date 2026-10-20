@@ -24,6 +24,8 @@ export function collectAssetIds(state: EditorState | null): string[] {
     state.scenes.forEach((s) => add(s.clipAssetId));
     add(state.narration?.assetId);
     add(state.music?.assetId);
+    add(state.settings?.promoSource);
+    add(state.settings?.watermarkChannelLogoAssetId);
   } else if (state.type === "audio") {
     state.segments.forEach((s) => add(s.assetId));
     add(state.music?.assetId);

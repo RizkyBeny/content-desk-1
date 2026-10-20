@@ -56,7 +56,7 @@ export function AmbientBackground() {
         <div
           className="absolute -top-[25%] -left-[15%] w-[610px] h-[400px] blur-[127px] opacity-[0.72] motion-reduce:animate-none"
           style={{
-            backgroundImage: "linear-gradient(#6e20ff, #ef7be9)",
+            backgroundImage: "linear-gradient(135deg, #01AFAE 0%, #4EDBD6 55%, #A7F3F0 100%)",
             animation: "rotate 22s linear infinite",
             borderRadius: "30% 70% 70% 30%/30% 30% 70% 70%",
             transform: "translate3d(calc(var(--px, 0) * 6px), calc(var(--py, 0) * 4px), 0)",
@@ -77,7 +77,7 @@ export function AmbientBackground() {
           className="absolute top-[15%] right-[20%] h-[40vmax] w-[48vmax] rounded-full blur-[100px] opacity-[0.18] motion-reduce:animate-none"
           style={{
             background:
-              "radial-gradient(closest-side, oklch(72% 0.20 235) 0%, oklch(68% 0.22 275) 32%, transparent 70%)",
+              "radial-gradient(closest-side, oklch(82% 0.1 190) 0%, oklch(72% 0.12 185) 32%, transparent 70%)",
             transform: "translate3d(calc(var(--px, 0) * 4px), calc(var(--py, 0) * 5px), 0)",
             animation: "blob-float-c 16s ease-in-out infinite alternate",
             willChange: "transform",

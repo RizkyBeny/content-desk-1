@@ -34,14 +34,16 @@ export function StageBar({
   onSwapAsset,
   swapLabel = "Ganti Aset",
   right,
+  className,
 }: {
   controller: EditorController;
   onSwapAsset?: () => void;
   swapLabel?: string;
   right?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex shrink-0 items-center justify-between gap-2 px-4">
+    <div className={cn("flex shrink-0 items-center justify-between gap-2 px-4", className)}>
       {onSwapAsset ? (
         <button
           type="button"

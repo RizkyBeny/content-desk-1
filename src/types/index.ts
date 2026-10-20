@@ -353,6 +353,33 @@ export interface AudioTrackRef {
   assetId: string | null;
   src: string | null;
   volume: number;
+  /** Nama file asli — dipakai panel Audio Latar / Voice Over. */
+  name?: string | null;
+}
+
+export type VideoAlignment = "left" | "center" | "right";
+export type VideoTextPlacement = "top" | "middle" | "bottom";
+export type VideoFitMode = "fill" | "fit";
+export type VideoOverlayMode = "none" | "gradient" | "blur" | "vignette";
+
+/** Konfigurasi panel video yang ikut tersimpan di editorState. */
+export interface VideoSettings {
+  alignment: VideoAlignment;
+  textPlacement: VideoTextPlacement;
+  highlightOn: boolean;
+  highlightText: string;
+  highlightColor: string;
+  descOn: boolean;
+  descText: string;
+  fitMode: VideoFitMode;
+  overlay: VideoOverlayMode;
+  promoSource: string;
+  promoTransition: string;
+  watermarkProgramOn: boolean;
+  watermarkChannelOn: boolean;
+  watermarkChannelLogoAssetId: string | null;
+  voiceOverOn: boolean;
+  voiceOverVolume: number;
 }
 
 export interface VideoEditorState {
@@ -363,6 +390,7 @@ export interface VideoEditorState {
   narration: AudioTrackRef | null;
   music: AudioTrackRef | null;
   subtitles: SubtitleCue[];
+  settings?: Partial<VideoSettings>;
 }
 
 export interface AudioSegment {

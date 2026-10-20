@@ -40,7 +40,7 @@ export function PropertiesPanel({
 }: {
   tab: PanelTab;
   onTab: (t: PanelTab) => void;
-  /** Tab yang ditampilkan — image/carousel/audio/article tanpa Voice Over. */
+  /** Tab yang ditampilkan — image/carousel tanpa Voice Over; audio/article hanya Properties. */
   tabs?: { value: PanelTab; label: string }[];
   children: ReactNode;
   watermark: ReactNode;

@@ -174,7 +174,7 @@ export function StartFramePicker({
                   key={item.id}
                   type="button"
                   onClick={() => void pickFromGallery(item)}
-                  className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 ring-offset-2 hover:ring-2 hover:ring-indigo-500 dark:bg-zinc-800"
+                  className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 ring-offset-2 hover:ring-2 hover:ring-brand dark:bg-zinc-800"
                 >
                   {item.thumbnailUrl ? (
                     <Image

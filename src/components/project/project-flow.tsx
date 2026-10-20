@@ -71,9 +71,9 @@ export function ProjectFlow({
                 className={[
                   "flex min-w-0 items-center justify-center gap-2 rounded-xl px-2 py-2 text-sm font-medium transition-colors sm:px-3",
                   active
-                    ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                    ? "font-semibold text-brand-strong dark:text-brand"
                     : done
-                      ? "text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+                      ? "text-brand-strong hover:bg-brand/10 dark:text-brand dark:hover:bg-brand/10"
                       : disabled
                         ? "cursor-not-allowed text-zinc-400 dark:text-zinc-600"
                         : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5",
@@ -83,9 +83,9 @@ export function ProjectFlow({
                   className={[
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
                     active
-                      ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300"
+                      ? "bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand"
                       : done
-                        ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300"
+                        ? "bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand"
                         : "bg-zinc-100 text-zinc-500 dark:bg-white/5 dark:text-zinc-400",
                   ].join(" ")}
                 >
@@ -102,7 +102,7 @@ export function ProjectFlow({
                 <div key={`connector-${s.id}`} className="flex h-6 w-10 shrink-0 items-center sm:w-16" aria-hidden>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10">
                     <div
-                      className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+                      className="h-full rounded-full bg-brand transition-all duration-300"
                       style={{ width: currentIndex > i ? "100%" : "0%" }}
                     />
                   </div>

@@ -27,7 +27,7 @@ export function WaveformBars({
             key={i}
             className={cn(
               "flex-1 rounded-full",
-              played ? "bg-indigo-500 dark:bg-indigo-400" : "bg-zinc-300 dark:bg-zinc-600",
+              played ? "bg-brand dark:bg-brand" : "bg-zinc-300 dark:bg-zinc-600",
             )}
             style={{ height: `${Math.max(8, Math.round(value * 100))}%` }}
           />

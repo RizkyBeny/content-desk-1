@@ -640,7 +640,7 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
                     type="button"
                     onClick={addRow}
                     aria-label={`Tambah ${noun}`}
-                    className="flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 text-sm font-medium text-zinc-500 transition-colors hover:border-indigo-400 hover:text-indigo-600 dark:border-white/15 dark:text-zinc-400 dark:hover:border-indigo-400 dark:hover:text-indigo-300"
+                    className="flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 text-sm font-medium text-zinc-500 transition-colors hover:border-brand hover:text-brand-strong dark:border-white/15 dark:text-zinc-400 dark:hover:border-brand dark:hover:text-brand"
                   >
                     <PlusIcon width={20} height={20} />
                     Tambah {noun}
@@ -695,7 +695,7 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
         ) : caption ? (
           <div className="glass-panel p-3 text-sm">
             <p>{caption.text}</p>
-            <p className="mt-1 text-xs text-indigo-600 dark:text-indigo-400">
+            <p className="mt-1 text-xs text-brand-strong dark:text-brand">
               {caption.hashtags.map((h) => `#${h}`).join(" ")}
             </p>
           </div>

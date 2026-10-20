@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -7,7 +8,7 @@ import { Avatar, Button } from "@heroui/react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, MOBILE_NAV, type NavItem } from "./nav";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { ChevronRightIcon, LogoutIcon, MenuIcon, SparkIcon } from "@/components/ui/icons";
+import { ChevronRightIcon, LogoutIcon, MenuIcon } from "@/components/ui/icons";
 
 export interface ShellUser {
   id: string;
@@ -32,15 +33,22 @@ function isEditorRoute(pathname: string) {
 
 function Brand() {
   return (
-    <Link href="/insight" className="flex items-center gap-2.5">
-      <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
-        <SparkIcon width={18} height={18} />
-      </span>
-      <span className="text-sm font-semibold leading-tight">
-        Content
-        <br />
-        Studio AI
-      </span>
+    <Link href="/insight" className="flex shrink-0 items-center">
+      <Image
+        src="/brand/kumparan-logo-light.png"
+        alt="Kumparan"
+        width={512}
+        height={127}
+        priority
+        className="h-8 w-auto dark:hidden"
+      />
+      <Image
+        src="/brand/kumparan-logo-dark.png"
+        alt="Kumparan"
+        width={512}
+        height={127}
+        className="hidden h-8 w-auto dark:block"
+      />
     </Link>
   );
 }
@@ -208,11 +216,24 @@ function TabletRail({ pathname }: { pathname: string }) {
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col gap-3 p-2 md:flex lg:hidden">
       <div className="frosted-glass flex h-full flex-col items-center gap-2 rounded-2xl p-2 bg-white/80 dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-white/10">
         <Link
-          href="/ai-studio/image"
-          aria-label="Content Studio AI"
-          className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white"
+          href="/insight"
+          aria-label="Kumparan"
+          className="flex size-10 items-center justify-center rounded-xl bg-[#01AFAE]/10 dark:bg-white/10"
         >
-          <SparkIcon width={18} height={18} />
+          <Image
+            src="/brand/kumparan-mark-light.png"
+            alt=""
+            width={128}
+            height={128}
+            className="h-7 w-auto dark:hidden"
+          />
+          <Image
+            src="/brand/kumparan-mark-dark.png"
+            alt=""
+            width={128}
+            height={128}
+            className="hidden h-7 w-auto dark:block"
+          />
         </Link>
         <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto">
           {flat.map((item) => {
@@ -246,6 +267,16 @@ function TabletRail({ pathname }: { pathname: string }) {
 export function AppShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Editor punya rail/header sendiri. Sembunyikan seluruh chrome aplikasi agar
+  // geometri 1424px Figma tidak terpotong sidebar global.
+  if (isEditorRoute(pathname)) {
+    return (
+      <div className="h-dvh w-full overflow-hidden bg-[var(--app-bg,transparent)] p-0 md:p-2 lg:p-4">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh">
@@ -308,7 +339,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-colors",
-                  active ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-500 dark:text-zinc-400",
+                  active ? "text-brand-strong dark:text-brand" : "text-zinc-500 dark:text-zinc-400",
                 )}
               >
                 <Icon width={20} height={20} />

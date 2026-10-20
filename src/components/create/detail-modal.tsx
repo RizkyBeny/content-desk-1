@@ -358,7 +358,7 @@ export function DetailModal({
                 <button
                   type="button"
                   onClick={copyPrompt}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-brand-strong hover:underline dark:text-brand"
                 >
                   <CopyIcon width={13} height={13} /> Salin
                 </button>

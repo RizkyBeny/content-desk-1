@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { toast } from "@heroui/react";
 import { cn } from "@/lib/utils";
 import {
   AlignBottomIcon,
@@ -15,13 +16,12 @@ import {
   ExpandUpDownIcon,
   ImageIcon,
   SquareDashedIcon,
-  TextIcon,
   Upload05Icon,
 } from "@/components/ui/icons";
 import type { Ratio } from "@/types";
 import {
   EdSlider,
-  EditorButton,
+  EdSwitch,
   FieldLabel,
   HIGHLIGHT_SWATCHES,
   InputAddonButton,
@@ -32,9 +32,12 @@ import {
   SwitchRow,
   TextareaField,
   hintCls,
+  inputCls,
   type SegmentOption,
 } from "./ui";
+import { DEFAULT_BRAND_LOGO } from "./watermark-overlay";
 import type { EditorUi } from "./use-editor-ui";
+import type { AssetDTO, AudioTrackRef } from "@/types";
 
 /* ─────────────────────────────────────────────────────────────────────────
    Seksi panel Properties — mengikuti Figma "Video Editor" (node 660-13750):
@@ -367,7 +370,7 @@ export function AudioLatarSection({
   onPick,
   label = "Backsound",
 }: {
-  music: { assetId: string | null; volume: number } | null | undefined;
+  music: { assetId: string | null; volume: number; name?: string | null } | null | undefined;
   onVolume: (v: number) => void;
   onClear: () => void;
   /** Membuka pemilih audio (addon upload) bila disediakan. */
@@ -387,7 +390,7 @@ export function AudioLatarSection({
         </div>
         <div className="flex items-center gap-1">
           <InputGroup
-            value={active ? "Backsound aktif" : ""}
+            value={active ? music?.name || "Backsound aktif" : ""}
             readOnly
             placeholder="Belum ada backsound"
             ariaLabel={label}
@@ -465,140 +468,230 @@ export function VideoPromoSection({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Tab Watermark / Voice Over — tetap fungsional, memakai primitives baru.
+   Tab Watermark / Voice Over — node Figma 304-18211 & 323-18753.
    ───────────────────────────────────────────────────────────────────────── */
 
-export function WatermarkPanel({ ui, patchUi }: { ui: EditorUi["ui"]; patchUi: EditorUi["patchUi"] }) {
+async function uploadAsset(file: File): Promise<AssetDTO> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("name", file.name);
+  const res = await fetch("/api/assets", { method: "POST", body: fd });
+  const data = (await res.json()) as { asset?: AssetDTO; error?: string };
+  if (!res.ok || !data.asset) throw new Error(data.error ?? "Gagal mengunggah file.");
+  return data.asset;
+}
+
+function PanelHeading({ title, description }: { title: string; description?: string }) {
   return (
-    <SectionBlock title="Watermark" description="Tempel identitas merek pada hasil konten.">
-      <SwitchRow
-        title="Tampilkan watermark"
-        description="Watermark muncul di sudut pilihan pada seluruh konten."
-        checked={ui.watermarkOn}
-        onChange={(v) => patchUi({ watermarkOn: v })}
-      />
-      {ui.watermarkOn ? (
-        <>
-          <div className="flex flex-col gap-2">
-            <FieldLabel>Teks watermark</FieldLabel>
-            <InputGroup
-              value={ui.watermarkText}
-              onChange={(v) => patchUi({ watermarkText: v })}
-              placeholder="Nama brand / handle..."
-              ariaLabel="Teks watermark"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <FieldLabel>Posisi</FieldLabel>
-            <SelectGroup
-              value={ui.watermarkPos}
-              options={[
-                { value: "top-left", label: "Kiri atas" },
-                { value: "top-right", label: "Kanan atas" },
-                { value: "center", label: "Tengah" },
-                { value: "bottom-left", label: "Kiri bawah" },
-                { value: "bottom-right", label: "Kanan bawah" },
-              ]}
-              onChange={(v) => patchUi({ watermarkPos: v })}
-              ariaLabel="Posisi watermark"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <FieldLabel>Opasitas</FieldLabel>
-            <div className="flex items-center gap-1.5">
-              <EdSlider
-                value={ui.watermarkOpacity}
-                min={0.1}
-                max={1}
-                step={0.05}
-                onChange={(v) => patchUi({ watermarkOpacity: v })}
-                ariaLabel="Opasitas watermark"
-                variant="volume"
-                className="min-w-0 flex-1"
-              />
-              <span className="w-9 shrink-0 text-right font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim tabular-nums">
-                {Math.round(ui.watermarkOpacity * 100)}%
-              </span>
-            </div>
-          </div>
-        </>
+    <div className="flex flex-col gap-1">
+      <h3 className="font-[family-name:var(--font-ed)] text-[length:var(--ed-sec-title)] font-bold leading-5 text-ed-title">
+        {title}
+      </h3>
+      {description ? (
+        <p className="font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim">{description}</p>
       ) : null}
-    </SectionBlock>
+    </div>
   );
 }
 
-const VOICES = [
-  { value: "wanita-natural", label: "Wanita Natural" },
-  { value: "pria-natural", label: "Pria Natural" },
-  { value: "wanita-energik", label: "Wanita Energik" },
-  { value: "pria-berwibawa", label: "Pria Berwibawa" },
-];
+export function WatermarkPanel({
+  ui,
+  patchUi,
+  channelLogoUrl,
+  onLogoUploaded,
+}: {
+  ui: EditorUi["ui"];
+  patchUi: EditorUi["patchUi"];
+  channelLogoUrl?: string | null;
+  onLogoUploaded?: (url: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const logoSrc = channelLogoUrl || DEFAULT_BRAND_LOGO;
+
+  async function onFile(file: File | null) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const asset = await uploadAsset(file);
+      patchUi({ watermarkChannelLogoAssetId: asset.id, watermarkChannelOn: true });
+      if (asset.fileUrl) onLogoUploaded?.(asset.fileUrl);
+      toast.success("Logo channel diperbarui.");
+    } catch (e) {
+      toast.danger((e as Error).message);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex flex-col">
+      <section className="flex flex-col gap-4 px-4 py-4">
+        <PanelHeading
+          title="Logo Placement"
+          description="Atur tampilan logo watermark di dalam canvas sebagai identitas perusahaan"
+        />
+      </section>
+
+      <div className="h-px w-full bg-ed-line" />
+
+      <section className="flex flex-col gap-4 px-4 py-4">
+        <SwitchRow
+          title="Program (Kiri Atas)"
+          description="Format .jpg, .png, and .svg"
+          checked={ui.watermarkProgramOn}
+          onChange={(v) => patchUi({ watermarkProgramOn: v })}
+        />
+
+        <div className="h-px w-full bg-ed-line" />
+
+        <SwitchRow
+          title="Channel (Kanan Atas)"
+          description="Format .jpg, .png, and .svg"
+          checked={ui.watermarkChannelOn}
+          onChange={(v) => patchUi({ watermarkChannelOn: v })}
+        />
+
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          aria-label="Ganti logo channel"
+          className="flex h-16 w-full items-center justify-center rounded-lg border border-dashed border-ed-line bg-ed-elev p-2.5 transition-colors hover:border-ed-line-strong disabled:opacity-60"
+        >
+          {busy ? (
+            <span className="font-[family-name:var(--font-ed-alt)] text-xs text-ed-dim">Mengunggah…</span>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoSrc} alt="Logo channel" className="max-h-10 max-w-[164px] object-contain" />
+          )}
+        </button>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/svg+xml"
+          className="sr-only"
+          onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
+        />
+      </section>
+    </div>
+  );
+}
 
 export function VoiceOverPanel({
   ui,
   patchUi,
-  onGenerate,
-  busy,
+  narration,
+  onNarration,
 }: {
   ui: EditorUi["ui"];
   patchUi: EditorUi["patchUi"];
-  onGenerate: () => void;
-  busy?: boolean;
+  narration: AudioTrackRef | null;
+  onNarration: (track: AudioTrackRef | null) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function onFile(file: File | null) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const asset = await uploadAsset(file);
+      onNarration({
+        assetId: asset.id,
+        src: null,
+        volume: ui.voiceOverVolume,
+        name: asset.name,
+      });
+      patchUi({ voiceOverOn: true });
+      toast.success("Voice over diperbarui.");
+    } catch (e) {
+      toast.danger((e as Error).message);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  function setVolume(v: number) {
+    patchUi({ voiceOverVolume: v });
+    if (narration) onNarration({ ...narration, volume: v });
+  }
+
   return (
-    <SectionBlock
-      title="Voice Over"
-      description="Buat narasi suara dari teks untuk seluruh konten."
-      action={
-        <EditorButton
-          variant="default"
-          onClick={onGenerate}
-          disabled={busy || !ui.voiceText.trim()}
-          icon={<TextIcon width={15} height={15} />}
-        >
-          {busy ? "Membuat..." : "Buat VO"}
-        </EditorButton>
-      }
-    >
-      <div className="flex flex-col gap-2">
-        <FieldLabel>Teks narasi</FieldLabel>
-        <TextareaField
-          value={ui.voiceText}
-          onChange={(v) => patchUi({ voiceText: v })}
-          placeholder="Tulis atau tempel naskah narasi..."
-          ariaLabel="Teks narasi"
-          rows={4}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <FieldLabel>Pilih suara</FieldLabel>
-        <SelectGroup
-          value={ui.voiceVoice}
-          options={[{ value: "", label: "Pilih suara..." }, ...VOICES]}
-          onChange={(v) => patchUi({ voiceVoice: v })}
-          ariaLabel="Pilih suara"
-        />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <FieldLabel>Kecepatan bicara</FieldLabel>
-        <div className="flex items-center gap-1.5">
-          <EdSlider
-            value={ui.voiceSpeed}
-            min={0.75}
-            max={1.5}
-            step={0.05}
-            onChange={(v) => patchUi({ voiceSpeed: v })}
-            ariaLabel="Kecepatan bicara"
-            variant="volume"
-            className="min-w-0 flex-1"
+    <div className="flex flex-col">
+      <section className="flex items-center gap-4 px-4 py-4">
+        <div className="min-w-0 flex-1">
+          <PanelHeading
+            title="Generated Voice Over"
+            description="Tersedia generated voice over yang bisa langsung digunakan"
           />
-          <span className="w-9 shrink-0 text-right font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim tabular-nums">
-            {ui.voiceSpeed.toFixed(2)}x
-          </span>
         </div>
-      </div>
-    </SectionBlock>
+        <EdSwitch
+          size="sm"
+          ariaLabel="Gunakan generated voice over"
+          checked={Boolean(narration && ui.voiceOverOn)}
+          disabled={!narration}
+          onChange={(v) => patchUi({ voiceOverOn: v })}
+        />
+      </section>
+
+      <div className="h-px w-full bg-ed-line" />
+
+      <section className="flex flex-col gap-4 px-4 py-4">
+        <PanelHeading title="Pengaturan" />
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <FieldLabel alt>Audio File</FieldLabel>
+            {narration ? <ClearButton onClick={() => { onNarration(null); patchUi({ voiceOverOn: false }); }} label="Clear" /> : null}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={busy}
+              className={cn(inputCls, "flex h-8 min-w-0 flex-1 items-center pr-2 text-left", !narration && "text-ed-dim")}
+            >
+              <span className="truncate">{narration?.name || narration?.assetId || "Belum ada voice over"}</span>
+            </button>
+            <InputAddonButton
+              onClick={() => inputRef.current?.click()}
+              ariaLabel="Unggah voice over"
+              disabled={busy}
+              icon={<Upload05Icon width={16} height={16} />}
+            />
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="audio/*"
+            className="sr-only"
+            onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <FieldLabel alt>Pengaturan Volume</FieldLabel>
+          <div className="flex items-center gap-1.5">
+            <EdSlider
+              value={ui.voiceOverVolume}
+              min={0}
+              max={1}
+              step={0.05}
+              onChange={setVolume}
+              ariaLabel="Pengaturan Volume Voice Over"
+              variant="volume"
+              className="min-w-0 flex-1"
+            />
+            <span className="w-9 shrink-0 text-right font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim tabular-nums">
+              {Math.round(ui.voiceOverVolume * 100)}%
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

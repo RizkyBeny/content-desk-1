@@ -96,7 +96,7 @@ export function VoicePicker({
             key={voice.id}
             className={cn(
               "flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors",
-              active ? "bg-indigo-500/10" : "hover:bg-zinc-900/5 dark:hover:bg-white/10",
+              active ? "bg-brand/10" : "hover:bg-zinc-900/5 dark:hover:bg-white/10",
             )}
           >
             <button
@@ -109,7 +109,7 @@ export function VoicePicker({
                 <span className="block font-medium">{voice.name}</span>
                 <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">{voice.label}</span>
               </span>
-              {active ? <CheckIcon width={16} height={16} className="text-indigo-500" /> : null}
+              {active ? <CheckIcon width={16} height={16} className="text-brand" /> : null}
             </button>
             {voice.previewUrl ? (
               <button

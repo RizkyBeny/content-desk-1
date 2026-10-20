@@ -379,26 +379,37 @@ export function EdSwitch({
   checked,
   onChange,
   ariaLabel,
+  size = "md",
+  disabled,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   ariaLabel: string;
+  size?: "sm" | "md";
+  disabled?: boolean;
 }) {
+  const small = size === "sm";
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={ariaLabel}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        "flex h-[18px] w-8 shrink-0 items-center rounded-full p-px transition-colors",
-        checked ? "justify-end bg-[#171717]" : "justify-start bg-ed-swatch-b",
+        "flex shrink-0 items-center rounded-full p-px transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+        small ? "h-[14px] w-6" : "h-[18px] w-8",
+        checked ? "justify-end bg-[#171717]" : "justify-start bg-ed-switch-off",
       )}
     >
       <span
         aria-hidden="true"
-        className={cn("size-4 rounded-full shadow-sm transition-colors", checked ? "bg-[#FAFAFA]" : "bg-white")}
+        className={cn(
+          "rounded-full shadow-sm transition-colors",
+          small ? "size-3" : "size-4",
+          checked ? "bg-[#FAFAFA]" : "bg-white",
+        )}
       />
     </button>
   );

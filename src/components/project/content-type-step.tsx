@@ -66,7 +66,7 @@ export function ContentTypeStep({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand-strong dark:text-brand">
                     <Icon width={20} height={20} />
                   </span>
                   <div className="min-w-0 flex-1">

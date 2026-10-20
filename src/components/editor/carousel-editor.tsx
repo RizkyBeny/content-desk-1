@@ -21,6 +21,7 @@ import { AssetRail } from "./frame/asset-rail";
 import { StageBar, fitFrame } from "./frame/stage";
 import { TimelineBar } from "./frame/timeline-bar";
 import { OrientationSection, TypographySection } from "./frame/sections";
+import { WatermarkOverlay } from "./frame/watermark-overlay";
 import type { TypeEditorProps } from "./frame/types";
 import type { CarouselEditorState, SlideObject, TextLayer } from "@/types";
 
@@ -73,7 +74,7 @@ function Thumb({
   );
 }
 
-export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, patchUi }: TypeEditorProps) {
+export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, patchUi, channelLogoUrl }: TypeEditorProps) {
   const state = controller.state as CarouselEditorState;
   const [activeId, setActiveId] = useState<string>(state.slides[0]?.id ?? "");
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -203,7 +204,10 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
         }
       />
       <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
-        <div className="relative" style={fitFrame(state.ratio)}>
+        <div
+          className="relative overflow-hidden"
+          style={{ ...fitFrame(state.ratio), containerType: "inline-size" }}
+        >
           {active && (
             <SlideCanvas
               slide={active}
@@ -216,6 +220,7 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
               }
             />
           )}
+          <WatermarkOverlay ui={ui} channelLogoUrl={channelLogoUrl} />
         </div>
       </div>
     </div>

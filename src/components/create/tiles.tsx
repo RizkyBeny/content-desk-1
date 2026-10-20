@@ -318,7 +318,7 @@ function TileShell({
       className={cn(
         "group relative block h-full w-full overflow-hidden rounded-2xl text-left transition-shadow",
         plain ? "glass-card" : "glass-card bg-zinc-100 dark:bg-zinc-800",
-        "hover:shadow-lg hover:shadow-zinc-900/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
+        "hover:shadow-lg hover:shadow-zinc-900/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
         className,
       )}
     >

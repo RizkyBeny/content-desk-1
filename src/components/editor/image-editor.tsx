@@ -10,11 +10,12 @@ import { AssetRail } from "./frame/asset-rail";
 import { StageBar, fitFrame } from "./frame/stage";
 import { TimelineBar, TimelineItem } from "./frame/timeline-bar";
 import { OrientationSection, TypographySection } from "./frame/sections";
+import { WatermarkOverlay } from "./frame/watermark-overlay";
 import { ImageIcon, TextIcon } from "@/components/ui/icons";
 import type { TypeEditorProps } from "./frame/types";
 import type { ImageEditorState, SlideObject } from "@/types";
 
-export function ImageEditor({ creation, controller, assetUrls, chrome, ui, patchUi }: TypeEditorProps) {
+export function ImageEditor({ creation, controller, assetUrls, chrome, ui, patchUi, channelLogoUrl }: TypeEditorProps) {
   const state = controller.state as ImageEditorState;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -50,7 +51,10 @@ export function ImageEditor({ creation, controller, assetUrls, chrome, ui, patch
         className="flex min-h-0 flex-1 items-center justify-center"
         style={{ containerType: "size" }}
       >
-        <div className="relative" style={fitFrame(state.ratio)}>
+        <div
+          className="relative overflow-hidden"
+          style={{ ...fitFrame(state.ratio), containerType: "inline-size" }}
+        >
           <SlideCanvas
             slide={state.slide}
             ratio={state.ratio}
@@ -61,6 +65,7 @@ export function ImageEditor({ creation, controller, assetUrls, chrome, ui, patch
               controller.setState((s) => (s.type === "image" ? { ...s, slide: patchLayer(s.slide, id, patch) } : s))
             }
           />
+          <WatermarkOverlay ui={ui} channelLogoUrl={channelLogoUrl} />
         </div>
       </div>
     </div>

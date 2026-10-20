@@ -2,10 +2,11 @@
 
 import { useState, type ReactNode } from "react";
 import { toast } from "@heroui/react";
+import { cn } from "@/lib/utils";
 import { patch } from "@/lib/client";
 import {
-  ArrowLeftIcon,
   LayersIcon,
+  PanelLeftIcon,
   PencilIcon,
   SaveIcon,
 } from "@/components/ui/icons";
@@ -52,13 +53,18 @@ export function EditorFrame({
   panel: ReactNode;
   timeline?: ReactNode;
 }) {
-  const { creation, title, onBack, onSave, onExport, panelTab, onPanelTab, watermark, voiceover, conflictBanner } =
-    chrome;
+  const { creation, title, onSave, onExport, panelTab, onPanelTab, watermark, voiceover, conflictBanner } = chrome;
   const [railOpen, setRailOpen] = useState(false);
+  const [railCollapsed, setRailCollapsed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
   // Voice Over hanya relevan untuk konten video (node video 362-16647).
-  const tabs = creation.type === "video" ? PANEL_TABS : PANEL_TABS.filter((t) => t.value !== "voiceover");
+  const tabs =
+    creation.type === "video"
+      ? PANEL_TABS
+      : creation.type === "image" || creation.type === "carousel"
+        ? PANEL_TABS.filter((t) => t.value !== "voiceover")
+        : PANEL_TABS.filter((t) => t.value === "properties");
   const activeTab = tabs.some((t) => t.value === panelTab) ? panelTab : "properties";
 
   // ── Edit judul inline (header) — persist ke caption pertama brief ────────
@@ -79,7 +85,11 @@ export function EditorFrame({
       setTitleOverride(next);
       return;
     }
-    const captions: Caption[] = creation.captions.map((c, i) => (i === 0 ? { ...c, text: next } : c));
+    const captions: Caption[] = creation.captions.map((c, i) => {
+      if (i !== 0) return c;
+      const rest = c.text.split("\n").slice(1).join("\n").trimStart();
+      return { ...c, text: rest ? `${next}\n${rest}` : next };
+    });
     try {
       await patch(`/api/briefs/${creation.briefId}`, { captions });
       setTitleOverride(next);
@@ -93,7 +103,7 @@ export function EditorFrame({
   return (
     <div
       data-ed-theme="auto"
-      className="relative flex h-[calc(100dvh-7rem)] min-h-[420px] w-full flex-col overflow-hidden rounded-2xl bg-ed-bg font-[family-name:var(--font-ed)] text-ed-text md:h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-2rem)]"
+      className="relative flex h-full min-h-[420px] w-full flex-col overflow-hidden rounded-2xl bg-ed-bg font-[family-name:var(--font-ed)] text-ed-text"
     >
       {/* Aksen latar belakang — dua elips ter-blur sesuai desain */}
       <div
@@ -109,7 +119,14 @@ export function EditorFrame({
 
       <div className="relative flex min-h-0 flex-1">
         {/* Rail aset (kiri, 256px) — desktop lg+ */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-ed-line-2 bg-ed-panel lg:flex">{rail}</aside>
+        <aside
+          className={cn(
+            "hidden w-64 shrink-0 flex-col border-r border-ed-line-2 bg-ed-panel lg:flex",
+            railCollapsed && "lg:hidden",
+          )}
+        >
+          {rail}
+        </aside>
 
         {/* Kolom kanan: header + (stage | panel) */}
         <div className="flex min-w-0 flex-1 flex-col">
@@ -118,11 +135,17 @@ export function EditorFrame({
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
-                onClick={onBack}
-                aria-label="Kembali"
+                onClick={() => {
+                  if (typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
+                    setRailCollapsed((v) => !v);
+                  } else {
+                    setRailOpen(true);
+                  }
+                }}
+                aria-label={railCollapsed ? "Buka panel aset" : "Tutup panel aset"}
                 className="flex size-7 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text"
               >
-                <ArrowLeftIcon width={16} height={16} />
+                <PanelLeftIcon width={16} height={16} />
               </button>
               <span aria-hidden="true" className="h-[26px] w-px shrink-0 bg-ed-line-strong" />
               {editing ? (

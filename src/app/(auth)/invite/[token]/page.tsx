@@ -75,7 +75,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-white/10 dark:bg-zinc-900/70"
+            className="w-full rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-white/10 dark:bg-zinc-900/70"
           />
         </div>
         <div className="space-y-1.5">
@@ -86,7 +86,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-white/10 dark:bg-zinc-900/70"
+            className="w-full rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-white/10 dark:bg-zinc-900/70"
           />
         </div>
         <div className="space-y-1.5">
@@ -97,13 +97,13 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
             minLength={8}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-white/10 dark:bg-zinc-900/70"
+            className="w-full rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-white/10 dark:bg-zinc-900/70"
           />
         </div>
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center rounded-xl bg-brand-strong px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         >
           {submitting ? "Memproses..." : "Buat akun"}
         </button>

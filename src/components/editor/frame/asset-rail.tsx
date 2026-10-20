@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "@heroui/react";
 import { apiFetch } from "@/lib/client";
-import { ArrowLeftIcon, ImageIcon, PlusIcon, UploadIcon, VideoIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon, AudioIcon, ImageIcon, PlusIcon, UploadIcon } from "@/components/ui/icons";
 import { UploadZone } from "@/components/asset/upload-zone";
 import { InputGroup, TabList } from "./ui";
 import type { AssetDTO, CreationDTO, RailTabValue } from "./types";
@@ -12,6 +12,19 @@ const RAIL_TABS: { value: RailTabValue; label: string }[] = [
   { value: "pustaka", label: "Data Journalism" },
   { value: "upload", label: "Upload" },
 ];
+
+const ASSET_TYPE_LABEL: Record<AssetDTO["type"], string> = {
+  image: "Image",
+  video: "Video",
+  audio: "Audio",
+  text: "Text",
+  reference: "Reference",
+};
+
+interface RailUser {
+  name: string;
+  role: string;
+}
 
 function Thumb({ asset }: { asset: AssetDTO }) {
   if (asset.type === "image" && asset.fileUrl) {
@@ -22,14 +35,19 @@ function Thumb({ asset }: { asset: AssetDTO }) {
   }
   if (asset.type === "video" && asset.fileUrl) {
     return (
-      <span className="flex h-full w-full items-center justify-center bg-ed-elev text-ed-dim">
-        <VideoIcon width={20} height={20} />
-      </span>
+      <video
+        src={`${asset.fileUrl}${asset.fileUrl.includes("#") ? "" : "#t=0.1"}`}
+        className="h-full w-full object-cover"
+        muted
+        playsInline
+        preload="metadata"
+        aria-label={asset.name}
+      />
     );
   }
   return (
-    <span className="flex h-full w-full items-center justify-center bg-ed-elev px-1 text-center text-[10px] leading-tight text-ed-dim">
-      {asset.type === "audio" ? "Audio" : "Aset"}
+    <span className="flex h-full w-full items-center justify-center bg-ed-elev text-ed-dim">
+      {asset.type === "audio" ? <AudioIcon width={20} height={20} /> : <ImageIcon width={20} height={20} />}
     </span>
   );
 }
@@ -52,8 +70,23 @@ export function AssetRail({
   const [assets, setAssets] = useState<AssetDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<RailUser | null>(null);
 
   const back = backHref ?? `/proyek/${creation.projectId}`;
+
+  useEffect(() => {
+    let aborted = false;
+    apiFetch<{ user: RailUser }>("/api/me")
+      .then((res) => {
+        if (!aborted) setUser(res.user);
+      })
+      .catch(() => {
+        /* footer opsional */
+      });
+    return () => {
+      aborted = true;
+    };
+  }, []);
 
   useEffect(() => {
     let aborted = false;
@@ -191,6 +224,22 @@ export function AssetRail({
           )}
         </div>
       </div>
+
+      <div className="shrink-0 border-t border-ed-line-2 p-2">
+        <div className="flex items-center gap-2 rounded-lg px-1 py-1.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ed-elev font-[family-name:var(--font-ed)] text-xs font-semibold text-ed-text">
+            {user?.name?.slice(0, 1).toUpperCase() || "K"}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-text">
+              {user?.name || "Creator"}
+            </p>
+            <p className="truncate font-[family-name:var(--font-ed-alt)] text-[10px] leading-4 text-ed-dim">
+              {user?.role === "admin" ? "Admin" : "Creator"}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -201,24 +250,24 @@ function RailTile({ asset, onPick, used }: { asset: AssetDTO; onPick: (a: AssetD
       type="button"
       onClick={() => onPick(asset)}
       title={asset.name}
-      className="group relative aspect-[4/3] overflow-hidden rounded transition-transform hover:-translate-y-0.5"
+      className="group flex min-w-0 flex-col gap-1 text-left transition-transform hover:-translate-y-0.5"
     >
-      <Thumb asset={asset} />
-      {asset.type !== "image" && asset.type !== "video" ? (
-        <span className="absolute inset-0 flex items-center justify-center text-ed-dim">
-          <ImageIcon width={18} height={18} />
+      <span className="relative block aspect-[4/3] overflow-hidden rounded">
+        <Thumb asset={asset} />
+        {used ? (
+          <span className="absolute right-1.5 top-1.5 rounded bg-ed-play px-1 py-0.5 font-[family-name:var(--font-ed-alt)] text-[10px] leading-5 text-white">
+            Dipakai
+          </span>
+        ) : null}
+        <span className="absolute bottom-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-ed-play text-white opacity-0 transition-opacity group-hover:opacity-100">
+          <PlusIcon width={14} height={14} />
         </span>
-      ) : null}
-      {used ? (
-        <span className="absolute right-1.5 top-1.5 rounded bg-ed-play px-1 py-0.5 font-[family-name:var(--font-ed-alt)] text-[10px] leading-5 text-white">
-          Dipakai
-        </span>
-      ) : null}
-      <span className="absolute bottom-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-ed-play text-white opacity-0 transition-opacity group-hover:opacity-100">
-        <PlusIcon width={14} height={14} />
       </span>
-      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="truncate font-[family-name:var(--font-ed)] text-[11px] leading-4 font-medium text-ed-sub">
         {asset.name}
+      </span>
+      <span className="font-[family-name:var(--font-ed-alt)] text-[10px] leading-4 text-ed-dim">
+        {ASSET_TYPE_LABEL[asset.type]}
       </span>
     </button>
   );

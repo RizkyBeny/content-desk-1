@@ -19,4 +19,6 @@ export interface TypeEditorProps {
   chrome: FrameChrome;
   ui: EditorUiState;
   patchUi: EditorUi["patchUi"];
+  /** URL logo channel hasil upload — fallback saat assetUrls belum termuat. */
+  channelLogoUrl?: string | null;
 }

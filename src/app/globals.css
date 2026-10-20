@@ -5,6 +5,10 @@
   color-scheme: light;
   --background: oklch(0.985 0.002 286.35);
   --foreground: oklch(0.2103 0.0059 285.89);
+  --brand: #01afae;
+  --brand-strong: #007f7e;
+  --brand-hover: #006b6a;
+  --brand-light: #7de9e6;
   --surface-glass: oklch(1 0 0 / 0.72);
   --surface-glass-border: oklch(0.92 0.004 286.32 / 0.45);
   --surface-glass-strong: oklch(1 0 0 / 0.88);
@@ -25,20 +29,20 @@
   --frosted-glass-inset: inset 0 0 30px rgba(0, 0, 0, 0.35);
 }
 
-/* Logo-inspired purple gradient for primary accents */
+/* Primary accent tokens */
 :root,
 :host {
-  --accent: oklch(0.62 0.19 275);
+  --accent: var(--brand-strong);
   --accent-foreground: oklch(0.9911 0 0);
-  --accent-hover: color-mix(in oklab, oklch(0.62 0.19 275) 90%, white 10%);
+  --accent-hover: var(--brand-hover);
 }
 
 .dark,
 :root.dark,
 :host(.dark) {
-  --accent: oklch(0.62 0.19 275);
+  --accent: var(--brand-strong);
   --accent-foreground: oklch(0.9911 0 0);
-  --accent-hover: color-mix(in oklab, oklch(0.62 0.19 275) 90%, white 10%);
+  --accent-hover: var(--brand-hover);
 }
 
 html {
@@ -59,7 +63,7 @@ body {
 }
 
 ::selection {
-  background-color: color-mix(in oklch, var(--accent, oklch(0.6 0.2 280)) 20%, transparent);
+  background-color: color-mix(in oklch, var(--accent, var(--brand)) 20%, transparent);
 }
 
 @utility glass {
@@ -144,6 +148,38 @@ body {
   animation: card-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Transisi klip video/promo — mengikuti pilihan “Transisi Video”. */
+@keyframes ed-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ed-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ed-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-in {
     animation: none;
@@ -187,9 +223,9 @@ body {
 
 .angle-card:hover {
   box-shadow:
-    0 0 0 1px color-mix(in oklch, oklch(0.62 0.19 275) 30%, transparent),
-    0 10px 30px -6px color-mix(in oklch, oklch(0.62 0.19 275) 45%, transparent),
-    0 0 26px -4px color-mix(in oklch, oklch(0.72 0.15 220) 40%, transparent);
+    0 0 0 1px color-mix(in oklch, var(--brand) 30%, transparent),
+    0 10px 30px -6px color-mix(in oklch, var(--brand) 45%, transparent),
+    0 0 26px -4px color-mix(in oklch, var(--brand) 40%, transparent);
 }
 
 .angle-card::before {
@@ -201,9 +237,9 @@ body {
   background: conic-gradient(
     from var(--angle),
     transparent 0deg,
-    oklch(0.62 0.19 275) 70deg,
-    oklch(0.72 0.17 320) 130deg,
-    oklch(0.72 0.15 220) 190deg,
+    var(--brand-strong) 70deg,
+    var(--brand) 130deg,
+    var(--brand-light) 190deg,
     transparent 260deg,
     transparent 360deg
   );
@@ -227,7 +263,7 @@ body {
 }
 
 .angle-active {
-  box-shadow: 0 0 18px -2px color-mix(in oklch, oklch(0.62 0.19 275) 45%, transparent);
+  box-shadow: 0 0 18px -2px color-mix(in oklch, var(--brand) 45%, transparent);
 }
 
 .brief-clamp {
@@ -354,6 +390,9 @@ body {
    ───────────────────────────────────────────────────────────────────────── */
 
 @theme inline {
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-hover: var(--brand-hover);
   --color-ed-bg: var(--ed-bg);
   --color-ed-panel: var(--ed-panel);
   --color-ed-elev: var(--ed-elev);
@@ -391,6 +430,7 @@ body {
   --color-ed-accent-soft: var(--ed-accent-soft);
   --color-ed-danger: var(--ed-danger);
   --color-ed-swatch-b: var(--ed-swatch-b);
+  --color-ed-switch-off: var(--ed-switch-off);
   --font-ed: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
   --font-ed-alt: var(--font-geist-sans), var(--font-inter), system-ui, sans-serif;
 }
@@ -434,11 +474,12 @@ body {
   --ed-light-btn: #efefef;
   --ed-light-t: #111111;
   --ed-play: #171717;
-  --ed-sel-b: #4a9eff;
+  --ed-sel-b: #fafafa;
   --ed-accent: #1d4ed8;
   --ed-accent-soft: rgba(26, 85, 216, 0.12);
   --ed-danger: #a8383e;
   --ed-swatch-b: #e5e5e5;
+  --ed-switch-off: #3f3f46;
   /* Geometri & tipografi panel (dark node 660-13752) */
   --ed-ctl-r: 8px;
   --ed-sec-title: 13px;
@@ -495,6 +536,7 @@ html:not(.dark) [data-ed-theme] {
   --ed-accent-soft: rgba(26, 85, 216, 0.12);
   --ed-danger: #c10007;
   --ed-swatch-b: #e5e5e5;
+  --ed-switch-off: #e5e5e5;
   /* Geometri & tipografi panel (light node 362-16647) */
   --ed-ctl-r: 10px;
   --ed-sec-title: 14px;

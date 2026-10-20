@@ -204,7 +204,7 @@ export function AudioConfig({
             step={AUDIO_SPEED_STEP}
             value={params.speed}
             onChange={(event) => onChange({ speed: Number(event.target.value) })}
-            className="w-full accent-indigo-500"
+            className="w-full accent-brand"
           />
         </FieldRow>
       </ConfigChip>
