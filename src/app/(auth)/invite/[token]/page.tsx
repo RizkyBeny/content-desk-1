@@ -103,7 +103,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-brand-strong px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center rounded-xl bg-brand-strong px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-hover disabled:opacity-50"
         >
           {submitting ? "Memproses..." : "Buat akun"}
         </button>

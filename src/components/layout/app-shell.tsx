@@ -218,7 +218,7 @@ function TabletRail({ pathname }: { pathname: string }) {
         <Link
           href="/insight"
           aria-label="Kumparan"
-          className="flex size-10 items-center justify-center rounded-xl bg-[#01AFAE]/10 dark:bg-white/10"
+          className="flex size-10 items-center justify-center rounded-xl bg-brand/10 dark:bg-white/10"
         >
           <Image
             src="/brand/kumparan-mark-light.png"

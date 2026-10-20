@@ -60,7 +60,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-brand-strong px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center rounded-xl bg-brand-strong px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand/40 disabled:opacity-50"
         >
           {loading ? "Memproses..." : "Masuk"}
         </button>
