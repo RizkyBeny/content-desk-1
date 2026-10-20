@@ -10,7 +10,7 @@ import {
   SaveIcon,
 } from "@/components/ui/icons";
 import type { Caption, CreationDTO } from "@/types";
-import { PropertiesPanel } from "./properties-panel";
+import { PANEL_TABS, PropertiesPanel } from "./properties-panel";
 import { EditorButton } from "./ui";
 import type { PanelTab } from "./use-editor-ui";
 
@@ -57,6 +57,10 @@ export function EditorFrame({
   const [railOpen, setRailOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
+  // Voice Over hanya relevan untuk konten video (node video 362-16647).
+  const tabs = creation.type === "video" ? PANEL_TABS : PANEL_TABS.filter((t) => t.value !== "voiceover");
+  const activeTab = tabs.some((t) => t.value === panelTab) ? panelTab : "properties";
+
   // ── Edit judul inline (header) — persist ke caption pertama brief ────────
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -88,8 +92,8 @@ export function EditorFrame({
 
   return (
     <div
-      data-ed-theme="dark"
-      className="relative flex h-[calc(100dvh-7rem)] min-h-[420px] w-full flex-col overflow-hidden bg-ed-bg font-[family-name:var(--font-ed)] text-ed-text md:h-[calc(100dvh-2.5rem)]"
+      data-ed-theme="auto"
+      className="relative flex h-[calc(100dvh-7rem)] min-h-[420px] w-full flex-col overflow-hidden rounded-2xl bg-ed-bg font-[family-name:var(--font-ed)] text-ed-text md:h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-2rem)]"
     >
       {/* Aksen latar belakang — dua elips ter-blur sesuai desain */}
       <div
@@ -184,8 +188,9 @@ export function EditorFrame({
             </div>
 
             <PropertiesPanel
-              tab={panelTab}
+              tab={activeTab}
               onTab={onPanelTab}
+              tabs={tabs}
               watermark={watermark}
               voiceover={voiceover}
               className="hidden xl:flex border-l border-ed-line bg-ed-panel"
@@ -223,11 +228,12 @@ export function EditorFrame({
           <div className="absolute inset-0 bg-black/40" onClick={() => setPanelOpen(false)} />
           <div className="absolute inset-y-0 right-0 flex w-[356px] max-w-full flex-col bg-ed-panel shadow-xl">
             <PropertiesPanel
-              tab={panelTab}
+              tab={activeTab}
               onTab={onPanelTab}
+              tabs={tabs}
               watermark={watermark}
               voiceover={voiceover}
-              className="h-full border-l-0"
+              className="flex h-full border-l-0"
             >
               {panel}
             </PropertiesPanel>

@@ -89,7 +89,7 @@ export type EditorButtonVariant =
 const BTN_VARIANT: Record<EditorButtonVariant, string> = {
   default: "border border-ed-input-b bg-ed-elev text-ed-dim hover:text-ed-text",
   light: "bg-ed-light-btn text-ed-light-t hover:opacity-90",
-  "ghost-pill": "rounded-full border border-ed-ghost-b bg-ed-ghost text-[#C8C8D8] hover:text-ed-text",
+  "ghost-pill": "rounded-full border border-ed-ghost-b bg-ed-ghost text-ed-ghost-t hover:text-ed-text",
   "dark-pill": "rounded-full bg-ed-play text-ed-dim hover:text-ed-text",
   chip: "rounded-full border border-ed-page-b bg-ed-page text-ed-page-t hover:text-ed-dim",
   timeline: "rounded-md bg-ed-tl-btn text-ed-dim hover:text-ed-text",
@@ -460,18 +460,24 @@ export function EdSlider({
   const vol = variant === "volume";
   return (
     <div className={cn("group relative flex h-[22px] items-center", className)}>
-      <div className="relative h-1 w-full rounded-full" style={{ background: vol ? "#F5F5F5" : "#2A2A2E" }}>
+      <div
+        className="relative h-1 w-full rounded-full"
+        style={{ background: vol ? "#F5F5F5" : "var(--ed-zoom-track)" }}
+      >
         <div
           className="absolute inset-y-0 left-0 rounded-full"
-          style={{ width: `${pct}%`, background: vol ? "#1447E6" : "#4A4A5A" }}
+          style={{ width: `${pct}%`, background: vol ? "#1447E6" : "var(--ed-zoom-fill)" }}
         />
       </div>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute flex h-[22px] w-[22px] items-center justify-center rounded-full"
-        style={{ left: `calc(${pct}% - 11px)`, background: vol ? "var(--ed-accent-soft)" : "#30303A" }}
+        style={{ left: `calc(${pct}% - 11px)`, background: vol ? "var(--ed-accent-soft)" : "var(--ed-zoom-thumb)" }}
       >
-        <span className="size-2.5 rounded-full" style={{ background: vol ? "#1D4ED8" : "#7A7A9A" }} />
+        <span
+          className="size-2.5 rounded-full"
+          style={{ background: vol ? "#1D4ED8" : "var(--ed-zoom-dot)" }}
+        />
       </div>
       <input
         type="range"

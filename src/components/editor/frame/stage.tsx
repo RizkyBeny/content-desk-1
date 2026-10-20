@@ -46,7 +46,7 @@ export function StageBar({
         <button
           type="button"
           onClick={onSwapAsset}
-          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-[#C8C8D8] transition-colors hover:text-ed-text"
+          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-ghost-t transition-colors hover:text-ed-text"
         >
           <ImageRemoveIcon width={15} height={15} />
           {swapLabel}

@@ -284,7 +284,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       <main
         className={
           isEditorRoute(pathname)
-            ? "px-3 pb-6 pt-4 md:pl-20 lg:pl-64 lg:pr-6"
+            ? "px-3 pb-6 pt-4 md:pl-20 lg:pl-64 lg:pr-4 lg:pb-4"
             : "px-3 pt-10 pb-28 md:pl-20 lg:pl-64 lg:pr-6"
         }
       >

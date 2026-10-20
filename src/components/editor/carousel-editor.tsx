@@ -14,19 +14,15 @@ import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable 
 import { CSS } from "@dnd-kit/utilities";
 import { CopyIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { SlideCanvas } from "./canvas/slide-canvas";
-import { SlideControls } from "./inspector/slide-controls";
-import { LayerInspector } from "./inspector/layer-inspector";
-import { LayersPanel } from "./layers-panel";
-import { addLayer, newImageLayer, newTextLayer, patchLayer, removeLayer, uid } from "./layer-utils";
+import { patchLayer, uid } from "./layer-utils";
 import { MediaSourcePicker, type MediaSelection } from "@/components/media/media-source-picker";
 import { EditorFrame } from "./frame/editor-frame";
 import { AssetRail } from "./frame/asset-rail";
 import { StageBar, fitFrame } from "./frame/stage";
 import { TimelineBar } from "./frame/timeline-bar";
-import { CanvasEditorSection, MediaConfigSection, TypographySection } from "./frame/sections";
-import { SectionBlock } from "./frame/ui";
+import { OrientationSection, TypographySection } from "./frame/sections";
 import type { TypeEditorProps } from "./frame/types";
-import type { CarouselEditorState, LayerPatch, SlideObject, TextLayer } from "@/types";
+import type { CarouselEditorState, SlideObject, TextLayer } from "@/types";
 
 const MAX_SLIDES = 10;
 const STYLE_KEYS: (keyof TextLayer)[] = ["fontFamily", "fontSize", "color", "align", "shadow"];
@@ -81,11 +77,10 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
   const state = controller.state as CarouselEditorState;
   const [activeId, setActiveId] = useState<string>(state.slides[0]?.id ?? "");
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-  const [picker, setPicker] = useState<null | "background" | "layer">(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const active = state.slides.find((s) => s.id === activeId) ?? state.slides[0];
-  const selected = active?.layers.find((l) => l.id === selectedLayerId) ?? null;
   const activeIndex = Math.max(0, state.slides.findIndex((s) => s.id === active?.id));
 
   function mutate(fn: (slides: SlideObject[]) => SlideObject[]) {
@@ -94,10 +89,6 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
 
   function patchActive(patch: Partial<SlideObject>) {
     mutate((slides) => slides.map((s) => (s.id === active.id ? { ...s, ...patch } : s)));
-  }
-
-  function withActiveLayer(id: string, patch: LayerPatch) {
-    mutate((slides) => slides.map((s) => (s.id === active.id ? patchLayer(s, id, patch) : s)));
   }
 
   function addSlide() {
@@ -173,16 +164,9 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
 
   function onPick(sel: MediaSelection) {
     const asset = sel.asset;
-    const mode = picker;
-    setPicker(null);
+    setPickerOpen(false);
     if (!asset) return;
-    if (mode === "background") {
-      patchActive({ background: { assetId: asset.id, fit: "cover" } });
-    } else {
-      const layer = newImageLayer(asset.id, asset.fileUrl, state.ratio);
-      mutate((slides) => slides.map((s) => (s.id === active.id ? addLayer(s, layer) : s)));
-      setSelectedLayerId(layer.id);
-    }
+    patchActive({ background: { assetId: asset.id, fit: "cover" } });
   }
 
   // Klik aset di rail → latar slide aktif.
@@ -196,7 +180,7 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
     <div className="flex h-full min-h-0 flex-col gap-3">
       <StageBar
         controller={controller}
-        onSwapAsset={() => setPicker("background")}
+        onSwapAsset={() => setPickerOpen(true)}
         swapLabel="Ganti Aset"
         right={
           <div className="mr-1 hidden items-center gap-1 sm:flex">
@@ -227,7 +211,9 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
               assetUrls={assetUrls}
               selectedId={selectedLayerId}
               onSelect={setSelectedLayerId}
-              onPatchLayer={(id, patch) => withActiveLayer(id, patch)}
+              onPatchLayer={(id, patch) =>
+                mutate((slides) => slides.map((s) => (s.id === active.id ? patchLayer(s, id, patch) : s)))
+              }
             />
           )}
         </div>
@@ -272,84 +258,14 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
     </TimelineBar>
   );
 
-  // ── Panel Properties ────────────────────────────────────────────────────
+  // ── Panel Properties (node 344-10326) ───────────────────────────────────
   const panel = (
     <>
-      <CanvasEditorSection
+      <OrientationSection
         ratio={state.ratio}
         onRatio={(r) => controller.setState((s) => (s.type === "carousel" ? { ...s, ratio: r } : s))}
       />
-
-      {active && (
-        <SectionBlock title={`Slide ${activeIndex + 1}`} description="Latar, pas, dan filter slide ini.">
-          <SlideControls
-            slide={active}
-            ratio={state.ratio}
-            showRatio={false}
-            onPatchSlide={patchActive}
-            onPatchFilters={(f) => patchActive({ filters: f })}
-            onSwapBackground={() => setPicker("background")}
-            onRemoveBackground={() => patchActive({ background: null })}
-          />
-        </SectionBlock>
-      )}
-
-      {active && (
-        <SectionBlock title="Layer" description={`${active.layers.length} layer pada slide ini.`}>
-          <LayersPanel
-            slide={active}
-            selectedId={selectedLayerId}
-            onSelect={setSelectedLayerId}
-            onAddText={() => {
-              const l = newTextLayer(state.ratio);
-              mutate((slides) => slides.map((s) => (s.id === active.id ? addLayer(s, l) : s)));
-              setSelectedLayerId(l.id);
-            }}
-            onAddImage={() => setPicker("layer")}
-            onDuplicate={(id) => {
-              const layer = active.layers.find((l) => l.id === id);
-              if (!layer) return;
-              const copy = { ...layer, id: uid(layer.type), x: layer.x + 24, y: layer.y + 24 };
-              mutate((slides) => slides.map((s) => (s.id === active.id ? addLayer(s, copy) : s)));
-            }}
-            onRemove={(id) => {
-              mutate((slides) => slides.map((s) => (s.id === active.id ? removeLayer(s, id) : s)));
-              setSelectedLayerId(null);
-            }}
-            onMove={(id, dir) =>
-              mutate((slides) =>
-                slides.map((s) => {
-                  if (s.id !== active.id) return s;
-                  const layers = [...s.layers];
-                  const i = layers.findIndex((l) => l.id === id);
-                  const j = i + dir;
-                  if (i < 0 || j < 0 || j >= layers.length) return s;
-                  [layers[i], layers[j]] = [layers[j], layers[i]];
-                  return { ...s, layers };
-                }),
-              )
-            }
-          />
-          {selected ? (
-            <div className="mt-3 border-t border-zinc-200/60 pt-3 dark:border-white/10">
-              <LayerInspector
-                layer={selected}
-                onPatch={(patch) => withActiveLayer(selected.id, patch)}
-                onDelete={() => {
-                  mutate((slides) => slides.map((s) => (s.id === active.id ? removeLayer(s, selected.id) : s)));
-                  setSelectedLayerId(null);
-                }}
-                onReplaceImage={() => setPicker("layer")}
-              />
-            </div>
-          ) : (
-            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Pilih layer untuk mengedit propertinya.</p>
-          )}
-        </SectionBlock>
-      )}
-
-      <TypographySection ui={ui} patchUi={patchUi} />
-      <MediaConfigSection ui={ui} patchUi={patchUi} />
+      <TypographySection ui={ui} patchUi={patchUi} showHighlightColor={false} />
     </>
   );
 
@@ -362,7 +278,7 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
         panel={panel}
         timeline={timeline}
       />
-      <MediaSourcePicker open={picker !== null} onClose={() => setPicker(null)} type="image" onSelect={onPick} />
+      <MediaSourcePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type="image" onSelect={onPick} />
     </>
   );
 }

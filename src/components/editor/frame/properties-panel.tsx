@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { TabList } from "./ui";
 import type { PanelTab } from "./use-editor-ui";
 
-const TABS: { value: PanelTab; label: string }[] = [
+export const PANEL_TABS: { value: PanelTab; label: string }[] = [
   { value: "properties", label: "Properties" },
   { value: "watermark", label: "Watermark" },
   { value: "voiceover", label: "Voice Over" },
@@ -32,6 +32,7 @@ function PanelSections({ children }: { children: ReactNode }) {
 export function PropertiesPanel({
   tab,
   onTab,
+  tabs = PANEL_TABS,
   children,
   watermark,
   voiceover,
@@ -39,6 +40,8 @@ export function PropertiesPanel({
 }: {
   tab: PanelTab;
   onTab: (t: PanelTab) => void;
+  /** Tab yang ditampilkan — image/carousel/audio/article tanpa Voice Over. */
+  tabs?: { value: PanelTab; label: string }[];
   children: ReactNode;
   watermark: ReactNode;
   voiceover: ReactNode;
@@ -52,7 +55,7 @@ export function PropertiesPanel({
       )}
     >
       <div className="shrink-0 py-2">
-        <TabList items={TABS} value={tab} onChange={onTab} size={13} ariaLabel="Panel properties" />
+        <TabList items={tabs} value={tab} onChange={onTab} size={13} ariaLabel="Panel properties" />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-0 py-2">

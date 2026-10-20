@@ -49,11 +49,11 @@ function WaveformPlayer({ url, fallbackTotal }: { url: string | null; fallbackTo
     };
   }, []);
 
+  // Muat URL baru ke instance WaveSurfer. Reset waktu/total dilakukan oleh
+  // event `ready`/`finish` (bukan setState langsung di body effect).
   useEffect(() => {
-    setTime(0);
-    setTotal(fallbackTotal);
     if (wsRef.current && url) void wsRef.current.load(url);
-  }, [url, fallbackTotal]);
+  }, [url]);
 
   return (
     <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4">
@@ -194,7 +194,6 @@ export function AudioEditor({ creation, controller, assetUrls, chrome, ui, patch
       zoom={ui.zoom}
       onZoom={(v) => patchUi({ zoom: v })}
       pageLabel={`Segmen ${index + 1}/${state.segments.length}`}
-      onVoiceOver={() => patchUi({ panelTab: "voiceover" })}
       onAddBacksound={() => setPicker({ kind: "music" })}
     >
       {state.segments.map((s, i) => (

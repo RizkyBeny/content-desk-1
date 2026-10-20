@@ -140,7 +140,7 @@ function ClearButton({ onClick, label }: { onClick: () => void; label: string })
   );
 }
 
-/* ── Canvas Editor ─────────────────────────────────────────────────────── */
+/* ── Canvas Editor (video) ─────────────────────────────────────────────── */
 
 export function CanvasEditorSection({
   ratio,
@@ -166,6 +166,33 @@ export function CanvasEditorSection({
   );
 }
 
+/* ── Orientasi (image & carousel — node 344-10326) ─────────────────────── */
+
+/**
+ * Blok pertama panel Single Image/Carousel: hanya label "Pilih Orientasi"
+ * dan segmented 16:9 / 1:1 / 9:16, tanpa judul/deskripsi seksi.
+ */
+export function OrientationSection({
+  ratio,
+  onRatio,
+  ratios = DEFAULT_RATIOS,
+}: {
+  ratio: Ratio;
+  onRatio: (ratio: Ratio) => void;
+  ratios?: Ratio[];
+}) {
+  return (
+    <section className="px-4 py-4">
+      <Segmented
+        label="Pilih Orientasi"
+        value={ratio}
+        options={ratios.map((r) => ({ value: r, label: (<>{RATIO_META[r].icon} {RATIO_META[r].label}</>), title: r }))}
+        onChange={onRatio}
+      />
+    </section>
+  );
+}
+
 /* ── Typography ────────────────────────────────────────────────────────── */
 
 export function TypographySection({
@@ -173,12 +200,15 @@ export function TypographySection({
   patchUi,
   titleText,
   onTitleText,
+  showHighlightColor = true,
 }: {
   ui: EditorUi["ui"];
   patchUi: EditorUi["patchUi"];
   /** Judul on-screen (video) — menggantikan `ui.titleText` bila diberikan. */
   titleText?: string;
   onTitleText?: (v: string) => void;
+  /** Node 344-10326 (image/carousel) tidak menampilkan baris pilihan warna. */
+  showHighlightColor?: boolean;
 }) {
   const title = titleText ?? ui.titleText;
   const setTitle = onTitleText ?? ((v: string) => patchUi({ titleText: v }));
@@ -218,19 +248,21 @@ export function TypographySection({
         {ui.highlightOn ? (
           <>
             <TextareaField
-              value={ui.titleText}
-              onChange={(v) => patchUi({ titleText: v })}
+              value={ui.highlightText}
+              onChange={(v) => patchUi({ highlightText: v })}
               placeholder="Tulis teks yang di-highlight..."
               ariaLabel="Teks highlight"
             />
-            <div className="flex flex-col gap-2">
-              <FieldLabel>Pilih Warna Highlight</FieldLabel>
-              <SwatchRow
-                value={ui.highlightColor}
-                onChange={(c) => patchUi({ highlightColor: c })}
-                swatches={HIGHLIGHT_SWATCHES}
-              />
-            </div>
+            {showHighlightColor ? (
+              <div className="flex flex-col gap-2">
+                <FieldLabel>Pilih Warna Highlight</FieldLabel>
+                <SwatchRow
+                  value={ui.highlightColor}
+                  onChange={(c) => patchUi({ highlightColor: c })}
+                  swatches={HIGHLIGHT_SWATCHES}
+                />
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>

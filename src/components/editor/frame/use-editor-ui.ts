@@ -24,6 +24,7 @@ export interface EditorUiState {
   textPlacement: TextPlacement;
   titleText: string;
   highlightOn: boolean;
+  highlightText: string;
   highlightColor: string;
   descOn: boolean;
   descText: string;
@@ -62,6 +63,7 @@ export const DEFAULT_UI: EditorUiState = {
   textPlacement: "bottom",
   titleText: "",
   highlightOn: false,
+  highlightText: "",
   highlightColor: "#00B1B0",
   descOn: false,
   descText: "",

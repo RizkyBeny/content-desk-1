@@ -349,7 +349,8 @@ body {
 
 /* ─────────────────────────────────────────────────────────────────────────
    Editor canvas (Figma "Video Editor" — node 660-13750).
-   Palet dark adalah default editor; varian light di-[data-ed-theme="light"].
+   Palet mengikuti tema aplikasi: dark saat <html class="dark">, light saat
+   <html> tanpa class .dark.
    ───────────────────────────────────────────────────────────────────────── */
 
 @theme inline {
@@ -377,6 +378,7 @@ body {
   --color-ed-timeline: var(--ed-timeline);
   --color-ed-ghost: var(--ed-ghost);
   --color-ed-ghost-b: var(--ed-ghost-b);
+  --color-ed-ghost-t: var(--ed-ghost-t);
   --color-ed-tl-btn: var(--ed-tl-btn);
   --color-ed-page: var(--ed-page);
   --color-ed-page-b: var(--ed-page-b);
@@ -420,6 +422,11 @@ body {
   --ed-timeline: rgba(22, 22, 24, 0.8);
   --ed-ghost: #252530;
   --ed-ghost-b: #303040;
+  --ed-ghost-t: #c8c8d8;
+  --ed-zoom-track: #2a2a2e;
+  --ed-zoom-fill: #4a4a5a;
+  --ed-zoom-thumb: #30303a;
+  --ed-zoom-dot: #7a7a9a;
   --ed-tl-btn: #1e1e22;
   --ed-page: #1e1e24;
   --ed-page-b: #2a2a32;
@@ -445,7 +452,7 @@ body {
 }
 
 /* Light — nilai persis dari node 362-16647 ("Final") */
-[data-ed-theme="light"] {
+html:not(.dark) [data-ed-theme] {
   color-scheme: light;
   --ed-bg: #f5f7ff;
   --ed-panel: #fbfbff;
@@ -471,6 +478,11 @@ body {
   --ed-timeline: rgba(255, 255, 255, 0.85);
   --ed-ghost: #eef2ff;
   --ed-ghost-b: #e0e7ff;
+  --ed-ghost-t: #0a0a0a;
+  --ed-zoom-track: #e5e5e5;
+  --ed-zoom-fill: #a1a1aa;
+  --ed-zoom-thumb: #f5f5f5;
+  --ed-zoom-dot: #52525b;
   --ed-tl-btn: #f4f4f5;
   --ed-page: #f4f4f5;
   --ed-page-b: #e5e5e5;
