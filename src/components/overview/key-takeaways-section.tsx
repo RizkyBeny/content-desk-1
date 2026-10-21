@@ -77,10 +77,10 @@ export function KeyTakeawaysSection() {
           return (
             <div
               key={group.type}
-              className="flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/30"
+              className="angle-card flex flex-col overflow-visible rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 dark:border-white/10 dark:bg-zinc-900/60"
             >
               {/* Card Color Header Bar */}
-              <div className={`flex items-center gap-2.5 px-4 py-3 ${style.barBg}`}>
+              <div className={`flex items-center gap-2.5 rounded-t-xl px-4 py-3 ${style.barBg}`}>
                 <div className="flex size-6 items-center justify-center rounded-full bg-white/20 text-white">
                   <GroupHeaderIcon type={group.type} />
                 </div>

@@ -158,7 +158,7 @@ function MetricCard({ metric }: { metric: SocialMetric }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   return (
-    <div className="flex flex-col justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40">
+    <div className="angle-card flex flex-col justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 dark:border-white/10 dark:bg-zinc-900/60">
       {/* Top: Label & Growth Badge / Hover Readout */}
       <div className="flex min-h-4 items-center justify-between gap-2">
         <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{metric.label}</span>

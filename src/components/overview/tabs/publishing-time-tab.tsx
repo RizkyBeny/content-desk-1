@@ -75,7 +75,7 @@ function HourlyBarChart({
     dataKey === "content" ? 20 : dataKey === "impression" ? 4 : 120;
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40">
+    <div className="angle-card flex flex-col gap-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all dark:border-white/10 dark:bg-zinc-900/60">
       <h3 className="text-sm font-bold text-zinc-900 dark:text-white">{title}</h3>
 
       <div className="relative flex h-48 items-end gap-1.5 pt-6 pb-6">
@@ -191,7 +191,7 @@ export function PublishingTimeTab() {
           {PUBLISHING_TIME_INSIGHTS.map((card, idx) => (
             <div
               key={idx}
-              className="flex flex-col justify-between gap-2.5 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
+              className="angle-card flex flex-col justify-between gap-2.5 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 dark:border-white/10 dark:bg-zinc-900/60"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export function PublishingTimeTab() {
           {TIME_SLOT_SECTION_CARDS.map((slot, idx) => (
             <div
               key={idx}
-              className="flex flex-col justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
+              className="angle-card flex flex-col justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 dark:border-white/10 dark:bg-zinc-900/60"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2">

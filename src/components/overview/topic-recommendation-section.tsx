@@ -52,7 +52,7 @@ export function TopicRecommendationSection({ onMakeContent, loadingRank }: Topic
           return (
             <div
               key={item.rank}
-              className="flex flex-col justify-between gap-4 rounded-xl border border-zinc-200/80 bg-white p-4.5 shadow-sm transition-all hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
+              className="angle-card flex flex-col justify-between gap-4 rounded-xl border border-zinc-200/80 bg-white p-4.5 shadow-sm transition-all dark:border-white/10 dark:bg-zinc-900/60"
             >
               <div className="space-y-2.5">
                 {/* Rank, Title & Score Pill */}

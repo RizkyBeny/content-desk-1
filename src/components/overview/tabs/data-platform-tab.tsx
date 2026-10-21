@@ -93,7 +93,7 @@ export function DataPlatformTab() {
         {DATA_PLATFORM_HIGHLIGHTS.map((item, idx) => (
           <div
             key={idx}
-            className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
+            className="angle-card flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 dark:border-white/10 dark:bg-zinc-900/60"
           >
             <div className="flex items-center gap-2.5">
               <HighlightIcon type={item.iconType} />
@@ -113,10 +113,10 @@ export function DataPlatformTab() {
         {PLATFORM_DETAIL_CARDS.map((card) => (
           <div
             key={card.platform}
-            className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
+            className="angle-card flex flex-col overflow-visible rounded-2xl border border-zinc-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 dark:border-white/10 dark:bg-zinc-900/60"
           >
             {/* Dark Header Banner */}
-            <div className={`flex items-center gap-2 px-4 py-3 ${card.headerBg}`}>
+            <div className={`flex items-center gap-2 rounded-t-2xl px-4 py-3 ${card.headerBg}`}>
               <SocialIcon platform={card.platform} />
               <h3 className="text-sm font-bold tracking-tight text-white">{card.platform}</h3>
             </div>
