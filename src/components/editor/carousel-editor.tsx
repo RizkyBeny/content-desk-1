@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, toast } from "@heroui/react";
 import {
   DndContext,
@@ -13,6 +13,7 @@ import {
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { CopyIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import { SlideCanvas } from "./canvas/slide-canvas";
 import { patchLayer, uid } from "./layer-utils";
 import { MediaSourcePicker, type MediaSelection } from "@/components/media/media-source-picker";
@@ -20,27 +21,38 @@ import { EditorFrame } from "./frame/editor-frame";
 import { AssetRail } from "./frame/asset-rail";
 import { StageBar, fitFrame } from "./frame/stage";
 import { TimelineBar } from "./frame/timeline-bar";
-import { OrientationSection, TypographySection } from "./frame/sections";
+import { MediaConfigSection, OrientationSection, TypographySection } from "./frame/sections";
 import { WatermarkOverlay } from "./frame/watermark-overlay";
+import { isLightColor } from "./frame/ui";
 import type { TypeEditorProps } from "./frame/types";
-import type { CarouselEditorState, SlideObject, TextLayer } from "@/types";
+import type { CarouselEditorState, SlideConfig, SlideObject } from "@/types";
+import type { EditorUiState } from "./frame/use-editor-ui";
 
 const MAX_SLIDES = 10;
-const STYLE_KEYS: (keyof TextLayer)[] = ["fontFamily", "fontSize", "color", "align", "shadow"];
+
+function placedClass(placement: "top" | "middle" | "bottom") {
+  if (placement === "top") return "justify-start pt-[5cqw]";
+  if (placement === "middle") return "justify-center";
+  return "justify-end pb-[5cqw]";
+}
+
+function alignClass(alignment: "left" | "center" | "right") {
+  if (alignment === "center") return "text-center";
+  if (alignment === "right") return "text-right";
+  return "text-left";
+}
 
 function Thumb({
   id,
   index,
   active,
   url,
-  text,
   onClick,
 }: {
   id: string;
   index: number;
   active: boolean;
   url: string | null;
-  text: string;
   onClick: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -48,14 +60,19 @@ function Thumb({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`shrink-0 ${active ? "rounded-lg ring-2 ring-indigo-500" : ""}`}
+      className={cn(
+        "shrink-0 rounded-[4px] transition-all",
+        active
+          ? "border-2 border-[#1A55D8]"
+          : "border border-zinc-200/60 hover:border-zinc-400 dark:border-white/10"
+      )}
       {...attributes}
       {...listeners}
     >
       <button
         type="button"
         onClick={onClick}
-        className="relative block h-[52px] w-[100px] overflow-hidden rounded border border-zinc-200/60 dark:border-white/10"
+        className="relative block h-[82px] w-[82px] overflow-hidden rounded-[2px]"
         aria-label={`Slide ${index + 1}`}
       >
         {url ? (
@@ -66,9 +83,6 @@ function Thumb({
             {index + 1}
           </span>
         )}
-        {text ? (
-          <span className="absolute inset-x-0 bottom-0 truncate bg-black/50 px-1 py-0.5 text-[10px] text-white">{text}</span>
-        ) : null}
       </button>
     </div>
   );
@@ -79,6 +93,7 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
   const [activeId, setActiveId] = useState<string>(state.slides[0]?.id ?? "");
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [isSwapping, setIsSwapping] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const active = state.slides.find((s) => s.id === activeId) ?? state.slides[0];
@@ -92,11 +107,86 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
     mutate((slides) => slides.map((s) => (s.id === active.id ? { ...s, ...patch } : s)));
   }
 
+  // Konfigurasi independen per slide/frame
+  const activeConfig: Required<SlideConfig> = useMemo(() => {
+    const c = active?.config ?? {};
+    const defaultTitle =
+      activeIndex === 0
+        ? creation.captions[0]?.text.split("\n")[0]?.trim() || "Headline"
+        : `Slide ${activeIndex + 1}`;
+    const title = c.titleText !== undefined ? c.titleText : defaultTitle;
+    const desc = c.descText ?? "";
+    return {
+      titleText: title,
+      descText: desc,
+      descOn: c.descOn !== undefined ? c.descOn : Boolean(desc),
+      alignment: c.alignment ?? "left",
+      textPlacement: c.textPlacement ?? "bottom",
+      highlightOn: c.highlightOn ?? false,
+      highlightText: c.highlightText ?? "",
+      highlightColor: c.highlightColor ?? "#00B1B0",
+      fitMode: c.fitMode ?? "fill",
+      overlay: c.overlay ?? "gradient",
+      durationSec: c.durationSec ?? 2,
+    };
+  }, [active?.config, activeIndex, creation.captions]);
+
+  function patchActiveConfig(patch: Partial<SlideConfig>) {
+    mutate((slides) =>
+      slides.map((s) => {
+        if (s.id !== active?.id) return s;
+        return {
+          ...s,
+          config: {
+            ...(s.config ?? {}),
+            ...patch,
+          },
+        };
+      })
+    );
+  }
+
+  // Adapter UI per-slide untuk TypographySection & MediaConfigSection
+  const slideUi: EditorUiState = useMemo(
+    () => ({
+      ...ui,
+      alignment: activeConfig.alignment,
+      textPlacement: activeConfig.textPlacement,
+      titleText: activeConfig.titleText,
+      highlightOn: activeConfig.highlightOn,
+      highlightText: activeConfig.highlightText,
+      highlightColor: activeConfig.highlightColor,
+      descOn: activeConfig.descOn,
+      descText: activeConfig.descText,
+      fitMode: activeConfig.fitMode,
+      overlay: activeConfig.overlay,
+      mediaDurationSec: activeConfig.durationSec,
+    }),
+    [ui, activeConfig]
+  );
+
+  function patchSlideUi(patch: Partial<EditorUiState>) {
+    const configPatch: Partial<SlideConfig> = {};
+    if (patch.titleText !== undefined) configPatch.titleText = patch.titleText;
+    if (patch.alignment !== undefined) configPatch.alignment = patch.alignment;
+    if (patch.textPlacement !== undefined) configPatch.textPlacement = patch.textPlacement;
+    if (patch.highlightOn !== undefined) configPatch.highlightOn = patch.highlightOn;
+    if (patch.highlightText !== undefined) configPatch.highlightText = patch.highlightText;
+    if (patch.highlightColor !== undefined) configPatch.highlightColor = patch.highlightColor;
+    if (patch.descOn !== undefined) configPatch.descOn = patch.descOn;
+    if (patch.descText !== undefined) configPatch.descText = patch.descText;
+    if (patch.fitMode !== undefined) configPatch.fitMode = patch.fitMode;
+    if (patch.overlay !== undefined) configPatch.overlay = patch.overlay;
+    if (patch.mediaDurationSec !== undefined) configPatch.durationSec = patch.mediaDurationSec;
+    patchActiveConfig(configPatch);
+  }
+
   function addSlide() {
     if (state.slides.length >= MAX_SLIDES) {
       toast.warning(`Maksimal ${MAX_SLIDES} slide.`);
       return;
     }
+    const newIndex = state.slides.length;
     const slide: SlideObject = {
       id: uid("slide"),
       background: null,
@@ -105,6 +195,19 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
       filters: { brightness: 0, contrast: 0, saturation: 0 },
       rotation: 0,
       scale: 1,
+      config: {
+        titleText: `Slide ${newIndex + 1}`,
+        descText: "",
+        descOn: false,
+        alignment: "left",
+        textPlacement: "bottom",
+        highlightOn: false,
+        highlightText: "",
+        highlightColor: "#00B1B0",
+        fitMode: "fill",
+        overlay: "gradient",
+        durationSec: 2,
+      },
     };
     mutate((slides) => [...slides, slide]);
     setActiveId(slide.id);
@@ -116,10 +219,15 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
       toast.warning(`Maksimal ${MAX_SLIDES} slide.`);
       return;
     }
+    const currentTitle = activeConfig.titleText || `Slide ${activeIndex + 1}`;
     const copy: SlideObject = {
       ...structuredClone(active),
       id: uid("slide"),
       layers: active.layers.map((l) => ({ ...l, id: uid(l.type) })),
+      config: {
+        ...activeConfig,
+        titleText: `${currentTitle} (Salinan)`,
+      },
     };
     mutate((slides) => [...slides, copy]);
     setActiveId(copy.id);
@@ -137,20 +245,23 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
   }
 
   function applyStyleToAll() {
-    const source = active.layers.find((l): l is TextLayer => l.type === "text");
-    if (!source) {
-      toast.warning("Tidak ada layer teks pada slide ini.");
-      return;
-    }
-    const style: Partial<TextLayer> = {};
-    for (const k of STYLE_KEYS) (style as Record<string, unknown>)[k] = source[k];
+    const styleFields: Partial<SlideConfig> = {
+      alignment: activeConfig.alignment,
+      textPlacement: activeConfig.textPlacement,
+      highlightColor: activeConfig.highlightColor,
+      fitMode: activeConfig.fitMode,
+      overlay: activeConfig.overlay,
+    };
     mutate((slides) =>
       slides.map((s) => ({
         ...s,
-        layers: s.layers.map((l) => (l.type === "text" ? { ...l, ...style } : l)),
-      })),
+        config: {
+          ...(s.config ?? {}),
+          ...styleFields,
+        },
+      }))
     );
-    toast.success("Gaya teks diterapkan ke semua slide.");
+    toast.success("Gaya tampilan diterapkan ke semua slide.");
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -170,21 +281,47 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
     patchActive({ background: { assetId: asset.id, fit: "cover" } });
   }
 
-  // Klik aset di rail → latar slide aktif.
+  // Klik aset di rail → latar slide aktif
   function pickFromRail(assetId: string) {
     patchActive({ background: { assetId, fit: "cover" } });
+    setIsSwapping(false);
     toast.success("Latar slide diperbarui.");
   }
 
-  // ── Stage ───────────────────────────────────────────────────────────────
+  // Typography overlay synchronization (per slide)
+  const titleText = activeConfig.titleText;
+  const highlightText = activeConfig.highlightOn ? activeConfig.highlightText.trim() : "";
+  const highlightIndex = highlightText
+    ? titleText.toLowerCase().indexOf(highlightText.toLowerCase())
+    : -1;
+  const canHighlight = Boolean(highlightText && highlightIndex >= 0);
+  const extraHighlight = Boolean(highlightText && highlightIndex < 0);
+
+  const titleNode = canHighlight && highlightText ? (
+    <>
+      {titleText.slice(0, highlightIndex)}
+      <mark
+        className="rounded-[3px] px-[0.12em]"
+        style={{
+          backgroundColor: activeConfig.highlightColor || "#00B1B0",
+          color: isLightColor(activeConfig.highlightColor || "#00B1B0") ? "#171717" : "#FFFFFF",
+        }}
+      >
+        {titleText.slice(highlightIndex, highlightIndex + highlightText.length)}
+      </mark>
+      {titleText.slice(highlightIndex + highlightText.length)}
+    </>
+  ) : (
+    titleText
+  );
+
+  // ── Stage (Padding diselaraskan presisi dengan Figma EL-718e44dc: 64px 129px 32px) ──
   const stage = (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-6 px-4 py-4 sm:px-8 xl:px-[129px] xl:pt-16 xl:pb-8">
       <StageBar
         controller={controller}
-        onSwapAsset={() => setPickerOpen(true)}
-        swapLabel="Ganti Aset"
         right={
-          <div className="mr-1 hidden items-center gap-1 sm:flex">
+          <div className="flex items-center gap-1">
             <Button size="sm" variant="secondary" onPress={duplicateSlide} isDisabled={state.slides.length >= MAX_SLIDES}>
               <CopyIcon width={14} height={14} /> Duplikat
             </Button>
@@ -205,28 +342,76 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
       />
       <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
         <div
-          className="relative overflow-hidden"
+          className="relative flex items-center justify-center overflow-hidden rounded-lg bg-black shadow-lg"
           style={{ ...fitFrame(state.ratio), containerType: "inline-size" }}
         >
           {active && (
             <SlideCanvas
-              slide={active}
+              slide={{
+                ...active,
+                // Hilangkan layer teks template/nama frame agar tidak bertumpuk di bawah text overlay
+                layers: active.layers.filter((l) => l.type !== "text"),
+              }}
               ratio={state.ratio}
               assetUrls={assetUrls}
               selectedId={selectedLayerId}
               onSelect={setSelectedLayerId}
+              fitMode={activeConfig.fitMode}
               onPatchLayer={(id, patch) =>
                 mutate((slides) => slides.map((s) => (s.id === active.id ? patchLayer(s, id, patch) : s)))
               }
             />
           )}
+
+          {/* Overlay konfigurasi media (Figma node 344:7334) */}
+          {activeConfig.overlay === "gradient" && (
+            <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+          )}
+          {activeConfig.overlay === "blur" && (
+            <div className="pointer-events-none absolute inset-0 z-10 bg-black/40 backdrop-blur-xs" />
+          )}
+          {activeConfig.overlay === "vignette" && (
+            <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle,transparent_40%,rgba(0,0,0,0.85)_100%)]" />
+          )}
+
+          {/* Typography structured overlay (Figma Carousel node 391:21229) */}
+          {titleText || extraHighlight || (activeConfig.descOn && activeConfig.descText) ? (
+            <div className={cn("pointer-events-none absolute inset-0 z-10 flex flex-col", placedClass(activeConfig.textPlacement))}>
+              <div className={cn("w-full px-[7cqw] pb-[4cqw]", alignClass(activeConfig.alignment))}>
+                {titleText ? (
+                  <p className="text-[clamp(14px,6.4cqw,34px)] font-bold leading-[1.15] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                    {titleNode}
+                  </p>
+                ) : null}
+                {extraHighlight && highlightText ? (
+                  <p className="mt-[1.5cqw] text-[clamp(13px,5.6cqw,30px)] font-bold leading-[1.1] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                    <span
+                      className="rounded-[3px] px-[0.12em]"
+                      style={{
+                        backgroundColor: activeConfig.highlightColor || "#00B1B0",
+                        color: isLightColor(activeConfig.highlightColor || "#00B1B0") ? "#171717" : "#FFFFFF",
+                      }}
+                    >
+                      {highlightText}
+                    </span>
+                  </p>
+                ) : null}
+                {activeConfig.descOn && activeConfig.descText ? (
+                  <p className="mt-[1.5cqw] text-[clamp(11px,3.8cqw,18px)] leading-[1.3] text-zinc-100 drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
+                    {activeConfig.descText}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <WatermarkOverlay ui={ui} channelLogoUrl={channelLogoUrl} />
         </div>
       </div>
     </div>
   );
 
-  // ── Timeline (strip slide + DnD) ────────────────────────────────────────
+  // ── Timeline (strip slide + DnD sesuai Figma 53:5460) ────────────────────
   const timeline = (
     <TimelineBar
       zoom={ui.zoom}
@@ -243,7 +428,6 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
               index={i}
               active={s.id === active.id}
               url={s.background ? assetUrls[s.background.assetId] ?? s.background.src ?? null : null}
-              text={s.layers.find((l): l is TextLayer => l.type === "text")?.text ?? ""}
               onClick={() => {
                 setActiveId(s.id);
                 setSelectedLayerId(null);
@@ -255,22 +439,34 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
       <button
         type="button"
         onClick={addSlide}
-        className="ml-1 flex h-[52px] w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-zinc-500 transition-colors hover:border-indigo-400 hover:text-indigo-500 dark:border-zinc-600 dark:text-zinc-400"
+        className="ml-1 flex h-[82px] w-[82px] shrink-0 items-center justify-center rounded-[4px] border border-dashed border-zinc-300 text-zinc-500 transition-colors hover:border-[#1A55D8] hover:text-[#1A55D8] dark:border-zinc-700 dark:text-zinc-400"
         aria-label="Tambah slide"
       >
-        <PlusIcon width={18} height={18} />
+        <PlusIcon width={20} height={20} />
       </button>
     </TimelineBar>
   );
 
-  // ── Panel Properties (node 344-10326) ───────────────────────────────────
+  // ── Panel Properties (Figma node 344:7334 & 391:21229) ──────────────────────
   const panel = (
     <>
       <OrientationSection
         ratio={state.ratio}
         onRatio={(r) => controller.setState((s) => (s.type === "carousel" ? { ...s, ratio: r } : s))}
       />
-      <TypographySection ui={ui} patchUi={patchUi} showHighlightColor={false} />
+      <TypographySection
+        ui={slideUi}
+        patchUi={patchSlideUi}
+        titleText={activeConfig.titleText}
+        onTitleText={(v) => patchActiveConfig({ titleText: v })}
+        showHighlightColor={true}
+      />
+      <MediaConfigSection
+        ui={slideUi}
+        patchUi={patchSlideUi}
+        durationSec={activeConfig.durationSec}
+        onDuration={(v) => patchActiveConfig({ durationSec: v })}
+      />
     </>
   );
 
@@ -278,7 +474,17 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
     <>
       <EditorFrame
         chrome={chrome}
-        rail={<AssetRail creation={creation} backHref={chrome.backHref} onPickAsset={(a) => pickFromRail(a.id)} />}
+        isSwapping={isSwapping}
+        rail={
+          <AssetRail
+            creation={creation}
+            backHref={chrome.backHref}
+            onBack={chrome.onBack}
+            isSwapping={isSwapping}
+            onCancelSwap={() => setIsSwapping(false)}
+            onPickAsset={(a) => pickFromRail(a.id)}
+          />
+        }
         stage={stage}
         panel={panel}
         timeline={timeline}

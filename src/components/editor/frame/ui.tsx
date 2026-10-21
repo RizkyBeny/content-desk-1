@@ -18,6 +18,15 @@ export const labelCls = "block text-xs font-medium leading-4 text-ed-dim";
 
 export const hintCls = "text-xs leading-4 text-ed-dim";
 
+export function isLightColor(hex: string) {
+  const clean = hex.replace("#", "");
+  if (clean.length !== 6) return false;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 155;
+}
+
 /**
  * Label kontrol (12px) — Inter di tema dark, Geist di tema light lewat
  * `--ed-label-font`; varian "alt" selalu Geist (dipakai label tertentu di dark).
@@ -398,17 +407,17 @@ export function EdSwitch({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        "flex shrink-0 items-center rounded-full p-px transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-        small ? "h-[14px] w-6" : "h-[18px] w-8",
-        checked ? "justify-end bg-[#171717]" : "justify-start bg-ed-switch-off",
+        "relative inline-flex shrink-0 cursor-pointer rounded-full p-[2px] transition-colors duration-200 ease-in-out focus:outline-none disabled:cursor-not-allowed disabled:opacity-40",
+        small ? "h-4 w-7" : "h-5 w-9",
+        checked ? "bg-[#1877F2]" : "bg-zinc-300 dark:bg-zinc-700",
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
-          "rounded-full shadow-sm transition-colors",
+          "pointer-events-none inline-block transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out",
           small ? "size-3" : "size-4",
-          checked ? "bg-[#FAFAFA]" : "bg-white",
+          checked ? (small ? "translate-x-3" : "translate-x-4") : "translate-x-0",
         )}
       />
     </button>

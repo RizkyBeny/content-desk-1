@@ -22,7 +22,8 @@ describe("buildInitialEditorState", () => {
     expect(s.ratio).toBe("4:5");
     expect(s.slides).toHaveLength(2);
     expect(s.slides[0].background?.assetId).toBe("a1");
-    expect(s.slides[1].layers[0]).toMatchObject({ type: "text", text: "Dua" });
+    expect(s.slides[0].config?.titleText).toBe("Satu");
+    expect(s.slides[1].config?.titleText).toBe("Dua");
   });
 
   it("video: scenes carry clip asset and duration", () => {

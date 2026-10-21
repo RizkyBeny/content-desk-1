@@ -301,6 +301,20 @@ export interface CanvasFilters {
   saturation: number;
 }
 
+export interface SlideConfig {
+  titleText?: string;
+  alignment?: "left" | "center" | "right";
+  textPlacement?: "top" | "middle" | "bottom";
+  highlightOn?: boolean;
+  highlightText?: string;
+  highlightColor?: string;
+  descOn?: boolean;
+  descText?: string;
+  fitMode?: "fill" | "fit";
+  overlay?: "none" | "gradient" | "blur" | "vignette";
+  durationSec?: number;
+}
+
 export interface SlideObject {
   id: string;
   background: MediaRef | null;
@@ -309,6 +323,7 @@ export interface SlideObject {
   filters?: CanvasFilters;
   rotation?: number;
   scale?: number;
+  config?: SlideConfig;
 }
 
 export interface ImageEditorState {

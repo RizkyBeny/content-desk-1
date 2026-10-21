@@ -35,7 +35,7 @@ import {
   inputCls,
   type SegmentOption,
 } from "./ui";
-import { DEFAULT_BRAND_LOGO } from "./watermark-overlay";
+import { DEFAULT_BRAND_LOGO, DEFAULT_PROGRAM_LOGO } from "./watermark-overlay";
 import type { EditorUi } from "./use-editor-ui";
 import type { AssetDTO, AudioTrackRef } from "@/types";
 
@@ -505,23 +505,50 @@ export function WatermarkPanel({
   channelLogoUrl?: string | null;
   onLogoUploaded?: (url: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const logoSrc = channelLogoUrl || DEFAULT_BRAND_LOGO;
+  const programInputRef = useRef<HTMLInputElement>(null);
+  const channelInputRef = useRef<HTMLInputElement>(null);
+  const [busyProgram, setBusyProgram] = useState(false);
+  const [busyChannel, setBusyChannel] = useState(false);
 
-  async function onFile(file: File | null) {
+  const programLogoSrc = ui.watermarkProgramLogoUrl || DEFAULT_PROGRAM_LOGO;
+  const channelLogoSrc = ui.watermarkChannelLogoUrl || channelLogoUrl || DEFAULT_BRAND_LOGO;
+
+  async function onProgramFile(file: File | null) {
     if (!file) return;
-    setBusy(true);
+    setBusyProgram(true);
     try {
       const asset = await uploadAsset(file);
-      patchUi({ watermarkChannelLogoAssetId: asset.id, watermarkChannelOn: true });
+      patchUi({
+        watermarkProgramLogoAssetId: asset.id,
+        watermarkProgramLogoUrl: asset.fileUrl,
+        watermarkProgramOn: true,
+      });
+      toast.success("Logo program diperbarui.");
+    } catch (e) {
+      toast.danger((e as Error).message);
+    } finally {
+      setBusyProgram(false);
+      if (programInputRef.current) programInputRef.current.value = "";
+    }
+  }
+
+  async function onChannelFile(file: File | null) {
+    if (!file) return;
+    setBusyChannel(true);
+    try {
+      const asset = await uploadAsset(file);
+      patchUi({
+        watermarkChannelLogoAssetId: asset.id,
+        watermarkChannelLogoUrl: asset.fileUrl,
+        watermarkChannelOn: true,
+      });
       if (asset.fileUrl) onLogoUploaded?.(asset.fileUrl);
       toast.success("Logo channel diperbarui.");
     } catch (e) {
       toast.danger((e as Error).message);
     } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
+      setBusyChannel(false);
+      if (channelInputRef.current) channelInputRef.current.value = "";
     }
   }
 
@@ -537,44 +564,85 @@ export function WatermarkPanel({
       <div className="h-px w-full bg-ed-line" />
 
       <section className="flex flex-col gap-4 px-4 py-4">
-        <SwitchRow
-          title="Program (Kiri Atas)"
-          description="Format .jpg, .png, and .svg"
-          checked={ui.watermarkProgramOn}
-          onChange={(v) => patchUi({ watermarkProgramOn: v })}
-        />
+        {/* Item 1: Program (Kiri Atas) */}
+        <div className="flex flex-col gap-3">
+          <SwitchRow
+            title="Program (Kiri Atas)"
+            description="Format .jpg, .png, and .svg"
+            checked={ui.watermarkProgramOn}
+            onChange={(v) => patchUi({ watermarkProgramOn: v })}
+          />
+
+          {ui.watermarkProgramOn && (
+            <button
+              type="button"
+              onClick={() => programInputRef.current?.click()}
+              disabled={busyProgram}
+              aria-label="Upload logo program"
+              className="group flex h-16 w-full items-center justify-center rounded-lg border border-dashed border-ed-line bg-ed-elev p-2.5 transition-colors hover:border-ed-line-strong hover:bg-ed-hover disabled:opacity-60"
+            >
+              {busyProgram ? (
+                <span className="font-[family-name:var(--font-ed-alt)] text-xs text-ed-dim">Mengunggah…</span>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={programLogoSrc}
+                  alt="Logo program"
+                  className="max-h-10 max-w-[164px] object-contain transition-transform group-hover:scale-105"
+                />
+              )}
+            </button>
+          )}
+
+          <input
+            ref={programInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml"
+            className="sr-only"
+            onChange={(e) => void onProgramFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
 
         <div className="h-px w-full bg-ed-line" />
 
-        <SwitchRow
-          title="Channel (Kanan Atas)"
-          description="Format .jpg, .png, and .svg"
-          checked={ui.watermarkChannelOn}
-          onChange={(v) => patchUi({ watermarkChannelOn: v })}
-        />
+        {/* Item 2: Channel (Kanan Atas) */}
+        <div className="flex flex-col gap-3">
+          <SwitchRow
+            title="Channel (Kanan Atas)"
+            description="Format .jpg, .png, and .svg"
+            checked={ui.watermarkChannelOn}
+            onChange={(v) => patchUi({ watermarkChannelOn: v })}
+          />
 
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-          aria-label="Ganti logo channel"
-          className="flex h-16 w-full items-center justify-center rounded-lg border border-dashed border-ed-line bg-ed-elev p-2.5 transition-colors hover:border-ed-line-strong disabled:opacity-60"
-        >
-          {busy ? (
-            <span className="font-[family-name:var(--font-ed-alt)] text-xs text-ed-dim">Mengunggah…</span>
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoSrc} alt="Logo channel" className="max-h-10 max-w-[164px] object-contain" />
+          {ui.watermarkChannelOn && (
+            <button
+              type="button"
+              onClick={() => channelInputRef.current?.click()}
+              disabled={busyChannel}
+              aria-label="Upload logo channel"
+              className="group flex h-16 w-full items-center justify-center rounded-lg border border-dashed border-ed-line bg-ed-elev p-2.5 transition-colors hover:border-ed-line-strong hover:bg-ed-hover disabled:opacity-60"
+            >
+              {busyChannel ? (
+                <span className="font-[family-name:var(--font-ed-alt)] text-xs text-ed-dim">Mengunggah…</span>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={channelLogoSrc}
+                  alt="Logo channel"
+                  className="max-h-10 max-w-[164px] object-contain transition-transform group-hover:scale-105"
+                />
+              )}
+            </button>
           )}
-        </button>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/svg+xml"
-          className="sr-only"
-          onChange={(e) => void onFile(e.target.files?.[0] ?? null)}
-        />
+          <input
+            ref={channelInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml"
+            className="sr-only"
+            onChange={(e) => void onChannelFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
       </section>
     </div>
   );

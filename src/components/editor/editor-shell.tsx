@@ -19,6 +19,7 @@ import {
   type EditorUiState,
 } from "./frame/use-editor-ui";
 import { VoiceOverPanel, WatermarkPanel } from "./frame/sections";
+import { BackConfirmDialog, SaveConfirmDialog, ExportMediaModal } from "./frame/editor-dialogs";
 import type { FrameChrome } from "./frame/editor-frame";
 import type { TypeEditorProps } from "./frame/types";
 import type { AudioTrackRef, CreationDTO, EditorState } from "@/types";
@@ -109,13 +110,17 @@ function EditorInner({
     }
   }
 
+  const [confirmBackOpen, setConfirmBackOpen] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+
   const chrome: FrameChrome = {
     creation,
     title: creation.captions[0]?.text.split("\n")[0]?.trim() || "Editor konten",
     backHref,
-    onBack: () => router.push(backHref ?? "/studio"),
-    onSave: () => void controller.save(),
-    onExport: () => toast.info("Ekspor tersedia di tahap berikutnya."),
+    onBack: () => setConfirmBackOpen(true),
+    onSave: () => setConfirmSaveOpen(true),
+    onExport: () => setExportModalOpen(true),
     panelTab: ui.panelTab,
     onPanelTab: (t) => patchUi({ panelTab: t }),
     watermark: (
@@ -147,18 +152,51 @@ function EditorInner({
 
   const props: TypeEditorProps = { creation, controller, assetUrls, chrome, ui, patchUi, channelLogoUrl };
 
+  let content: React.ReactNode = null;
   switch (creation.type) {
     case "image":
-      return <ImageEditor {...props} />;
+      content = <ImageEditor {...props} />;
+      break;
     case "carousel":
-      return <CarouselEditor {...props} />;
+      content = <CarouselEditor {...props} />;
+      break;
     case "article":
-      return <ArticleEditor {...props} />;
+      content = <ArticleEditor {...props} />;
+      break;
     case "audio":
-      return <AudioEditor {...props} />;
+      content = <AudioEditor {...props} />;
+      break;
     case "video":
-      return <VideoEditor {...props} />;
+      content = <VideoEditor {...props} />;
+      break;
     default:
-      return null;
+      content = null;
   }
+
+  return (
+    <>
+      {content}
+      <BackConfirmDialog
+        open={confirmBackOpen}
+        onConfirm={() => router.push(backHref ?? "/studio")}
+        onCancel={() => setConfirmBackOpen(false)}
+      />
+      <SaveConfirmDialog
+        open={confirmSaveOpen}
+        saving={controller.status === "saving"}
+        onConfirm={async () => {
+          await controller.save();
+          setConfirmSaveOpen(false);
+        }}
+        onCancel={() => setConfirmSaveOpen(false)}
+      />
+      <ExportMediaModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        creation={creation}
+        assetUrls={assetUrls}
+        channelLogoUrl={channelLogoUrl}
+      />
+    </>
+  );
 }

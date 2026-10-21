@@ -42,8 +42,11 @@ export interface EditorUiState {
 
   // Watermark tab — logo placement
   watermarkProgramOn: boolean;
+  watermarkProgramLogoAssetId: string | null;
+  watermarkProgramLogoUrl: string | null;
   watermarkChannelOn: boolean;
   watermarkChannelLogoAssetId: string | null;
+  watermarkChannelLogoUrl: string | null;
 
   // Voice over tab — generated/uploaded audio
   voiceOverOn: boolean;
@@ -76,8 +79,11 @@ export const DEFAULT_UI: EditorUiState = {
   promoDurationSec: 5,
 
   watermarkProgramOn: false,
+  watermarkProgramLogoAssetId: null,
+  watermarkProgramLogoUrl: null,
   watermarkChannelOn: false,
   watermarkChannelLogoAssetId: null,
+  watermarkChannelLogoUrl: null,
 
   voiceOverOn: false,
   voiceOverVolume: 1,

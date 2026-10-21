@@ -60,10 +60,16 @@ export function AssetRail({
   creation,
   onPickAsset,
   backHref,
+  onBack,
+  isSwapping,
+  onCancelSwap,
 }: {
   creation: CreationDTO;
   onPickAsset?: (asset: AssetDTO) => void;
   backHref?: string;
+  onBack?: () => void;
+  isSwapping?: boolean;
+  onCancelSwap?: () => void;
 }) {
   const [tab, setTab] = useState<RailTabValue>("pustaka");
   const [query, setQuery] = useState("");
@@ -136,16 +142,44 @@ export function AssetRail({
     <div className="flex h-full min-h-0 flex-col">
       {/* Back to brief */}
       <div className="shrink-0 px-2 py-1.5">
-        <a
-          href={back}
-          className="group flex items-center gap-2 px-1 py-1.5 text-xs leading-4 text-ed-dim transition-colors hover:text-ed-text"
-        >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-ed-line-strong bg-transparent transition-colors group-hover:text-ed-text">
-            <ArrowLeftIcon width={16} height={16} />
-          </span>
-          Back to brief
-        </a>
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="group flex w-full items-center gap-2 px-1 py-1.5 text-xs leading-4 text-ed-dim transition-colors hover:text-ed-text text-left"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-ed-line-strong bg-transparent transition-colors group-hover:text-ed-text">
+              <ArrowLeftIcon width={16} height={16} />
+            </span>
+            Back to brief
+          </button>
+        ) : (
+          <a
+            href={back}
+            className="group flex items-center gap-2 px-1 py-1.5 text-xs leading-4 text-ed-dim transition-colors hover:text-ed-text"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-ed-line-strong bg-transparent transition-colors group-hover:text-ed-text">
+              <ArrowLeftIcon width={16} height={16} />
+            </span>
+            Back to brief
+          </a>
+        )}
       </div>
+
+      {isSwapping ? (
+        <div className="mx-2 mb-2 flex items-center justify-between gap-1.5 rounded-lg border border-indigo-400/50 bg-indigo-500/10 px-2.5 py-1.5 text-xs text-indigo-400">
+          <span className="truncate font-medium">Pilih aset pengganti di bawah</span>
+          {onCancelSwap ? (
+            <button
+              type="button"
+              onClick={onCancelSwap}
+              className="shrink-0 font-semibold text-ed-dim hover:text-ed-text underline text-[11px]"
+            >
+              Batal
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         <div className="flex flex-col gap-4">

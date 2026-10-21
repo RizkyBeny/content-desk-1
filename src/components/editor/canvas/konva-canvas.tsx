@@ -40,13 +40,29 @@ function useHtmlImage(url?: string | null): HTMLImageElement | null {
   return img;
 }
 
-function BackgroundImage({ image, slide, w, h }: { image: HTMLImageElement; slide: SlideObject; w: number; h: number }) {
+function BackgroundImage({
+  image,
+  slide,
+  w,
+  h,
+  fitMode = "fill",
+}: {
+  image: HTMLImageElement;
+  slide: SlideObject;
+  w: number;
+  h: number;
+  fitMode?: "fill" | "fit";
+}) {
   const ref = useRef<Konva.Image>(null);
   const f = slide.filters ?? { brightness: 0, contrast: 0, saturation: 0 };
   const zoom = slide.scale ?? 1;
-  const cover = Math.max(w / image.width, h / image.height) * zoom;
-  const dw = image.width * cover;
-  const dh = image.height * cover;
+  const isContain = slide.background?.fit === "contain" || fitMode === "fit";
+  const factor =
+    (isContain
+      ? Math.min(w / image.width, h / image.height)
+      : Math.max(w / image.width, h / image.height)) * zoom;
+  const dw = image.width * factor;
+  const dh = image.height * factor;
 
   useEffect(() => {
     const node = ref.current;
@@ -57,7 +73,7 @@ function BackgroundImage({ image, slide, w, h }: { image: HTMLImageElement; slid
     node.saturation(f.saturation / 100);
     node.cache();
     node.getLayer()?.batchDraw();
-  }, [image, f.brightness, f.contrast, f.saturation, zoom, slide.rotation, w, h]);
+  }, [image, f.brightness, f.contrast, f.saturation, zoom, slide.rotation, w, h, factor]);
 
   return (
     <Group clipFunc={(ctx) => ctx.rect(0, 0, w, h)}>
@@ -84,6 +100,7 @@ export interface SlideCanvasProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onPatchLayer: (id: string, patch: LayerPatch) => void;
+  fitMode?: "fill" | "fit";
 }
 
 export function KonvaCanvas({
@@ -93,12 +110,13 @@ export function KonvaCanvas({
   selectedId,
   onSelect,
   onPatchLayer,
+  fitMode = "fill",
 }: SlideCanvasProps) {
   const { w, h } = CANVAS_DIMS[ratio];
   const wrapRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<Konva.Layer>(null);
   const trRef = useRef<Konva.Transformer>(null);
-  const [boxW, setBoxW] = useState(0);
+  const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   const bg = useHtmlImage(
     slide.background ? assetUrls[slide.background.assetId] ?? slide.background.src ?? null : null,
@@ -107,13 +125,27 @@ export function KonvaCanvas({
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setBoxW(el.clientWidth));
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const cr = entry.contentRect;
+        if (cr.width > 0 && cr.height > 0) {
+          setBoxSize({ w: cr.width, h: cr.height });
+        }
+      }
+    });
     ro.observe(el);
-    setBoxW(el.clientWidth);
+    if (el.clientWidth > 0 && el.clientHeight > 0) {
+      setBoxSize({ w: el.clientWidth, h: el.clientHeight });
+    }
     return () => ro.disconnect();
   }, []);
 
-  const scale = boxW ? Math.min(boxW / w, 560 / h) : 0;
+  const scale =
+    boxSize.w > 0 && boxSize.h > 0
+      ? Math.min(boxSize.w / w, boxSize.h / h)
+      : boxSize.w > 0
+        ? boxSize.w / w
+        : 0;
 
   useEffect(() => {
     const tr = trRef.current;
@@ -125,12 +157,15 @@ export function KonvaCanvas({
     tr.getLayer()?.batchDraw();
   }, [selectedId, slide]);
 
+  const stageW = Math.round(w * scale);
+  const stageH = Math.round(h * scale);
+
   return (
-    <div ref={wrapRef} className="w-full">
+    <div ref={wrapRef} className="flex h-full w-full items-center justify-center overflow-hidden">
       {scale > 0 && (
         <Stage
-          width={w * scale}
-          height={h * scale}
+          width={stageW}
+          height={stageH}
           scaleX={scale}
           scaleY={scale}
           onMouseDown={(e) => {
@@ -142,7 +177,7 @@ export function KonvaCanvas({
         >
           <Layer listening={false}>
             <Rect width={w} height={h} fill={slide.background_color ?? "#111318"} />
-            {bg && <BackgroundImage image={bg} slide={slide} w={w} h={h} />}
+            {bg && <BackgroundImage image={bg} slide={slide} w={w} h={h} fitMode={fitMode} />}
           </Layer>
           <Layer ref={layerRef}>
             {slide.layers.map((layer) =>

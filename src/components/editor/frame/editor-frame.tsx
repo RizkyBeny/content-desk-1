@@ -46,17 +46,23 @@ export function EditorFrame({
   stage,
   panel,
   timeline,
+  isSwapping,
 }: {
   chrome: FrameChrome;
   rail: ReactNode;
   stage: ReactNode;
   panel: ReactNode;
   timeline?: ReactNode;
+  isSwapping?: boolean;
 }) {
   const { creation, title, onSave, onExport, panelTab, onPanelTab, watermark, voiceover, conflictBanner } = chrome;
   const [railOpen, setRailOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+
+  // Jika sedang swapping, paksa rail aktif
+  const isRailHiddenDesktop = railCollapsed && !isSwapping;
+  const isRailVisibleMobile = railOpen || isSwapping;
 
   // Voice Over hanya relevan untuk konten video (node video 362-16647).
   const tabs =
@@ -122,7 +128,7 @@ export function EditorFrame({
         <aside
           className={cn(
             "hidden w-64 shrink-0 flex-col border-r border-ed-line-2 bg-ed-panel lg:flex",
-            railCollapsed && "lg:hidden",
+            isRailHiddenDesktop && "lg:hidden",
           )}
         >
           {rail}
@@ -225,7 +231,7 @@ export function EditorFrame({
       </div>
 
       {/* Rail drawer (mobile/tablet < lg) */}
-      {railOpen ? (
+      {isRailVisibleMobile ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setRailOpen(false)} />
           <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-ed-panel shadow-xl">

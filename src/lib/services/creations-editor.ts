@@ -89,11 +89,52 @@ function imageState(items: EditorItemSeed[], rows: BriefRow[]): ImageEditorState
 
 function carouselState(items: EditorItemSeed[], rows: BriefRow[]): CarouselEditorState {
   const ratio = asRatio(rows[0]?.rasio, "4:5");
-  const slides = items.map((it) => {
+  const slides = items.map((it, idx) => {
     const row = rows[it.briefRowRef - 1] ?? {};
-    return slideFor(it.briefRowRef, it.assetId, { ...row, rasio: ratio }, row.judul ?? "");
+    const title = row.judul || (idx === 0 ? "Headline" : `Slide ${idx + 1}`);
+    const desc = row.isi ?? "";
+    const slide = slideFor(it.briefRowRef, it.assetId, { ...row, rasio: ratio }, "");
+    return {
+      ...slide,
+      config: {
+        titleText: title,
+        descText: desc,
+        descOn: Boolean(desc),
+        alignment: "left" as const,
+        textPlacement: "bottom" as const,
+        highlightOn: false,
+        highlightText: "",
+        highlightColor: "#00B1B0",
+        fitMode: "fill" as const,
+        overlay: "gradient" as const,
+        durationSec: 2,
+      },
+    };
   });
-  return { type: "carousel", ratio, slides: slides.length ? slides : [slideFor(1, null, { rasio: ratio }, "")] };
+  return {
+    type: "carousel",
+    ratio,
+    slides: slides.length
+      ? slides
+      : [
+          {
+            ...slideFor(1, null, { rasio: ratio }, ""),
+            config: {
+              titleText: "Headline",
+              descText: "",
+              descOn: false,
+              alignment: "left",
+              textPlacement: "bottom",
+              highlightOn: false,
+              highlightText: "",
+              highlightColor: "#00B1B0",
+              fitMode: "fill",
+              overlay: "gradient",
+              durationSec: 2,
+            },
+          },
+        ],
+  };
 }
 
 function videoState(items: EditorItemSeed[], rows: BriefRow[]): VideoEditorState {

@@ -71,6 +71,7 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
   const [time, setTime] = useState(0);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [promoAssets, setPromoAssets] = useState<AssetDTO[]>([]);
+  const [isSwapping, setIsSwapping] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const musicRef = useRef<HTMLAudioElement>(null);
   const voiceRef = useRef<HTMLAudioElement>(null);
@@ -331,6 +332,7 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
       return;
     }
     patchScene(index, { clipAssetId: asset.id, clipSrc: null });
+    setIsSwapping(false);
     toast.success("Klip scene diperbarui.");
   }
 
@@ -343,8 +345,6 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
     <div className="flex h-full min-h-0 flex-col gap-6 px-4 py-4 sm:px-8 xl:px-[129px] xl:pt-16 xl:pb-8">
       <StageBar
         controller={controller}
-        onSwapAsset={() => setPicker("clip")}
-        swapLabel="Ganti Aset"
         className="px-0"
       />
 
@@ -538,7 +538,17 @@ export function VideoEditor({ creation, controller, assetUrls, chrome, ui, patch
     <>
       <EditorFrame
         chrome={chrome}
-        rail={<AssetRail creation={creation} backHref={chrome.backHref} onPickAsset={pickFromRail} />}
+        isSwapping={isSwapping}
+        rail={
+          <AssetRail
+            creation={creation}
+            backHref={chrome.backHref}
+            onBack={chrome.onBack}
+            isSwapping={isSwapping}
+            onCancelSwap={() => setIsSwapping(false)}
+            onPickAsset={pickFromRail}
+          />
+        }
         stage={stage}
         panel={panel}
         timeline={timeline}

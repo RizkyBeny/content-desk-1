@@ -43,8 +43,14 @@ export function StageBar({
   className?: string;
 }) {
   return (
-    <div className={cn("flex shrink-0 items-center justify-between gap-2 px-4", className)}>
-      {onSwapAsset ? (
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-3 px-4",
+        onSwapAsset ? "justify-between" : "justify-center",
+        className,
+      )}
+    >
+      {onSwapAsset && (
         <button
           type="button"
           onClick={onSwapAsset}
@@ -53,10 +59,8 @@ export function StageBar({
           <ImageRemoveIcon width={15} height={15} />
           {swapLabel}
         </button>
-      ) : (
-        <span />
       )}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {right}
         <div className="flex items-center gap-1.5">
           <button
