@@ -22,7 +22,7 @@ export function isMockData(): boolean {
   return dataMode() === "mock";
 }
 
-/** Auth dilewati saat mode mock (fokus front-end, tanpa login). */
+/** Auth dilewati hanya saat AUTH_DISABLED diset eksplisit ke "true". */
 export function authDisabled(): boolean {
-  return process.env.AUTH_DISABLED === "true" || isMockData();
+  return process.env.AUTH_DISABLED === "true";
 }

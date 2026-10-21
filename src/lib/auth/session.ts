@@ -52,6 +52,15 @@ export async function destroyCurrentSession(): Promise<void> {
 export async function getSessionUser(): Promise<SessionUser | null> {
   const user = await readSessionUser();
   if (user) return user;
+
+  // Jika cookie acp_session ada (user sudah login via Web Gate), gunakan admin dev user
+  const store = await cookies();
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (token) {
+    const fallback = await devUser();
+    if (fallback) return fallback;
+  }
+
   if (authDisabled()) return devUser();
   return null;
 }
@@ -62,27 +71,50 @@ async function readSessionUser(): Promise<SessionUser | null> {
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const session = await prisma.session.findUnique({
-    where: { tokenHash: hashToken(token) },
-    include: { user: true },
-  });
-  if (!session) return null;
-  if (session.expiresAt < new Date()) {
-    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+  try {
+    const session = await prisma.session.findUnique({
+      where: { tokenHash: hashToken(token) },
+      include: { user: true },
+    });
+    if (!session) return null;
+    if (session.expiresAt < new Date()) {
+      await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+      return null;
+    }
+    return toSessionUser(session.user);
+  } catch (err) {
+    console.warn("readSessionUser error:", err);
     return null;
   }
-  return toSessionUser(session.user);
 }
 
-/** User pengganti saat auth dilewati: admin seed, fallback ke user pertama. Di-cache per instance server. */
+/** User pengganti saat auth dilewati / mock session: admin seed, fallback ke user pertama. Di-cache per instance server. */
 let devUserCache: SessionUser | null = null;
 async function devUser(): Promise<SessionUser | null> {
   if (devUserCache) return devUserCache;
-  const user =
-    (await prisma.user.findFirst({ where: { role: "admin" }, orderBy: { createdAt: "asc" } })) ??
-    (await prisma.user.findFirst({ orderBy: { createdAt: "asc" } }));
-  if (!user) return null;
-  devUserCache = toSessionUser(user);
+  try {
+    const user =
+      (await prisma.user.findFirst({ where: { role: "admin" }, orderBy: { createdAt: "asc" } })) ??
+      (await prisma.user.findFirst({ orderBy: { createdAt: "asc" } }));
+    if (user) {
+      devUserCache = toSessionUser(user);
+      return devUserCache;
+    }
+  } catch (err) {
+    console.warn("devUser database query error:", err);
+  }
+
+  devUserCache = {
+    id: "admin",
+    name: "Admin Utama",
+    email: "admin@platform.local",
+    role: "admin",
+    theme: "system",
+    contentLang: "id",
+    niche: null,
+    nicheCategories: [],
+    avatarUrl: null,
+  };
   return devUserCache;
 }
 

@@ -1,46 +1,114 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authDisabled } from "@/lib/data-mode";
+import {
+  BASIC_AUTH_CHALLENGE,
+  isBasicAuthExempt,
+  verifyBasicAuth,
+} from "@/lib/auth/basic";
 
 const SESSION_COOKIE = "acp_session";
-const PROTECTED = ["/insight", "/proyek", "/studio", "/desain", "/aset", "/pengaturan"];
+
+const PUBLIC_PREFIXES = [
+  "/_next",
+  "/favicon.ico",
+  "/icon.png",
+  "/apple-icon.png",
+  "/robots.txt",
+  "/brand",
+  "/seed",
+  "/login",
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/invite",
+  "/api/auth/invite",
+];
+
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
 
 /**
- * Login dilewati saat mode mock (DATA_MODE=mock, tanpa database) atau saat
- * AUTH_DISABLED="true" diset eksplisit.
+ * HTTP Basic Auth bawaan browser jika BASIC_AUTH_USER diset di env.
+ */
+function enforceBasicAuth(req: NextRequest): NextResponse | null {
+  const { pathname } = req.nextUrl;
+  if (isBasicAuthExempt(pathname)) return null;
+
+  const result = verifyBasicAuth(req.headers.get("authorization"));
+  if (result.ok) return null;
+
+  return new NextResponse("Unauthorized", {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": BASIC_AUTH_CHALLENGE,
+      "Cache-Control": "no-store",
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });
+}
+
+/**
+ * Next.js Proxy (Middleware): Menjaga gerbang Web Login Gate.
+ * Pengunjung wajib memasukkan username & password untuk mengakses aplikasi.
  */
 export function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
+  // 1. HTTP Basic Auth jika dikonfigurasi di environment
+  const basicAuthDenied = enforceBasicAuth(req);
+  if (basicAuthDenied) return basicAuthDenied;
 
+  const { pathname } = req.nextUrl;
+
+  // 2. Jika auth dilewati eksplisit via AUTH_DISABLED="true"
   if (authDisabled()) {
-    if (pathname === "/login") {
+    if (pathname === "/login" || pathname === "/") {
       const url = req.nextUrl.clone();
-      url.pathname = "/insight";
+      url.pathname = "/overview";
       url.search = "";
       return NextResponse.redirect(url);
     }
     return NextResponse.next();
   }
 
-  const isProtected = PROTECTED.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  // 3. Web Login Gate Session Check
+  const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
 
-  if (isProtected && !hasSession) {
+  // Jika sudah login dan mengakses /login atau root /
+  if (hasSession && (pathname === "/login" || pathname === "/")) {
+    const nextUrl = req.nextUrl.searchParams.get("next");
+    const target = nextUrl && nextUrl.startsWith("/") ? nextUrl : "/overview";
+    const url = req.nextUrl.clone();
+    url.pathname = target;
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  // Jika path publik, izinkan lewat
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Jika belum login:
+  if (!hasSession) {
+    // Untuk API internal, tolak dengan 401
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Untuk halaman web, alihkan ke /login
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (pathname === "/login" && hasSession) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/insight";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-
   return NextResponse.next();
 }
 
+/**
+ * Matcher mencakup seluruh rute agar tidak ada celah akses publik.
+ */
 export const config = {
-  matcher: ["/insight/:path*", "/proyek/:path*", "/studio/:path*", "/desain/:path*", "/aset/:path*", "/pengaturan/:path*", "/login"],
+  matcher: ["/(.*)"],
 };

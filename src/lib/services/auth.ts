@@ -4,15 +4,30 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { ApiError } from "@/lib/api";
 import { getEnv } from "@/lib/env";
+import { isGateEnabled, verifyGateCredentials } from "@/lib/auth/gate";
 import type { Role } from "@/types";
 
 const INVITE_TTL_MS = 7 * 86400000;
 
-export async function login(email: string, password: string, userAgent?: string) {
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
-  if (!user) throw new ApiError("Email atau password salah.", 401);
+export async function login(identifier: string, password: string, userAgent?: string) {
+  const normalized = identifier.toLowerCase().trim();
+
+  // 1. Cek kredensial Web Login Gate
+  if (isGateEnabled() && verifyGateCredentials(normalized, password)) {
+    let user =
+      (await prisma.user.findFirst({ where: { role: "admin" } })) ??
+      (await prisma.user.findFirst());
+    if (user) {
+      await createSession(user.id, userAgent);
+      return { id: user.id, role: user.role as Role, name: user.name };
+    }
+  }
+
+  // 2. Cek database user
+  const user = await prisma.user.findUnique({ where: { email: normalized } });
+  if (!user) throw new ApiError("Username atau password salah.", 401);
   const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) throw new ApiError("Email atau password salah.", 401);
+  if (!valid) throw new ApiError("Username atau password salah.", 401);
   await createSession(user.id, userAgent);
   return { id: user.id, role: user.role as Role, name: user.name };
 }

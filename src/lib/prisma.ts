@@ -15,19 +15,24 @@ import { seedMockData } from "./db/demo-data";
  * `prisma` hanya terjadi di dalam fungsi async (bukan saat evaluasi modul).
  */
 function createClient(): PrismaClient {
-  if (isMockData()) {
-    return createMockPrismaClient({ seed: seedMockData }) as unknown as PrismaClient;
-  }
-
   const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
   };
-  const client =
-    globalForPrisma.prisma ??
-    new PrismaClient({
+
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
+  }
+
+  let client: PrismaClient;
+  if (isMockData()) {
+    client = createMockPrismaClient({ seed: seedMockData }) as unknown as PrismaClient;
+  } else {
+    client = new PrismaClient({
       log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
     });
-  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  }
+
+  globalForPrisma.prisma = client;
   return client;
 }
 
