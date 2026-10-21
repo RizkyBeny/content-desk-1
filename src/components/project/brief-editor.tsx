@@ -53,6 +53,15 @@ const ROW_NOUN: Record<ContentType, string> = {
   article: "section",
 };
 
+/** Susun prompt generate per baris brief (selaras dengan alur Generate). */
+function derivedPrompt(type: ContentType, row: BriefRow): string {
+  if (type === "carousel") return [row.visual, row.judul, row.isi].filter(Boolean).join(". ");
+  if (type === "audio") return row.naskah ?? "";
+  if (type === "video") return row.visual ?? "";
+  if (type === "article") return row.poin ?? "";
+  return [row.elemenVisual, row.gaya, row.teks].filter(Boolean).join(". ");
+}
+
 const GRIP_CLASS =
   "inline-flex h-8 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-zinc-300";
 
@@ -436,9 +445,14 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
     if (!brief) return;
     setBusy("media");
     try {
-      await post(`/api/briefs/${brief.id}/generate-media`);
-      toast.success("Memulai generate media. Mengalihkan ke editor...");
-      router.push(`/desain?project=${projectId}`);
+      const mediaSources = rows.map((row, i) => ({
+        briefRow: i + 1,
+        source: "ai_generated" as const,
+        prompt: derivedPrompt(contentType, row),
+      }));
+      const res = await post<{ creationId: string }>("/api/creations", { projectId, mediaSources });
+      toast.success("Generate dimulai. Mengalihkan ke editor...");
+      router.push(`/studio/${res.creationId}`);
     } catch (e: unknown) {
       toast.danger((e as Error).message ?? "Gagal memproses media.");
     } finally {
