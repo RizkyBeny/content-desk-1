@@ -52,14 +52,16 @@ export function useAssetUrls(creation: CreationDTO, state: EditorState | null): 
     let aborted = false;
     (async () => {
       const found: Record<string, string> = {};
-      for (const id of missing) {
-        try {
-          const res = await apiFetch<{ asset: AssetDTO }>(`/api/assets/${id}`);
-          if (res.asset.fileUrl) found[id] = res.asset.fileUrl;
-        } catch {
-          /* ignore missing assets */
-        }
-      }
+      await Promise.all(
+        missing.map(async (id) => {
+          try {
+            const res = await apiFetch<{ asset: AssetDTO }>(`/api/assets/${id}`);
+            if (res.asset.fileUrl) found[id] = res.asset.fileUrl;
+          } catch {
+            /* ignore missing assets */
+          }
+        }),
+      );
       if (!aborted && Object.keys(found).length) setExtra((prev) => ({ ...prev, ...found }));
     })();
     return () => {
