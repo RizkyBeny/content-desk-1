@@ -23,9 +23,10 @@ export function fitFrame(ratio: string): CSSProperties {
   const rh = Number.isFinite(h) && h > 0 ? h : 1;
   return {
     aspectRatio: `${rw} / ${rh}`,
-    width: `min(100cqw, calc(100cqh * ${rw} / ${rh}))`,
     maxWidth: "100%",
     maxHeight: "100%",
+    width: `min(100%, calc(max(100cqh, min(50vh, 320px)) * ${rw} / ${rh}))`,
+    height: "auto",
   };
 }
 
@@ -45,8 +46,8 @@ export function StageBar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center gap-3 px-4",
-        onSwapAsset ? "justify-between" : "justify-center",
+        "flex shrink-0 flex-wrap items-center gap-2 px-2 sm:px-4",
+        onSwapAsset ? "justify-between" : "justify-center sm:justify-end",
         className,
       )}
     >
@@ -54,34 +55,37 @@ export function StageBar({
         <button
           type="button"
           onClick={onSwapAsset}
-          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-ghost-t transition-colors hover:text-ed-text"
+          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-2.5 sm:px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-ghost-t transition-colors hover:text-ed-text"
         >
-          <ImageRemoveIcon width={15} height={15} />
-          {swapLabel}
+          <ImageRemoveIcon width={14} height={14} />
+          <span className="hidden sm:inline">{swapLabel}</span>
+          <span className="sm:hidden">Ganti</span>
         </button>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
         {right}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <button
             type="button"
             aria-label="Undo"
+            title="Undo"
             disabled={!controller.canUndo}
             onClick={controller.undo}
             className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-lg border border-ed-input-b bg-ed-elev px-2 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-dim transition-colors hover:text-ed-text disabled:pointer-events-none disabled:opacity-50"
           >
-            <UndoIcon width={15} height={15} />
-            Undo
+            <UndoIcon width={14} height={14} />
+            <span className="hidden sm:inline">Undo</span>
           </button>
           <button
             type="button"
             aria-label="Redo"
+            title="Redo"
             disabled={!controller.canRedo}
             onClick={controller.redo}
             className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-lg border border-ed-input-b bg-ed-elev px-2 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-dim transition-colors hover:text-ed-text disabled:pointer-events-none disabled:opacity-50"
           >
-            <RedoIcon width={15} height={15} />
-            Redo
+            <RedoIcon width={14} height={14} />
+            <span className="hidden sm:inline">Redo</span>
           </button>
         </div>
       </div>

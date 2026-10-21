@@ -262,11 +262,11 @@ function ExportModalInner({
       role="dialog"
       aria-modal="true"
       aria-label="Export Media"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6"
     >
-      <div className="relative flex w-full max-w-[926px] flex-col gap-6 overflow-hidden rounded-[16px] bg-white p-6 shadow-2xl dark:bg-[#18181B] md:flex-row border border-black/5 dark:border-white/10">
+      <div className="relative flex w-full max-w-[926px] max-h-[92vh] overflow-y-auto flex-col gap-4 rounded-[16px] bg-white p-4 shadow-2xl dark:bg-[#18181B] sm:gap-6 sm:p-6 md:flex-row border border-black/5 dark:border-white/10">
         {/* Kolom Kiri: Preview Card (Figma node I533:30916;522:30819) */}
-        <div className="flex w-full shrink-0 flex-col items-center justify-center rounded-[16px] bg-[#EEF2FF] p-6 dark:bg-[#1E2235] md:w-[447px] md:p-10">
+        <div className="flex w-full shrink-0 flex-col items-center justify-center rounded-[16px] bg-[#EEF2FF] p-4 dark:bg-[#1E2235] sm:p-6 md:w-[447px] md:p-10">
           <div className="relative aspect-square w-full max-w-[367px] overflow-hidden rounded-[8px] bg-black shadow-md">
             {previewNode ? (
               previewNode

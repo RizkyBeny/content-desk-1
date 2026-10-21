@@ -137,8 +137,8 @@ export function EditorFrame({
         {/* Kolom kanan: header + (stage | panel) */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Header (57px) */}
-          <header className="flex h-[57px] shrink-0 items-center justify-between gap-3 border-b border-ed-line-2 bg-ed-header px-4 backdrop-blur-[10px]">
-            <div className="flex min-w-0 items-center gap-3">
+          <header className="flex h-[57px] shrink-0 items-center justify-between gap-2 border-b border-ed-line-2 bg-ed-header px-2.5 sm:gap-3 sm:px-4 backdrop-blur-[10px]">
+            <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -153,7 +153,7 @@ export function EditorFrame({
               >
                 <PanelLeftIcon width={16} height={16} />
               </button>
-              <span aria-hidden="true" className="h-[26px] w-px shrink-0 bg-ed-line-strong" />
+              <span aria-hidden="true" className="h-[22px] w-px shrink-0 bg-ed-line-strong sm:h-[26px]" />
               {editing ? (
                 <input
                   value={draft}
@@ -168,11 +168,11 @@ export function EditorFrame({
                       setEditing(false);
                     }
                   }}
-                  className="h-7 w-full min-w-0 max-w-80 rounded-md border border-ed-input-b bg-ed-elev px-2 text-sm font-medium text-ed-text outline-none"
+                  className="h-7 w-full min-w-0 max-w-44 rounded-md border border-ed-input-b bg-ed-elev px-2 text-xs font-medium text-ed-text outline-none sm:max-w-80 sm:text-sm"
                 />
               ) : (
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <h1 className="truncate text-sm font-medium leading-5 text-ed-text">
+                <div className="flex min-w-0 items-center gap-1">
+                  <h1 className="max-w-[110px] truncate text-xs font-medium leading-5 text-ed-text sm:max-w-xs sm:text-sm">
                     {shownTitle || "Editor konten"}
                   </h1>
                   <button
@@ -182,20 +182,31 @@ export function EditorFrame({
                       setEditing(true);
                     }}
                     aria-label="Edit judul"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text"
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text sm:size-7"
                   >
-                    <PencilIcon width={16} height={16} />
+                    <PencilIcon width={14} height={14} />
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
-              <EditorButton variant="default" onClick={onSave} icon={<SaveIcon width={16} height={16} />}>
-                Simpan draft
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <EditorButton
+                variant="default"
+                onClick={onSave}
+                icon={<SaveIcon width={15} height={15} />}
+                className="px-2 text-xs sm:px-3"
+              >
+                <span className="hidden sm:inline">Simpan draft</span>
+                <span className="sm:hidden">Simpan</span>
               </EditorButton>
-              <EditorButton variant="light" onClick={onExport} className="font-semibold">
-                Publish Content
+              <EditorButton
+                variant="light"
+                onClick={onExport}
+                className="px-2.5 text-xs font-semibold sm:px-3"
+              >
+                <span className="hidden sm:inline">Publish Content</span>
+                <span className="sm:hidden">Publish</span>
               </EditorButton>
               <button
                 type="button"
@@ -203,7 +214,7 @@ export function EditorFrame({
                 aria-label="Buka properties"
                 className="flex size-7 shrink-0 items-center justify-center rounded-md bg-ed-elev text-ed-dim transition-colors hover:text-ed-text xl:hidden"
               >
-                <LayersIcon width={16} height={16} />
+                <LayersIcon width={15} height={15} />
               </button>
             </div>
           </header>
@@ -212,7 +223,7 @@ export function EditorFrame({
           <div className="flex min-h-0 flex-1">
             <div className="flex min-w-0 flex-1 flex-col">
               {conflictBanner}
-              <div className="min-h-0 flex-1 overflow-y-auto">{stage}</div>
+              <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">{stage}</div>
               {timeline}
             </div>
 
@@ -251,25 +262,40 @@ export function EditorFrame({
         </div>
       ) : null}
 
-      {/* Panel drawer (mobile/tablet < xl) */}
+      {/* Panel drawer (mobile/tablet < xl) - Bottom Sheet di mobile, Side Drawer di tablet */}
       {panelOpen ? (
         <div className="fixed inset-0 z-50 xl:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setPanelOpen(false)} />
-          <div className="absolute inset-y-0 right-0 flex w-[356px] max-w-full flex-col bg-ed-panel shadow-xl">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setPanelOpen(false)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] flex flex-col rounded-t-2xl bg-ed-panel shadow-2xl sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:w-[356px] sm:max-h-full sm:rounded-none">
+            {/* Grab handle di mobile */}
+            <div className="flex shrink-0 items-center justify-center pt-2 sm:hidden">
+              <span className="h-1 w-10 rounded-full bg-zinc-400/40" />
+            </div>
+            <div className="flex shrink-0 items-center justify-between border-b border-ed-line-2 px-4 py-2 sm:hidden">
+              <span className="text-sm font-semibold">Pengaturan Kanvas</span>
+              <button
+                type="button"
+                onClick={() => setPanelOpen(false)}
+                aria-label="Tutup"
+                className="flex size-7 items-center justify-center rounded-md bg-ed-elev text-xs text-ed-dim"
+              >
+                ✕
+              </button>
+            </div>
             <PropertiesPanel
               tab={activeTab}
               onTab={onPanelTab}
               tabs={tabs}
               watermark={watermark}
               voiceover={voiceover}
-              className="flex h-full border-l-0"
+              className="flex h-full w-full border-l-0"
             >
               {panel}
             </PropertiesPanel>
             <button
               type="button"
               onClick={() => setPanelOpen(false)}
-              className="shrink-0 border-t border-ed-line-2 px-4 py-2 text-sm font-medium text-ed-dim"
+              className="hidden sm:block shrink-0 border-t border-ed-line-2 px-4 py-2 text-sm font-medium text-ed-dim"
             >
               Tutup
             </button>
@@ -282,9 +308,9 @@ export function EditorFrame({
         type="button"
         onClick={() => setRailOpen(true)}
         aria-label="Buka aset"
-        className="absolute bottom-3 left-3 z-40 flex size-11 items-center justify-center rounded-full bg-ed-accent text-white shadow-lg transition-transform hover:scale-105 lg:hidden"
+        className="absolute bottom-16 sm:bottom-3 left-3 z-40 flex size-10 sm:size-11 items-center justify-center rounded-full bg-ed-accent text-white shadow-lg transition-transform hover:scale-105 lg:hidden"
       >
-        <LayersIcon width={18} height={18} />
+        <LayersIcon width={17} height={17} />
       </button>
     </div>
   );

@@ -66,9 +66,9 @@ export function TimelineBar({
         ) : null}
       </div>
 
-      <div className="flex h-[57px] shrink-0 items-center justify-end gap-3 border-t border-ed-line-3 px-4">
-        <div className="flex items-center gap-4">
-          <div className="flex w-[204px] items-center gap-4">
+      <div className="flex h-10 sm:h-[57px] shrink-0 items-center justify-end gap-3 border-t border-ed-line-3 px-3 sm:px-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden sm:flex w-[204px] items-center gap-4">
             <span className="font-[family-name:var(--font-ed-alt)] text-xs leading-4 text-ed-dim">Zoom</span>
             <EdSlider
               value={zoom}
@@ -84,7 +84,7 @@ export function TimelineBar({
               {zoom}%
             </span>
           </div>
-          <EditorButton variant="chip" size={28} className="rounded-full">
+          <EditorButton variant="chip" size={28} className="rounded-full text-[11px] sm:text-xs">
             {pageLabel ?? "Page 1/1"}
           </EditorButton>
         </div>

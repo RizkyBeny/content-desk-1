@@ -317,13 +317,14 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
 
   // ── Stage (Padding diselaraskan presisi dengan Figma EL-718e44dc: 64px 129px 32px) ──
   const stage = (
-    <div className="flex h-full min-h-0 flex-col gap-6 px-4 py-4 sm:px-8 xl:px-[129px] xl:pt-16 xl:pb-8">
+    <div className="flex h-full min-h-0 flex-col gap-2 p-2 sm:gap-4 sm:px-8 sm:py-4 xl:gap-6 xl:px-[129px] xl:pt-16 xl:pb-8">
       <StageBar
         controller={controller}
         right={
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="secondary" onPress={duplicateSlide} isDisabled={state.slides.length >= MAX_SLIDES}>
-              <CopyIcon width={14} height={14} /> Duplikat
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+            <Button size="sm" variant="secondary" onPress={duplicateSlide} isDisabled={state.slides.length >= MAX_SLIDES} className="h-7 px-2 text-xs">
+              <CopyIcon width={13} height={13} />
+              <span className="hidden sm:inline">Duplikat</span>
             </Button>
             <Button
               size="sm"
@@ -331,16 +332,18 @@ export function CarouselEditor({ creation, controller, assetUrls, chrome, ui, pa
               onPress={deleteSlide}
               isDisabled={state.slides.length <= 1}
               aria-label="Hapus slide"
+              className="h-7 px-2"
             >
-              <TrashIcon width={14} height={14} />
+              <TrashIcon width={13} height={13} />
             </Button>
-            <Button size="sm" variant="secondary" onPress={applyStyleToAll}>
-              Gaya ke semua
+            <Button size="sm" variant="secondary" onPress={applyStyleToAll} className="h-7 px-2 text-xs">
+              <span className="hidden sm:inline">Gaya ke semua</span>
+              <span className="sm:hidden">Seragamkan</span>
             </Button>
           </div>
         }
       />
-      <div className="flex min-h-0 flex-1 items-center justify-center" style={{ containerType: "size" }}>
+      <div className="flex min-h-[220px] flex-1 items-center justify-center p-1 sm:p-2" style={{ containerType: "size" }}>
         <div
           className="relative flex items-center justify-center overflow-hidden rounded-lg bg-black shadow-lg"
           style={{ ...fitFrame(state.ratio), containerType: "inline-size" }}

@@ -125,6 +125,16 @@ export function KonvaCanvas({
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
+    const updateSize = () => {
+      const rect = el.getBoundingClientRect();
+      const width = el.clientWidth || rect.width;
+      const height = el.clientHeight || rect.height;
+      if (width > 0 && height > 0) {
+        setBoxSize({ w: width, h: height });
+      }
+    };
+
+    updateSize();
     const ro = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const cr = entry.contentRect;
@@ -134,9 +144,6 @@ export function KonvaCanvas({
       }
     });
     ro.observe(el);
-    if (el.clientWidth > 0 && el.clientHeight > 0) {
-      setBoxSize({ w: el.clientWidth, h: el.clientHeight });
-    }
     return () => ro.disconnect();
   }, []);
 
@@ -161,7 +168,7 @@ export function KonvaCanvas({
   const stageH = Math.round(h * scale);
 
   return (
-    <div ref={wrapRef} className="flex h-full w-full items-center justify-center overflow-hidden">
+    <div ref={wrapRef} className="flex h-full w-full min-h-[220px] items-center justify-center overflow-hidden">
       {scale > 0 && (
         <Stage
           width={stageW}
