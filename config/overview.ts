@@ -559,7 +559,7 @@ export const PUBLISHING_TIME_INSIGHTS: PublishingTimeInsightCard[] = [
     iconType: "trophy",
     title: "Jam terbaik",
     pillText: "20.00 - 21.00",
-    pillColor: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+    pillColor: "bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand",
     description: "Memberikan performa tertinggi dengan 20 konten, 36jt Impression, dan 104rb engagement",
   },
   {
@@ -580,7 +580,7 @@ export const PUBLISHING_TIME_INSIGHTS: PublishingTimeInsightCard[] = [
     iconType: "chart",
     title: "Engagement Rate",
     pillText: "Stabil",
-    pillColor: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400",
+    pillColor: "bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand",
     description: "Rata-rata engagement rate 6.6% (vs 6.4% periode sebelumnya)",
   },
 ];

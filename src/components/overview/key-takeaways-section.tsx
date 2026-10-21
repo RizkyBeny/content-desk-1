@@ -5,13 +5,13 @@ import { KEY_TAKEAWAYS_DATA, type KeyTakeawayGroup } from "../../../config/overv
 
 const HEADER_STYLES: Record<KeyTakeawayGroup["type"], { barBg: string }> = {
   highlights: {
-    barBg: "bg-[#10B981] text-white",
+    barBg: "bg-emerald-600 text-white",
   },
   lowlights: {
-    barBg: "bg-[#EF4444] text-white",
+    barBg: "bg-rose-600 text-white",
   },
   actions: {
-    barBg: "bg-[#0066FF] text-white",
+    barBg: "bg-brand-strong text-white",
   },
 };
 
@@ -54,18 +54,18 @@ function GroupHeaderIcon({ type }: { type: KeyTakeawayGroup["type"] }) {
 
 export function KeyTakeawaysSection() {
   return (
-    <section className="flex flex-col gap-5 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-[#2E2E2E] dark:bg-[#1A1A1A]">
+    <section className="flex flex-col gap-5 rounded-2xl border border-zinc-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900/70">
       {/* Section Header */}
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl dark:text-white">
+          <h2 className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl dark:text-white">
             Key Takeaways
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500 sm:text-sm dark:text-zinc-400">
+          <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
             Ringkasan insight utama dari keseluruhan analisis pada periode ini
           </p>
         </div>
-        <span className="self-start text-xs text-slate-400 sm:self-auto dark:text-zinc-500 font-medium">
+        <span className="self-start text-xs text-zinc-400 sm:self-auto dark:text-zinc-500 font-medium">
           Diperbarui tiap hari
         </span>
       </div>
@@ -77,7 +77,7 @@ export function KeyTakeawaysSection() {
           return (
             <div
               key={group.type}
-              className="flex flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-[#2E2E2E] dark:bg-[#1E1E1E]"
+              className="flex flex-col overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/30"
             >
               {/* Card Color Header Bar */}
               <div className={`flex items-center gap-2.5 px-4 py-3 ${style.barBg}`}>
@@ -90,7 +90,7 @@ export function KeyTakeawaysSection() {
               {/* Card Body */}
               <div className="flex flex-1 flex-col gap-4 p-4 text-xs">
                 {/* Intro summary block */}
-                <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
+                <p className="leading-relaxed text-zinc-600 dark:text-zinc-300">
                   {group.summary.includes("30% selama 7 hari terakhir") ? (
                     <>
                       Platform instagram mencatatkan tren penurunan signifikan sebesar{" "}
@@ -121,16 +121,16 @@ export function KeyTakeawaysSection() {
                           </span>
                         )}
                         {group.type === "actions" && (
-                          <span className="flex size-4 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                          <span className="flex size-4 items-center justify-center rounded-full bg-brand/15 text-brand-strong dark:bg-brand/25 dark:text-brand">
                             <ThumbUpIcon className="size-2.5" />
                           </span>
                         )}
                       </div>
                       <div className="space-y-1">
-                        <h4 className="font-bold leading-snug text-slate-900 dark:text-white">
+                        <h4 className="font-bold leading-snug text-zinc-900 dark:text-white">
                           {item.title}
                         </h4>
-                        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
+                        <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
                           {item.description}
                         </p>
                       </div>

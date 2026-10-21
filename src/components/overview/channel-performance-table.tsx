@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { ProgressTableRow } from "../../../config/overview";
+import { HoverTip } from "./hover-tip";
 
 interface ChannelPerformanceTableProps {
   title: string;
@@ -56,19 +57,19 @@ export function ChannelPerformanceTable({
   data,
 }: ChannelPerformanceTableProps) {
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-[#2E2E2E] dark:bg-[#1A1A1A]">
+    <section className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900/70">
       {/* Header, Subtitle & Info Callout on Top Right */}
       <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
         <div>
-          <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-white">
+          <h2 className="text-base font-bold tracking-tight text-zinc-900 sm:text-lg dark:text-white">
             {title}
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">{description}</p>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
         </div>
 
         {/* Info callout on the right */}
-        <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-zinc-400">
-          <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+          <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" x2="12" y1="16" y2="12" />
@@ -80,79 +81,88 @@ export function ChannelPerformanceTable({
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-[#2E2E2E]">
+      <div className="overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-white/10">
         <table className="w-full text-left text-xs">
           <thead>
             {/* Top Multi-column Header */}
-            <tr className="border-b border-slate-200/80 bg-slate-50/70 text-[11px] font-semibold text-slate-600 dark:border-[#2E2E2E] dark:bg-white/[0.02] dark:text-zinc-300">
+            <tr className="border-b border-zinc-200/80 bg-zinc-50/70 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
               <th scope="col" rowSpan={2} className="px-4 py-3 font-semibold align-bottom">
                 Platform
               </th>
               <th scope="col" rowSpan={2} className="px-4 py-3 font-semibold align-bottom">
-                {metricHeader}
+                <HoverTip side="bottom" tip="Rata-rata metrik per konten pada platform" align="start">
+                  {metricHeader}
+                </HoverTip>
               </th>
               <th scope="col" rowSpan={2} className="px-4 py-3 font-semibold align-bottom">
-                Standar Platform
+                <HoverTip side="bottom" tip="Rata-rata performa konten 8 minggu terakhir" align="start">
+                  Standar Platform
+                </HoverTip>
               </th>
               <th scope="col" rowSpan={2} className="px-4 py-3 font-semibold align-bottom">
-                Perubahan dari standar
+                <HoverTip side="bottom" tip="Selisih rata-rata metrik terhadap standar platform" align="start">
+                  Perubahan dari standar
+                </HoverTip>
               </th>
               <th
                 scope="col"
                 colSpan={3}
-                className="border-l border-slate-200/80 px-4 py-2 text-center text-[11px] font-semibold text-slate-600 dark:border-[#2E2E2E] dark:text-zinc-300"
+                className="border-l border-zinc-200/80 px-4 py-2 text-center text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:text-zinc-300"
               >
-                Persentase jumlah konten terhadap keseluruhan konten
+                <HoverTip side="bottom" tip="Distribusi konten platform: di bawah, di sekitar, dan di atas standar">
+                  Persentase jumlah konten terhadap keseluruhan konten
+                </HoverTip>
               </th>
             </tr>
             {/* Sub-header for the 3 percentage columns */}
-            <tr className="border-b border-slate-200/80 text-[11px] font-medium dark:border-[#2E2E2E]">
+            <tr className="border-b border-zinc-200/80 text-[11px] font-medium dark:border-white/10">
               <th
                 scope="col"
-                className="border-l border-slate-200/80 bg-rose-50/70 px-4 py-2 text-center text-rose-700 dark:border-[#2E2E2E] dark:bg-rose-950/20 dark:text-rose-400 font-medium"
+                className="border-l border-zinc-200/80 bg-rose-50/70 px-4 py-2 text-center text-rose-700 dark:border-white/10 dark:bg-rose-950/20 dark:text-rose-400 font-medium"
               >
                 Dibawah standar
               </th>
               <th
                 scope="col"
-                className="border-l border-slate-200/80 bg-slate-100/70 px-4 py-2 text-center text-slate-700 dark:border-[#2E2E2E] dark:bg-white/[0.04] dark:text-zinc-300 font-medium"
+                className="border-l border-zinc-200/80 bg-zinc-100/70 px-4 py-2 text-center text-zinc-700 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 font-medium"
               >
                 Standar rata-rata
               </th>
               <th
                 scope="col"
-                className="border-l border-slate-200/80 bg-emerald-50/70 px-4 py-2 text-center text-emerald-700 dark:border-[#2E2E2E] dark:bg-emerald-950/20 dark:text-emerald-400 font-medium"
+                className="border-l border-zinc-200/80 bg-emerald-50/70 px-4 py-2 text-center text-emerald-700 dark:border-white/10 dark:bg-emerald-950/20 dark:text-emerald-400 font-medium"
               >
                 Di atas standar
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-[#2E2E2E] text-slate-800 dark:text-zinc-200">
+          <tbody className="divide-y divide-zinc-100 dark:divide-white/10 text-zinc-800 dark:text-zinc-200">
             {data.map((row) => (
-              <tr key={row.platform} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-white/[0.02]">
+              <tr key={row.platform} className="transition-colors hover:bg-zinc-50/60 dark:hover:bg-white/5">
                 {/* Platform */}
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-2">
                     <SocialIcon platform={row.platform} />
-                    <span className="font-semibold text-slate-900 dark:text-white">{row.platform}</span>
+                    <span className="font-semibold text-zinc-900 dark:text-white">{row.platform}</span>
                   </div>
                 </td>
 
                 {/* Average Metric */}
-                <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
+                <td className="px-4 py-3.5 font-semibold text-zinc-900 dark:text-white">
                   {row.average}
                 </td>
 
                 {/* Standard Platform */}
-                <td className="px-4 py-3.5 text-slate-600 dark:text-zinc-400">
+                <td className="px-4 py-3.5 text-zinc-600 dark:text-zinc-400">
                   {row.standard}
                 </td>
 
                 {/* Perubahan dari Standar Badge */}
                 <td className="px-4 py-3.5">
-                  <span
+                  <HoverTip
+                    tip={`Rata-rata ${row.average} vs standar ${row.standard}`}
                     className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-transform hover:scale-105",
                       row.status === "above"
                         ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
                         : "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
@@ -161,14 +171,17 @@ export function ChannelPerformanceTable({
                     <span>▲</span>
                     <span>{row.changeValue}</span>
                     <span>{row.statusText}</span>
-                  </span>
+                  </HoverTip>
                 </td>
 
                 {/* Subcolumn 1: Dibawah standar */}
-                <td className="border-l border-slate-200/80 px-4 py-3.5 dark:border-[#2E2E2E]">
-                  <div className="flex items-center justify-center">
+                <td className="border-l border-zinc-200/80 px-4 py-3.5 dark:border-white/10">
+                  <div className="group/bar relative flex items-center justify-center">
+                    <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 invisible -translate-x-1/2 whitespace-nowrap rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-medium opacity-0 transition-opacity duration-150 text-white shadow-lg group-hover/bar:visible group-hover/bar:opacity-100 dark:bg-white dark:text-zinc-900">
+                      Dibawah standar · {row.pctBelow}% konten
+                    </span>
                     <div
-                      className="flex h-5 items-center justify-center rounded-md bg-rose-100/80 px-2 text-[11px] font-bold text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
+                      className="flex h-5 items-center justify-center rounded-md bg-rose-100/80 px-2 text-[11px] font-bold text-rose-700 transition-all group-hover/bar:brightness-105 group-hover/bar:ring-2 group-hover/bar:ring-rose-300 dark:bg-rose-900/40 dark:text-rose-300 dark:group-hover/bar:ring-rose-700"
                       style={{ width: `${Math.max(28, row.pctBelow * 1.5)}%` }}
                     >
                       {row.pctBelow}%
@@ -177,10 +190,13 @@ export function ChannelPerformanceTable({
                 </td>
 
                 {/* Subcolumn 2: Standar rata-rata */}
-                <td className="border-l border-slate-200/80 px-4 py-3.5 dark:border-[#2E2E2E]">
-                  <div className="flex items-center justify-center">
+                <td className="border-l border-zinc-200/80 px-4 py-3.5 dark:border-white/10">
+                  <div className="group/bar relative flex items-center justify-center">
+                    <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 invisible -translate-x-1/2 whitespace-nowrap rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-medium opacity-0 transition-opacity duration-150 text-white shadow-lg group-hover/bar:visible group-hover/bar:opacity-100 dark:bg-white dark:text-zinc-900">
+                      Standar rata-rata · {row.pctAverage}% konten
+                    </span>
                     <div
-                      className="flex h-5 items-center justify-center rounded-md bg-slate-200/80 px-2 text-[11px] font-bold text-slate-700 dark:bg-zinc-800 dark:text-zinc-300"
+                      className="flex h-5 items-center justify-center rounded-md bg-zinc-200/80 px-2 text-[11px] font-bold text-zinc-700 transition-all group-hover/bar:brightness-105 group-hover/bar:ring-2 group-hover/bar:ring-zinc-400 dark:bg-zinc-800 dark:text-zinc-300 dark:group-hover/bar:ring-zinc-500"
                       style={{ width: `${Math.max(28, row.pctAverage * 1.5)}%` }}
                     >
                       {row.pctAverage}%
@@ -189,10 +205,13 @@ export function ChannelPerformanceTable({
                 </td>
 
                 {/* Subcolumn 3: Di atas standar */}
-                <td className="border-l border-slate-200/80 px-4 py-3.5 dark:border-[#2E2E2E]">
-                  <div className="flex items-center justify-center">
+                <td className="border-l border-zinc-200/80 px-4 py-3.5 dark:border-white/10">
+                  <div className="group/bar relative flex items-center justify-center">
+                    <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 invisible -translate-x-1/2 whitespace-nowrap rounded-lg bg-zinc-900 px-2 py-1 text-[10px] font-medium opacity-0 transition-opacity duration-150 text-white shadow-lg group-hover/bar:visible group-hover/bar:opacity-100 dark:bg-white dark:text-zinc-900">
+                      Di atas standar · {row.pctAbove}% konten
+                    </span>
                     <div
-                      className="flex h-5 items-center justify-center rounded-md bg-emerald-100/80 px-2 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                      className="flex h-5 items-center justify-center rounded-md bg-emerald-100/80 px-2 text-[11px] font-bold text-emerald-700 transition-all group-hover/bar:brightness-105 group-hover/bar:ring-2 group-hover/bar:ring-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300 dark:group-hover/bar:ring-emerald-700"
                       style={{ width: `${Math.max(28, row.pctAbove * 1.5)}%` }}
                     >
                       {row.pctAbove}%

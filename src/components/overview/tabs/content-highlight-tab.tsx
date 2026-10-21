@@ -5,6 +5,7 @@ import {
   TOP_HIGHLIGHT_TABLE_DATA,
   type ContentHighlightRow,
 } from "../../../../config/overview";
+import { HoverTip } from "../hover-tip";
 
 function SocialIcon({ platform }: { platform: ContentHighlightRow["platform"] }) {
   if (platform === "Instagram") {
@@ -31,7 +32,7 @@ function SocialIcon({ platform }: { platform: ContentHighlightRow["platform"] })
     );
   }
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="text-slate-900 dark:text-white">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="text-zinc-900 dark:text-white">
       <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.29 0 .58.04.85.12V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.47 6.26 6.26 0 0 0 1.86-4.47v-7a8.16 8.16 0 0 0 4.91 1.64V6.85c-.34-.04-.67-.09-1-.16z" />
     </svg>
   );
@@ -53,20 +54,20 @@ function HighlightSectionContainer({
   data: ContentHighlightRow[];
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-[#2E2E2E] dark:bg-[#1A1A1A]">
+    <section className="flex flex-col gap-4 rounded-2xl border border-zinc-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900/70">
       {/* Header Row with Filter Dropdown */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg dark:text-white">
+          <h2 className="text-base font-bold tracking-tight text-zinc-900 sm:text-lg dark:text-white">
             {title}
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">{subtitle}</p>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <label className="text-xs text-slate-500 dark:text-zinc-400">Filter Akun Media Sosial</label>
+          <label className="text-xs text-zinc-500 dark:text-zinc-400">Filter Akun Media Sosial</label>
           <div className="relative">
-            <select className="h-8.5 rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 shadow-sm focus:outline-none dark:border-[#2E2E2E] dark:bg-[#1E1E1E] dark:text-zinc-200">
+            <select className="h-8.5 rounded-lg border border-zinc-200 bg-white pl-3 pr-8 text-xs font-semibold text-zinc-700 shadow-sm transition-colors focus:border-brand focus:outline-none dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-200">
               <option>Semua akun (News)</option>
             </select>
           </div>
@@ -77,8 +78,8 @@ function HighlightSectionContainer({
       <div
         className={`rounded-xl p-4 text-xs ${
           calloutType === "red"
-            ? "border border-rose-200 bg-[#FFF5F5] dark:border-rose-900/40 dark:bg-rose-950/20"
-            : "border border-emerald-200 bg-[#F2FAF5] dark:border-emerald-900/40 dark:bg-emerald-950/20"
+            ? "border border-rose-200 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20"
+            : "border border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
         }`}
       >
         <h4
@@ -90,7 +91,7 @@ function HighlightSectionContainer({
         >
           {calloutTitle}
         </h4>
-        <ul className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-slate-700 dark:text-zinc-300">
+        <ul className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-zinc-700 dark:text-zinc-300">
           {calloutBullets.map((bullet, idx) => (
             <li key={idx}>{bullet}</li>
           ))}
@@ -98,25 +99,25 @@ function HighlightSectionContainer({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-[#2E2E2E]">
+      <div className="overflow-x-auto rounded-xl border border-zinc-200/80 dark:border-white/10">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-200/80 bg-slate-50/60 text-[11px] font-semibold text-slate-600 dark:border-[#2E2E2E] dark:bg-white/[0.02] dark:text-zinc-400">
+            <tr className="border-b border-zinc-200/80 bg-zinc-50/60 text-[11px] font-semibold text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
               <th scope="col" className="px-4 py-2.5 font-semibold">Platform</th>
               <th scope="col" className="px-4 py-2.5 font-semibold">Konten</th>
               <th scope="col" className="px-4 py-2.5 font-semibold">Topik</th>
-              <th scope="col" className="px-4 py-2.5 font-semibold">Impression</th>
-              <th scope="col" className="px-4 py-2.5 font-semibold">Engagment</th>
+              <th scope="col" className="px-4 py-2.5 font-semibold"><HoverTip side="bottom" tip="Total tayangan konten ini">Impression</HoverTip></th>
+              <th scope="col" className="px-4 py-2.5 font-semibold"><HoverTip side="bottom" tip="Total interaksi konten ini">Engagment</HoverTip></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-[#2E2E2E] text-slate-800 dark:text-zinc-200">
+          <tbody className="divide-y divide-zinc-100 dark:divide-white/10 text-zinc-800 dark:text-zinc-200">
             {data.map((row, idx) => (
-              <tr key={idx} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-white/[0.02]">
+              <tr key={idx} className="transition-colors hover:bg-zinc-50/60 dark:hover:bg-white/5">
                 {/* Platform */}
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <SocialIcon platform={row.platform} />
-                    <span className="font-semibold text-slate-900 dark:text-white">{row.platform}</span>
+                    <span className="font-semibold text-zinc-900 dark:text-white">{row.platform}</span>
                   </div>
                 </td>
 
@@ -124,7 +125,7 @@ function HighlightSectionContainer({
                 <td className="px-4 py-3 max-w-md">
                   <a
                     href="#"
-                    className="line-clamp-1 font-medium text-blue-600 hover:underline dark:text-blue-400"
+                    className="line-clamp-1 font-medium text-brand-strong hover:underline dark:text-brand"
                   >
                     {row.contentTitle}
                   </a>
@@ -136,7 +137,7 @@ function HighlightSectionContainer({
                     {row.topicBadges.map((badge, bIdx) => (
                       <span
                         key={bIdx}
-                        className="rounded-md bg-blue-50 px-2 py-0.5 text-[10.5px] font-semibold text-blue-600 dark:bg-blue-950/40 dark:text-blue-400"
+                        className="rounded-md bg-brand/10 px-2 py-0.5 text-[10.5px] font-semibold text-brand-strong dark:bg-brand/15 dark:text-brand"
                       >
                         {badge}
                       </span>
@@ -145,12 +146,12 @@ function HighlightSectionContainer({
                 </td>
 
                 {/* Impression */}
-                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-white">
                   {row.impression}
                 </td>
 
                 {/* Engagement */}
-                <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-white">
                   {row.engagement}
                 </td>
               </tr>

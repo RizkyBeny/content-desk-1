@@ -29,7 +29,7 @@ function HighlightIcon({ type }: { type: DataPlatformHighlight["iconType"] }) {
     );
   }
   return (
-    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/15 text-brand-strong dark:bg-brand/25 dark:text-brand">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
         <rect width="18" height="18" x="3" y="3" rx="2" />
         <circle cx="9" cy="9" r="2" />
@@ -65,23 +65,23 @@ function SocialIcon({ platform }: { platform: "Instagram" | "TikTok" | "YouTube"
 
 export function DataPlatformTab() {
   return (
-    <section className="flex flex-col gap-5 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-[#2E2E2E] dark:bg-[#1A1A1A]">
+    <section className="flex flex-col gap-5 rounded-2xl border border-zinc-200/80 bg-white p-5 sm:p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900/70">
       {/* 1. Header Row with Account Filter Dropdown */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl dark:text-white">
+          <h2 className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl dark:text-white">
             Overview Data Platform
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500 sm:text-sm dark:text-zinc-400">
+          <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
             Executive Summary setiap platform media sosial dalam cluster News.
           </p>
         </div>
 
         {/* Filter Dropdown */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <label className="text-xs text-slate-500 dark:text-zinc-400">Filter Akun Media Sosial</label>
+          <label className="text-xs text-zinc-500 dark:text-zinc-400">Filter Akun Media Sosial</label>
           <div className="relative">
-            <select className="h-8.5 rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-700 shadow-sm focus:outline-none dark:border-[#2E2E2E] dark:bg-[#1E1E1E] dark:text-zinc-200">
+            <select className="h-8.5 rounded-lg border border-zinc-200 bg-white pl-3 pr-8 text-xs font-semibold text-zinc-700 shadow-sm transition-colors focus:border-brand focus:outline-none dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-200">
               <option>Semua akun (News)</option>
             </select>
           </div>
@@ -93,15 +93,15 @@ export function DataPlatformTab() {
         {DATA_PLATFORM_HIGHLIGHTS.map((item, idx) => (
           <div
             key={idx}
-            className="flex flex-col gap-2 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-[#2E2E2E] dark:bg-[#1E1E1E]"
+            className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
           >
             <div className="flex items-center gap-2.5">
               <HighlightIcon type={item.iconType} />
-              <h3 className="text-xs font-bold leading-snug text-slate-900 dark:text-white">
+              <h3 className="text-xs font-bold leading-snug text-zinc-900 dark:text-white">
                 {item.title}
               </h3>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-600 dark:text-zinc-400">
+            <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
               {item.description}
             </p>
           </div>
@@ -113,7 +113,7 @@ export function DataPlatformTab() {
         {PLATFORM_DETAIL_CARDS.map((card) => (
           <div
             key={card.platform}
-            className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-[#2E2E2E] dark:bg-[#1E1E1E]"
+            className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-brand/40"
           >
             {/* Dark Header Banner */}
             <div className={`flex items-center gap-2 px-4 py-3 ${card.headerBg}`}>
@@ -126,7 +126,10 @@ export function DataPlatformTab() {
               {/* Big Impression Metric */}
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+                  <span
+                    title={`Impression ${card.impression} · ${card.impressionChange} vs periode sebelumnya`}
+                    className="cursor-help text-2xl font-bold tracking-tight text-zinc-900 transition-colors hover:text-brand-strong sm:text-3xl dark:text-white dark:hover:text-brand"
+                  >
                     {card.impression}
                   </span>
                   <span
@@ -138,28 +141,43 @@ export function DataPlatformTab() {
                     <span>{card.impressionChange}</span>
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium">Impression</p>
+                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">Impression</p>
               </div>
 
               {/* Sub-metrics row */}
-              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 dark:border-[#2E2E2E] text-xs">
+              <div className="grid grid-cols-3 gap-2 border-t border-zinc-100 pt-3 dark:border-white/10 text-xs">
                 <div>
-                  <p className="text-[10px] text-slate-400 dark:text-zinc-500">Engagement</p>
-                  <p className="font-bold text-slate-900 dark:text-white">{card.engagement}</p>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Engagement</p>
+                  <p
+                    title={`Engagement ${card.engagement} · ${card.engagementChange} vs periode sebelumnya`}
+                    className="cursor-help font-bold text-zinc-900 transition-colors hover:text-brand-strong dark:text-white dark:hover:text-brand"
+                  >
+                    {card.engagement}
+                  </p>
                   <span className="text-[10px] font-semibold text-emerald-500">
                     ↗ {card.engagementChange}
                   </span>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 dark:text-zinc-500">Engagement Rate</p>
-                  <p className="font-bold text-slate-900 dark:text-white">{card.er}</p>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Engagement Rate</p>
+                  <p
+                    title={`Engagement rate ${card.er} · ${card.erChange} vs periode sebelumnya`}
+                    className="cursor-help font-bold text-zinc-900 transition-colors hover:text-brand-strong dark:text-white dark:hover:text-brand"
+                  >
+                    {card.er}
+                  </p>
                   <span className="text-[10px] font-semibold text-rose-500">
                     ↘ {card.erChange}
                   </span>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 dark:text-zinc-500">Jumlah konten</p>
-                  <p className="font-bold text-slate-900 dark:text-white">{card.contentCount}</p>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Jumlah konten</p>
+                  <p
+                    title={`${card.contentCount} konten · ${card.contentChange} vs periode sebelumnya`}
+                    className="cursor-help font-bold text-zinc-900 transition-colors hover:text-brand-strong dark:text-white dark:hover:text-brand"
+                  >
+                    {card.contentCount}
+                  </p>
                   <span
                     className={`text-[10px] font-semibold ${
                       card.platform === "YouTube" ? "text-rose-500" : "text-emerald-500"
@@ -175,7 +193,7 @@ export function DataPlatformTab() {
                 {card.insights.map((insight, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3 dark:border-[#2E2E2E] dark:bg-white/[0.02]"
+                    className="flex items-start justify-between gap-3 rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 dark:border-white/10 dark:bg-white/5"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
@@ -192,17 +210,17 @@ export function DataPlatformTab() {
                             </svg>
                           </span>
                         )}
-                        <h4 className="text-[11px] font-bold text-slate-900 dark:text-white">
+                        <h4 className="text-[11px] font-bold text-zinc-900 dark:text-white">
                           {insight.title}
                         </h4>
                       </div>
-                      <p className="text-[10.5px] leading-relaxed text-slate-500 dark:text-zinc-400">
+                      <p className="text-[10.5px] leading-relaxed text-zinc-500 dark:text-zinc-400">
                         {insight.description}
                       </p>
                     </div>
 
                     {/* Thumbnail Image */}
-                    <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 dark:border-[#2E2E2E]">
+                    <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-zinc-200 dark:border-white/10">
                       <Image
                         src={insight.thumbnail}
                         alt="Thumbnail"

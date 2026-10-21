@@ -55,12 +55,12 @@ export function OverviewDashboard() {
       <PendingDraftBanner />
 
       {/* 2. Page Header with Title, Description, and Cluster Dropdown */}
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center dark:border-[#2E2E2E]">
+      <div className="flex flex-col justify-between gap-4 border-b border-zinc-200/80 pb-5 sm:flex-row sm:items-center dark:border-white/10">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl dark:text-white">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
             Overview · News
           </h1>
-          <p className="mt-1 text-xs text-slate-500 sm:text-sm dark:text-zinc-400">
+          <p className="mt-1 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
             7 hari terakhir (6 Okt 2026 – 12 Okt 2026) · perubahan dibanding 7 hari sebelumnya (29 Sep–5 Okt) · data ilustrasi
           </p>
         </div>
@@ -72,7 +72,7 @@ export function OverviewDashboard() {
               id="cluster-select"
               value={selectedCluster}
               onChange={(e) => setSelectedCluster(e.target.value)}
-              className="h-9 rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-semibold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none dark:border-[#2E2E2E] dark:bg-[#1E1E1E] dark:text-zinc-200"
+              className="h-9 rounded-lg border border-zinc-200 bg-white pl-3 pr-8 text-xs font-semibold text-zinc-800 shadow-sm focus:border-brand focus:outline-none dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-200"
             >
               <option value="news">News</option>
               <option value="bisnis">Bisnis</option>
@@ -85,7 +85,7 @@ export function OverviewDashboard() {
       </div>
 
       {/* 3. 6 Analytical Tabs (Figma List-tab 349:18834) */}
-      <div className="overflow-x-auto no-scrollbar border-b border-slate-200/80 dark:border-[#2E2E2E]">
+      <div className="overflow-x-auto no-scrollbar border-b border-zinc-200/80 dark:border-white/10">
         <div className="flex min-w-max items-center gap-6">
           {OVERVIEW_TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -97,13 +97,13 @@ export function OverviewDashboard() {
                 className={cn(
                   "relative pb-3 pt-1 text-xs sm:text-sm font-semibold transition-colors",
                   isActive
-                    ? "text-[#0066FF] dark:text-blue-400"
-                    : "text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white",
+                    ? "text-brand-strong dark:text-brand"
+                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white",
                 )}
               >
                 {tab.label}
                 {isActive && (
-                  <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[#0066FF] dark:bg-blue-400" />
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand-strong dark:bg-brand" />
                 )}
               </button>
             );
@@ -155,7 +155,7 @@ export function OverviewDashboard() {
       {activeTab === "content-highlight" && <ContentHighlightTab />}
 
       {/* Footer text note across all views */}
-      <div className="pt-2 text-xs text-slate-400 dark:text-zinc-500">
+      <div className="pt-2 text-xs text-zinc-400 dark:text-zinc-500">
         Sumber: data mart internal (D-1) · data ilustrasi
       </div>
     </div>
