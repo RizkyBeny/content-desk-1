@@ -1235,16 +1235,13 @@ export function ImageStudioFlow({
             Template produksi gambar siap diisi untuk semua jenis konten.
           </p>
 
-          {/* Metadata Chips (Aspect Ratio, Durasi/Estimasi, Scene Count) */}
+          {/* Metadata Chips (Aspect Ratio, Gambar Count) */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="inline-flex items-center rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
               Aspect Ratio {params.ratio}
             </span>
             <span className="inline-flex items-center rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              60 detik
-            </span>
-            <span className="inline-flex items-center rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              {cards.length} Scene / Gambar
+              {cards.length} Gambar
             </span>
           </div>
         </div>
