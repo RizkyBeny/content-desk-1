@@ -14,7 +14,7 @@ export async function login(identifier: string, password: string, userAgent?: st
 
   // 1. Cek kredensial Web Login Gate
   if (isGateEnabled() && verifyGateCredentials(normalized, password)) {
-    let user =
+    const user =
       (await prisma.user.findFirst({ where: { role: "admin" } })) ??
       (await prisma.user.findFirst());
     if (user) {

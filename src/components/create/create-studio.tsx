@@ -5,8 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "@heroui/react";
 import { apiFetch, ClientError } from "@/lib/client";
 import { cn } from "@/lib/utils";
-import type { GenerationDTO, GenerationParams, GenerationType, VideoParams } from "@/types";
-import { ATTACHMENT_ACCEPT_IMAGE, ATTACHMENT_ACCEPT_VIDEO, ATTACHMENT_MAX_IMAGE_MB, ATTACHMENT_MAX_VIDEO_MB, INSIGHT_VIDEO_SECTION, PAGE_DESCRIPTION, PAGE_TITLE, PLACEHOLDER, PROMPT_LIMITS, VIDEO_TOPIC_CHIPS, defaultParams } from "../../../config/generation";
+import type { GenerationDTO, GenerationParams, GenerationType } from "@/types";
+import { ATTACHMENT_ACCEPT_IMAGE, ATTACHMENT_ACCEPT_VIDEO, ATTACHMENT_MAX_IMAGE_MB, ATTACHMENT_MAX_VIDEO_MB, PAGE_DESCRIPTION, PAGE_TITLE, PLACEHOLDER, PROMPT_LIMITS, defaultParams } from "../../../config/generation";
 import { IMAGE_TEMPLATES } from "../../../config/templates";
 import { SectionHeader } from "@/components/ui/primitives";
 import { BentoGallery } from "./bento-gallery";
@@ -17,8 +17,7 @@ import { DetailModal } from "./detail-modal";
 import { HeroSection } from "./hero-section";
 import { InsightSection } from "./insight-section";
 import { GuidedImageFlow } from "./guided-image-flow";
-import { GuidedVideoFlow } from "./guided-video-flow";
-import { QuotaBadge } from "./quota-badge";
+import { VideoStudioFlow } from "./video-studio-flow";
 import { ReferenceOutputGrid } from "./reference-output-grid";
 import { TopicChips } from "./topic-chips";
 import { useGenerations } from "./use-generations";
@@ -306,66 +305,7 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
   }
 
   if (type === "video") {
-    if (guidedPhase) {
-      return (
-        <GuidedVideoFlow
-          context={guidedContext}
-          attachment={guidedAttachment}
-          quota={quota}
-          onExit={() => {
-            setGuidedPhase(false);
-            setGuidedAttachment(null);
-          }}
-          onGenerated={() => refresh()}
-        />
-      );
-    }
-
-    const completedVideos = items.filter((item) => item.status === "completed" && (item.thumbnailUrl || item.fileUrl));
-
-    return (
-      <div className="space-y-6 pb-6">
-        <HeroSection
-          title="Generate Video"
-          subtitle="Generate video kini makin mudah dengan mode panduan memberikan output yang lebih maksimal tanpa harus bikin prompt yang panjang"
-        />
-
-        <ComposerCard
-          value={prompt}
-          onChange={setPrompt}
-          onSubmit={handleSubmit}
-          busy={busy}
-          exhausted={false}
-          maxLength={PROMPT_LIMITS.video}
-          placeholder={PLACEHOLDER.video}
-          attachAccept={ATTACHMENT_ACCEPT_VIDEO}
-          attachment={attachment}
-          onAttachFile={handleAttachFile}
-          onRemoveAttachment={() => setAttachment(null)}
-          onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
-        />
-
-        <TopicChips chips={VIDEO_TOPIC_CHIPS} onSelect={setPrompt} />
-
-        <section className="space-y-5">
-          <InsightSection data={INSIGHT_VIDEO_SECTION} onSimilar={handleInsightSimilar} />
-          <SectionHeader title="Referensi Output" />
-          <ReferenceOutputGrid
-            generations={completedVideos}
-            templates={IMAGE_TEMPLATES}
-            onOpenGeneration={openItem}
-          />
-        </section>
-
-        <DetailModal
-          item={selected}
-          canModerate={canModerate}
-          onClose={closeModal}
-          onSimilar={handleSimilar}
-          onDeleted={(id) => void remove(id)}
-        />
-      </div>
-    );
+    return <VideoStudioFlow items={items} canModerate={canModerate} />;
   }
 
   return (
