@@ -1727,12 +1727,6 @@ export function VideoStudioFlow({
                         {item.duration}
                       </div>
 
-                      {/* Badge Custom Asset (Kanan Atas jika dipilih user) */}
-                      {hasUserAsset && (
-                        <div className="absolute top-2.5 right-2.5 z-10 rounded bg-[#00B1B0] px-2 py-0.5 text-[10px] font-semibold text-white shadow-xs">
-                          User Asset
-                        </div>
-                      )}
 
                       {/* Overlay Gelap Bawah dengan Judul Visual */}
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 pt-6 text-white">
