@@ -23,6 +23,9 @@ export function LoginForm() {
     setLoading(true);
     try {
       await post("/api/auth/login", { username, password });
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("acp_tab_session", "active");
+      }
       toast.success("Akses berhasil dibuka!");
       window.location.href = target;
     } catch (err: unknown) {

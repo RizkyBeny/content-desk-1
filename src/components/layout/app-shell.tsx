@@ -144,8 +144,11 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
 function UserCard({ user }: { user: ShellUser }) {
   const router = useRouter();
   async function logout() {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("acp_tab_session");
+    }
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    window.location.href = "/login";
   }
   return (
     <div className="flex items-center gap-3 rounded-xl border border-zinc-200/60 p-2.5 dark:border-white/10">

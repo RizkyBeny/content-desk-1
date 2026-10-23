@@ -36,7 +36,6 @@ export async function createSession(userId: string, userAgent?: string): Promise
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    expires: expiresAt,
   });
 }
 
