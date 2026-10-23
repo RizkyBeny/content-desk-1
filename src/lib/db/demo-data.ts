@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getAIProvider } from "@/lib/adapters/ai";
-import { buildItemDefs } from "@/lib/services/creations";
+import { buildItemDefs, ensureCanvasOneCreation } from "@/lib/services/creations";
 import { jakartaDate } from "@/lib/services/quota";
 import type { Angle, BriefRow, ContentType, MediaSource, RecommendedType } from "@/types";
 import type { MediaSourceInput } from "@/lib/services/creations";
@@ -424,6 +424,8 @@ async function seedProjects(adminId: string, assetIds: string[]): Promise<void> 
       },
     });
   }
+
+  await ensureCanvasOneCreation({ id: adminId });
 }
 
 // ─── Generations (galeri AI Studio) ─────────────────────────────────────────

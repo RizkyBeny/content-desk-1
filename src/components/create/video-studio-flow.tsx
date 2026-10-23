@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "@heroui/react";
+import { put } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import type { GenerationDTO } from "@/types";
 import { INSIGHT_VIDEO_SECTION } from "../../../config/generation";
@@ -565,9 +566,28 @@ export function VideoStudioFlow({
     }
   }
 
-  function handleProceedToEditor() {
+  async function handleProceedToEditor() {
     setPreviewModalOpen(false);
     toast.success("Mengarahkan ke Canvas Editor…");
+    try {
+      await put("/api/creations/canvas-1", {
+        type: "video",
+        ratio: params.ratio,
+        items: scenes.map((s) => ({
+          id: s.sceneNumber,
+          title: `Scene ${s.sceneNumber}`,
+          description: s.visual.description || s.voiceover || "",
+          imageUrl:
+            sceneAssets[s.sceneNumber]?.url ||
+            s.visual.thumbnailUrl ||
+            SAMPLE_GALLERY_VIDEOS[(s.sceneNumber - 1) % SAMPLE_GALLERY_VIDEOS.length].url,
+          videoUrl:
+            sceneAssets[s.sceneNumber]?.type === "video" ? sceneAssets[s.sceneNumber]?.url : undefined,
+        })),
+      });
+    } catch (err) {
+      console.warn("Gagal sinkronisasi draft video ke canvas-1:", err);
+    }
     router.push("/studio/canvas-1");
   }
 
@@ -602,9 +622,10 @@ export function VideoStudioFlow({
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="inline-flex items-center justify-center rounded-full bg-brand px-7 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-brand-hover hover:scale-105 active:scale-95"
+              className="angle-card relative inline-flex items-center justify-center gap-2 rounded-full bg-brand px-7 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-brand-hover"
             >
-              Buat Video Sekarang
+              <SparklesIcon className="h-4 w-4" />
+              <span>Buat Video Sekarang</span>
             </button>
           </div>
         </header>
@@ -1178,36 +1199,7 @@ export function VideoStudioFlow({
                     <span>Lanjut Generate Story Board</span>
                   </button>
                 </div>
-              ) : (
-                /* ACTION BAR SKENARIO 1 (DOCK BAWAH) */
-                <div className="glass-panel angle-card w-full rounded-2xl p-4 px-6 flex flex-wrap items-center justify-between gap-4 shadow-2xl backdrop-blur-xl border border-zinc-200/90 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 animate-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      AI siap merekomendasikan pembagian adegan lengkap untukmu.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConceptChoice(null);
-                        setAssistantReplied(false);
-                      }}
-                      className="text-xs text-brand hover:underline font-medium ml-1"
-                    >
-                      Ubah pilihan
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleStartStoryboardLoading}
-                    disabled={loadingStoryboard}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-xs font-semibold text-white shadow-lg transition-all hover:bg-brand-hover active:scale-95 disabled:opacity-50"
-                  >
-                    <SparklesIcon className="h-3.5 w-3.5" />
-                    <span>Buka Storyboard</span>
-                    <span>→</span>
-                  </button>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}

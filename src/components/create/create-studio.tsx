@@ -17,6 +17,7 @@ import { DetailModal } from "./detail-modal";
 import { HeroSection } from "./hero-section";
 import { InsightSection } from "./insight-section";
 import { GuidedImageFlow } from "./guided-image-flow";
+import { ImageStudioFlow } from "./image-studio-flow";
 import { VideoStudioFlow } from "./video-studio-flow";
 import { ReferenceOutputGrid } from "./reference-output-grid";
 import { TopicChips } from "./topic-chips";
@@ -244,64 +245,7 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
       : [];
 
   if (type === "image") {
-    if (guidedPhase) {
-      return (
-        <GuidedImageFlow
-          context={guidedContext}
-          attachment={guidedAttachment}
-          quota={quota}
-          onExit={() => {
-            setGuidedPhase(false);
-            setGuidedAttachment(null);
-          }}
-          onGenerated={() => refresh()}
-        />
-      );
-    }
-
-    return (
-      <div className="space-y-6 pb-6">
-        <HeroSection
-          title="Generate Image"
-          subtitle="Generate gambar kini makin mudah dengan mode panduan memberikan output yang lebih maksimal tanpa harus bikin prompt yang panjang"
-        />
-
-        <ComposerCard
-          value={prompt}
-          onChange={setPrompt}
-          onSubmit={handleSubmit}
-          busy={busy}
-          exhausted={false}
-          maxLength={PROMPT_LIMITS.image}
-          placeholder={PLACEHOLDER.image}
-          attachAccept={ATTACHMENT_ACCEPT_IMAGE}
-          attachment={attachment}
-          onAttachFile={handleAttachFile}
-          onRemoveAttachment={() => setAttachment(null)}
-          onAttachmentModeChange={(mode) => setAttachment((prev) => (prev ? { ...prev, mode } : prev))}
-        />
-
-        <TopicChips onSelect={setPrompt} />
-
-        <section className="space-y-5">
-          <InsightSection onSimilar={handleInsightSimilar} />
-          <SectionHeader title="Referensi Output" />
-          <ReferenceOutputGrid
-            generations={completedImages}
-            templates={IMAGE_TEMPLATES}
-            onOpenGeneration={openItem}
-          />
-        </section>
-
-        <DetailModal
-          item={selected}
-          canModerate={canModerate}
-          onClose={closeModal}
-          onSimilar={handleSimilar}
-          onDeleted={(id) => void remove(id)}
-        />
-      </div>
-    );
+    return <ImageStudioFlow items={items} canModerate={canModerate} />;
   }
 
   if (type === "video") {

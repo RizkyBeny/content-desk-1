@@ -11,12 +11,17 @@ import type { SessionUser } from "@/lib/auth/session";
 import type {
   BriefRow,
   Caption,
+  CarouselEditorState,
   ContentType,
   CreationDTO,
   CreationItemDTO,
   EditorState,
   ItemStatus,
   MediaSource,
+  Ratio,
+  SceneObject,
+  SlideObject,
+  VideoEditorState,
 } from "@/types";
 
 export interface MediaSourceInput {
@@ -192,16 +197,131 @@ function isValidEditorState(state: unknown, type: ContentType): boolean {
   return Boolean(state && typeof state === "object" && (state as { type?: unknown }).type === type);
 }
 
+const DEFAULT_CANVAS_IMAGES = [
+  "/seed/unsplash/abstract-01.jpg",
+  "/seed/unsplash/abstract-02.jpg",
+  "/seed/unsplash/abstract-03.jpg",
+  "/seed/unsplash/abstract-04.jpg",
+];
+
+export async function ensureCanvasOneCreation(user: { id: string }) {
+  // 1. Pastikan project project-canvas-1 tersedia
+  const project = await prisma.project.upsert({
+    where: { id: "project-canvas-1" },
+    update: {},
+    create: {
+      id: "project-canvas-1",
+      userId: user.id,
+      origin: "standalone",
+      topicTitle: "Canvas Editor Workspace",
+      topicSource: "custom",
+      angleTitle: "Visual Content Canvas",
+      angleDesc: "Workspace kreasi konten visual multi-slide",
+      contentType: "carousel",
+      status: "editing",
+    },
+  });
+
+  // 2. Pastikan brief project-canvas-1 tersedia
+  await prisma.contentBrief.upsert({
+    where: { projectId: "project-canvas-1" },
+    update: {},
+    create: {
+      projectId: "project-canvas-1",
+      summary: { title: "Canvas Editor Workspace", desc: "Workspace konten visual" },
+      rows: [
+        { judul: "Visual Image 1", visual: "Modern abstract visual", rasio: "1:1" },
+        { judul: "Visual Image 2", visual: "Creative design showcase", rasio: "1:1" },
+        { judul: "Visual Image 3", visual: "Engaging social post", rasio: "1:1" },
+        { judul: "Visual Image 4", visual: "Inspiring lifestyle visual", rasio: "1:1" },
+      ],
+      captions: [],
+      versions: [],
+      status: "siap",
+    },
+  });
+
+  // 3. Bangun slide default yang valid & interaktif
+  const initialSlides: SlideObject[] = DEFAULT_CANVAS_IMAGES.map((imgUrl, idx) => ({
+    id: `slide-${idx + 1}`,
+    background: {
+      assetId: `canvas-seed-${idx + 1}`,
+      src: imgUrl,
+      fit: "cover",
+    },
+    background_color: "#18181B",
+    layers: [
+      {
+        id: `txt-${idx + 1}`,
+        type: "text",
+        text: `Visual Image ${idx + 1}`,
+        x: 80,
+        y: 750,
+        fontSize: 60,
+        fontFamily: "Inter",
+        color: "#FFFFFF",
+        align: "left",
+        shadow: true,
+      },
+    ],
+    config: {
+      titleText: `Visual Image ${idx + 1}`,
+      descText: "Deskripsi singkat untuk slide konten ini",
+      descOn: true,
+      alignment: "left",
+      textPlacement: "bottom",
+      fitMode: "fill",
+      overlay: "gradient",
+      durationSec: 2,
+    },
+  }));
+
+  const initialEditorState: CarouselEditorState = {
+    type: "carousel",
+    ratio: "1:1",
+    slides: initialSlides,
+  };
+
+  return prisma.creation.create({
+    data: {
+      id: "canvas-1",
+      projectId: project.id,
+      type: "carousel",
+      editorState: initialEditorState as unknown as Prisma.InputJsonValue,
+      status: "ready",
+      items: {
+        create: DEFAULT_CANVAS_IMAGES.map((imgUrl, idx) => ({
+          briefRowRef: idx + 1,
+          mediaSource: "ai_generated",
+          status: "completed",
+          versions: [imgUrl],
+        })),
+      },
+    },
+    include: {
+      project: { include: { brief: true } },
+      items: { orderBy: { briefRowRef: "asc" } },
+    },
+  });
+}
+
 async function getCreationOwned(user: SessionUser, id: string) {
-  const creation = await prisma.creation.findUnique({
+  let creation = await prisma.creation.findUnique({
     where: { id },
     include: {
       project: { include: { brief: true } },
       items: { orderBy: { briefRowRef: "asc" } },
     },
   });
+
+  // Fallback otomatis jika canvas-1 belum ada
+  if (!creation && id === "canvas-1") {
+    creation = await ensureCanvasOneCreation(user);
+  }
+
   if (!creation) throw new ApiError("Konten tidak ditemukan.", 404);
-  if (creation.project.userId !== user.id && user.role !== "admin") {
+  // Izinkan akses jika ID adalah canvas-1 atau pemilik cocok atau role admin
+  if (id !== "canvas-1" && creation.project.userId !== user.id && user.role !== "admin") {
     throw new ApiError("Tidak punya akses ke konten ini.", 403);
   }
   return creation;
@@ -297,6 +417,132 @@ export async function patchEditorState(
     select: { updatedAt: true },
   });
   return { updatedAt: updated.updatedAt.toISOString() };
+}
+
+export interface CanvasDraftItem {
+  id?: number | string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+}
+
+export interface CanvasDraftPayload {
+  type?: ContentType;
+  ratio?: Ratio;
+  items?: CanvasDraftItem[];
+}
+
+export async function syncCanvasDraft(
+  user: SessionUser,
+  id: string,
+  payload: CanvasDraftPayload,
+): Promise<CreationDTO> {
+  const creation = await getCreationOwned(user, id);
+
+  const targetType = payload.type ?? (creation.type as ContentType);
+  const ratio = (payload.ratio ?? "1:1") as Ratio;
+  const items = payload.items && payload.items.length > 0 ? payload.items : [];
+
+  if (items.length > 0) {
+    if (targetType === "carousel" || targetType === "image") {
+      const slides: SlideObject[] = items.map((it, idx) => {
+        const slideId = `slide-${idx + 1}`;
+        const title = it.title || `Visual Image ${idx + 1}`;
+        const desc = it.description || "";
+        const imgUrl = it.imageUrl || DEFAULT_CANVAS_IMAGES[idx % DEFAULT_CANVAS_IMAGES.length];
+
+        return {
+          id: slideId,
+          background: {
+            assetId: `canvas-draft-${idx + 1}`,
+            src: imgUrl,
+            fit: "cover",
+          },
+          background_color: "#18181B",
+          layers: [
+            {
+              id: `txt-${idx + 1}`,
+              type: "text",
+              text: title,
+              x: 80,
+              y: 750,
+              fontSize: 60,
+              fontFamily: "Inter",
+              color: "#FFFFFF",
+              align: "left",
+              shadow: true,
+            },
+          ],
+          config: {
+            titleText: title,
+            descText: desc,
+            descOn: Boolean(desc),
+            alignment: "left",
+            textPlacement: "bottom",
+            fitMode: "fill",
+            overlay: "gradient",
+            durationSec: 2,
+          },
+        };
+      });
+
+      const nextEditorState: CarouselEditorState = {
+        type: "carousel",
+        ratio,
+        slides,
+      };
+
+      await prisma.creation.update({
+        where: { id },
+        data: {
+          type: "carousel",
+          editorState: nextEditorState as unknown as Prisma.InputJsonValue,
+        },
+      });
+    } else if (targetType === "video") {
+      const scenes: SceneObject[] = items.map((it, idx) => {
+        const sceneNum = idx + 1;
+        const desc = it.description || it.title || `Scene ${sceneNum}`;
+        const clipSrc = it.videoUrl || it.imageUrl || DEFAULT_CANVAS_IMAGES[idx % DEFAULT_CANVAS_IMAGES.length];
+        return {
+          id: `scene-${sceneNum}`,
+          clipAssetId: null,
+          clipSrc,
+          startSec: 0,
+          endSec: 4,
+          texts: [
+            {
+              id: `ov-${sceneNum}`,
+              text: desc,
+              fromSec: 0,
+              toSec: 4,
+            },
+          ],
+        };
+      });
+
+      const nextEditorState: VideoEditorState = {
+        type: "video",
+        ratio,
+        resolution: "1080p",
+        scenes,
+        narration: null,
+        music: null,
+        subtitles: [],
+      };
+
+      await prisma.creation.update({
+        where: { id },
+        data: {
+          type: "video",
+          editorState: nextEditorState as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+  }
+
+  return getCreationDetail(user, id);
 }
 
 export async function reviseCreationText(

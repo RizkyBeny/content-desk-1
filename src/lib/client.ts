@@ -36,3 +36,6 @@ export const post = <T>(url: string, body?: unknown) =>
 
 export const patch = <T>(url: string, body?: unknown) =>
   apiFetch<T>(url, { method: "PATCH", body: body ? JSON.stringify(body) : undefined });
+
+export const put = <T>(url: string, body?: unknown) =>
+  apiFetch<T>(url, { method: "PUT", body: body ? JSON.stringify(body) : undefined });
