@@ -46,8 +46,7 @@ export function StageBar({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-wrap items-center gap-2 px-2 sm:px-4",
-        onSwapAsset ? "justify-between" : "justify-center sm:justify-end",
+        "relative flex shrink-0 flex-wrap items-center justify-center gap-2 px-2 sm:px-4",
         className,
       )}
     >
@@ -55,14 +54,14 @@ export function StageBar({
         <button
           type="button"
           onClick={onSwapAsset}
-          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-2.5 sm:px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-ghost-t transition-colors hover:text-ed-text"
+          className="inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border border-ed-ghost-b bg-ed-ghost px-2.5 sm:px-3 font-[family-name:var(--font-ed)] text-xs leading-4 font-medium text-ed-ghost-t transition-colors hover:text-ed-text sm:absolute sm:left-4"
         >
           <ImageRemoveIcon width={14} height={14} />
           <span className="hidden sm:inline">{swapLabel}</span>
           <span className="sm:hidden">Ganti</span>
         </button>
       )}
-      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         {right}
         <div className="flex items-center gap-1 sm:gap-1.5">
           <button
