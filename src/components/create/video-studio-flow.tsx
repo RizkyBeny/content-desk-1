@@ -159,6 +159,7 @@ const CAMERA_MOVEMENTS = [
 export type GalleryAsset = {
   id: string;
   url: string;
+  videoUrl?: string;
   title: string;
   duration?: string;
   type: "video" | "image";
@@ -168,6 +169,7 @@ export const SAMPLE_GALLERY_VIDEOS: GalleryAsset[] = [
   {
     id: "v1",
     url: "/seed/unsplash/abstract-01.jpg",
+    videoUrl: "/seed/videos/sample-video-1.mp4",
     title: "B-roll kabut asap tebal menyelimuti jalanan",
     duration: "00:30",
     type: "video",
@@ -175,6 +177,7 @@ export const SAMPLE_GALLERY_VIDEOS: GalleryAsset[] = [
   {
     id: "v2",
     url: "/seed/unsplash/abstract-02.jpg",
+    videoUrl: "/seed/videos/sample-video-2.mp4",
     title: "Peta sebaran titik api satelit BMKG",
     duration: "00:20",
     type: "video",
@@ -182,6 +185,7 @@ export const SAMPLE_GALLERY_VIDEOS: GalleryAsset[] = [
   {
     id: "v3",
     url: "/seed/unsplash/abstract-03.jpg",
+    videoUrl: "/seed/videos/sample-video-1.mp4",
     title: "Penumpukan penumpang di bandara akibat kabut",
     duration: "00:15",
     type: "video",
@@ -189,6 +193,7 @@ export const SAMPLE_GALLERY_VIDEOS: GalleryAsset[] = [
   {
     id: "v4",
     url: "/seed/unsplash/abstract-04.jpg",
+    videoUrl: "/seed/videos/sample-video-2.mp4",
     title: "Bara api lahan gambut membara dari dalam",
     duration: "00:25",
     type: "video",
@@ -196,6 +201,7 @@ export const SAMPLE_GALLERY_VIDEOS: GalleryAsset[] = [
   {
     id: "v5",
     url: "/seed/unsplash/abstract-05.jpg",
+    videoUrl: "/seed/videos/sample-video-1.mp4",
     title: "Petugas Manggala Agni memadamkan api",
     duration: "00:30",
     type: "video",
@@ -203,6 +209,7 @@ export const SAMPLE_GALLERY_VIDEOS: GalleryAsset[] = [
   {
     id: "v6",
     url: "/seed/unsplash/abstract-06.jpg",
+    videoUrl: "/seed/videos/sample-video-2.mp4",
     title: "Warga berkendara memakai masker N95",
     duration: "00:20",
     type: "video",
@@ -385,6 +392,7 @@ export function VideoStudioFlow({
   const [activeSceneForAssetModal, setActiveSceneForAssetModal] = useState<number | null>(null);
   const [selectedAssetInModal, setSelectedAssetInModal] = useState<GalleryAsset | null>(null);
   const [assetModalTab, setAssetModalTab] = useState<"video" | "image">("video");
+  const [playingAssetId, setPlayingAssetId] = useState<string | null>(null);
   const modalFileInputRef = useRef<HTMLInputElement>(null);
 
   // Step 3 & 4 State (Storyboard & Modal Preview)
@@ -469,6 +477,7 @@ export function VideoStudioFlow({
     const uploadedAsset: GalleryAsset = {
       id: `uploaded-${Date.now()}`,
       url,
+      videoUrl: isVideo ? url : undefined,
       title: file.name.replace(/\.[^/.]+$/, ""),
       duration: isVideo ? "00:30" : undefined,
       type: isVideo ? "video" : "image",
@@ -491,6 +500,7 @@ export function VideoStudioFlow({
     toast.success(`Aset berhasil diterapkan pada Scene ${activeSceneForAssetModal}!`);
     setActiveSceneForAssetModal(null);
     setSelectedAssetInModal(null);
+    setPlayingAssetId(null);
   }
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -1402,6 +1412,7 @@ export function VideoStudioFlow({
                   onClick={() => {
                     setActiveSceneForAssetModal(null);
                     setSelectedAssetInModal(null);
+                    setPlayingAssetId(null);
                   }}
                   className="rounded-lg border border-zinc-200 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-white/15 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
@@ -1423,7 +1434,10 @@ export function VideoStudioFlow({
             <div className="flex items-center gap-6 border-b border-zinc-200 dark:border-white/10 pt-3">
               <button
                 type="button"
-                onClick={() => setAssetModalTab("video")}
+                onClick={() => {
+                  setAssetModalTab("video");
+                  setPlayingAssetId(null);
+                }}
                 className={cn(
                   "pb-2.5 text-sm font-semibold transition-colors relative",
                   assetModalTab === "video"
@@ -1438,7 +1452,10 @@ export function VideoStudioFlow({
               </button>
               <button
                 type="button"
-                onClick={() => setAssetModalTab("image")}
+                onClick={() => {
+                  setAssetModalTab("image");
+                  setPlayingAssetId(null);
+                }}
                 className={cn(
                   "pb-2.5 text-sm font-semibold transition-colors relative",
                   assetModalTab === "image"
@@ -1487,6 +1504,9 @@ export function VideoStudioFlow({
                 {/* Asset Gallery Cards */}
                 {(assetModalTab === "video" ? SAMPLE_GALLERY_VIDEOS : SAMPLE_GALLERY_IMAGES).map((asset) => {
                   const isSelected = selectedAssetInModal?.url === asset.url;
+                  const isPlaying = playingAssetId === asset.id;
+                  const videoSource = asset.videoUrl || (asset.type === "video" ? asset.url : undefined);
+
                   return (
                     <div
                       key={asset.id}
@@ -1498,47 +1518,84 @@ export function VideoStudioFlow({
                           : "border-zinc-200 hover:border-zinc-300 dark:border-white/10 dark:hover:border-white/20"
                       )}
                     >
-                      <Image
-                        src={asset.url}
-                        alt={asset.title}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-
-                      {/* Top Badges (Duration / Type) */}
-                      {asset.duration && (
-                        <div className="absolute top-2 left-2 z-10 rounded bg-black/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white backdrop-blur-xs">
-                          {asset.duration}
+                      {isPlaying && videoSource ? (
+                        <div className="absolute inset-0 z-20 bg-black flex items-center justify-center">
+                          <video
+                            src={videoSource}
+                            controls
+                            autoPlay
+                            playsInline
+                            className="h-full w-full object-cover rounded-xl"
+                            onEnded={() => setPlayingAssetId(null)}
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPlayingAssetId(null);
+                            }}
+                            title="Tutup preview video"
+                            aria-label="Tutup preview video"
+                            className="absolute top-2 right-2 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-black/80 text-white hover:bg-black transition-colors shadow-md"
+                          >
+                            <span className="text-xs font-bold leading-none">✕</span>
+                          </button>
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          <Image
+                            src={asset.url}
+                            alt={asset.title}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
 
-                      {/* Radio / Selection Indicator (Top Right) */}
-                      <div
-                        className={cn(
-                          "absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border transition-all",
-                          isSelected
-                            ? "border-[#00B1B0] bg-[#00B1B0] text-white shadow-xs"
-                            : "border-white/70 bg-black/40 text-transparent group-hover:border-white"
-                        )}
-                      >
-                        {isSelected && <CheckIcon className="h-3 w-3 stroke-[3]" />}
-                      </div>
+                          {/* Top Badges (Duration / Type) */}
+                          {asset.duration && (
+                            <div className="absolute top-2 left-2 z-10 rounded bg-black/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white backdrop-blur-xs">
+                              {asset.duration}
+                            </div>
+                          )}
 
-                      {/* Play Button Overlay for Videos */}
-                      {asset.type === "video" && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-xs transition-transform group-hover:scale-110">
-                            <PlayIcon className="h-4 w-4 ml-0.5" />
+                          {/* Radio / Selection Indicator (Top Right) */}
+                          <div
+                            className={cn(
+                              "absolute top-2 right-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border transition-all",
+                              isSelected
+                                ? "border-[#00B1B0] bg-[#00B1B0] text-white shadow-xs"
+                                : "border-white/70 bg-black/40 text-transparent group-hover:border-white"
+                            )}
+                          >
+                            {isSelected && <CheckIcon className="h-3 w-3 stroke-[3]" />}
                           </div>
-                        </div>
-                      )}
 
-                      {/* Bottom Info Gradient */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5 pt-6 text-white">
-                        <p className="text-[11px] font-medium leading-snug line-clamp-2">
-                          {asset.title}
-                        </p>
-                      </div>
+                          {/* Play Button Overlay for Videos */}
+                          {asset.type === "video" && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPlayingAssetId(asset.id);
+                                  setSelectedAssetInModal(asset);
+                                }}
+                                title={`Putar video ${asset.title}`}
+                                aria-label={`Putar video ${asset.title}`}
+                                className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-xs transition-all hover:scale-110 hover:bg-[#00B1B0] active:scale-95 shadow-lg group-hover:scale-105 cursor-pointer"
+                              >
+                                <PlayIcon className="h-4 w-4 ml-0.5" />
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Bottom Info Gradient */}
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5 pt-6 text-white">
+                            <p className="text-[11px] font-medium leading-snug line-clamp-2">
+                              {asset.title}
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })}
