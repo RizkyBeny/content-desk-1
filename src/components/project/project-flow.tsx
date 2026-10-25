@@ -1,12 +1,17 @@
 "use client";
 
-import { Fragment, useState } from "react";
-import { AngleStep } from "./angle-step";
-import { ContentTypeStep } from "./content-type-step";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, toast } from "@heroui/react";
+import { post } from "@/lib/client";
+import { AngleStep, type SingleMediaConfig } from "./angle-step";
+import { ProjectHeaderSummary } from "./project-header-summary";
 import { BriefEditor } from "./brief-editor";
-import { GenerateStep } from "./generate-step";
-import { CheckIcon, CopyIcon, FileTextIcon, LayersIcon, SparkIcon } from "@/components/ui/icons";
-import type { Angle, BriefDTO, ContentType, RecommendedType } from "@/types";
+import { MultiTypeAccordion } from "./multi-type-accordion";
+import { StoryboardPreviewModal } from "./storyboard-preview-modal";
+import type { MultiTypeConfig } from "./multi-type-config-modal";
+import { ArrowLeftIcon, SparkIcon } from "@/components/ui/icons";
+import type { Angle, BriefDTO, BriefRow, ContentType, RecommendedType } from "@/types";
 
 export interface ProjectState {
   id: string;
@@ -19,13 +24,6 @@ export interface ProjectState {
   contentType: ContentType | null;
 }
 
-const STEPS = [
-  { id: "angle", label: "Angle", icon: LayersIcon },
-  { id: "type", label: "Jenis Konten", icon: CopyIcon },
-  { id: "brief", label: "Brief", icon: FileTextIcon },
-  { id: "generate", label: "Generate", icon: SparkIcon },
-] as const;
-
 export function ProjectFlow({
   project,
   initialBrief,
@@ -33,129 +31,191 @@ export function ProjectFlow({
   project: ProjectState;
   initialBrief: BriefDTO | null;
 }) {
+  const router = useRouter();
   const [state, setState] = useState<ProjectState>(project);
   const [brief, setBrief] = useState<BriefDTO | null>(initialBrief);
-  const [step, setStep] = useState<string>(
-    initialBrief ? "brief" : project.contentType ? "brief" : project.selectedAngleId ? "type" : "angle",
-  );
+  
+  // Phase can be "angle" or "brief"
+  const [phase, setPhase] = useState<"angle" | "brief">(() => {
+    if (initialBrief || (project.selectedAngleId && project.contentType)) {
+      return "brief";
+    }
+    return "angle";
+  });
 
-  function disabledFor(id: string): boolean {
-    if (id === "type") return !state.selectedAngleId;
-    if (id === "brief") return !state.contentType;
-    if (id === "generate") return !brief;
-    return false;
+  // Media types selection: single type or multiple types
+  const [selectedMediaTypes, setSelectedMediaTypes] = useState<ContentType[]>(() => {
+    return project.contentType ? [project.contentType] : ["video"];
+  });
+
+  const [activeType, setActiveType] = useState<ContentType>(() => {
+    return project.contentType || "video";
+  });
+
+  // Modal Preview Storyboard state
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isGeneratingCreation, setIsGeneratingCreation] = useState(false);
+  const [multiConfig, setMultiConfig] = useState<MultiTypeConfig | null>(null);
+  const [singleConfig, setSingleConfig] = useState<SingleMediaConfig | null>(null);
+
+  const isMultiType = selectedMediaTypes.length > 1;
+
+  async function handleProceedFromAngle(params: {
+    angle: Angle;
+    mediaTypes: ContentType[];
+    promptContext: string;
+    singleConfig?: SingleMediaConfig;
+    multiTypeConfig?: MultiTypeConfig;
+  }) {
+    setSelectedMediaTypes(params.mediaTypes);
+    const primary = params.mediaTypes[0] || "video";
+    setActiveType(primary);
+    if (params.singleConfig) {
+      setSingleConfig(params.singleConfig);
+    }
+    if (params.multiTypeConfig) {
+      setMultiConfig(params.multiTypeConfig);
+    }
+
+    setState((prev) => ({
+      ...prev,
+      selectedAngleId: params.angle.id,
+      angleTitle: params.angle.title,
+      contentType: primary,
+    }));
+
+    setPhase("brief");
   }
 
-  const currentIndex = STEPS.findIndex((s) => s.id === step);
+  function derivedPrompt(type: ContentType, row: BriefRow): string {
+    if (type === "carousel") return [row.visual, row.judul, row.isi].filter(Boolean).join(". ");
+    if (type === "video") return row.visual || row.narasi || "";
+    return [row.elemenVisual, row.gaya, row.teks, row.visual].filter(Boolean).join(". ");
+  }
+
+  async function handleExecuteGenerate() {
+    if (!brief) return;
+    setIsGeneratingCreation(true);
+    try {
+      const mediaSources = (brief.rows || []).map((row, i) => ({
+        briefRow: i + 1,
+        source: "ai_generated" as const,
+        prompt: derivedPrompt(activeType, row),
+      }));
+
+      const res = await post<{ creationId: string }>("/api/creations", {
+        projectId: state.id,
+        mediaSources,
+      });
+
+      toast.success("Generate kreasi dimulai! Mengalihkan ke Canvas Editor...");
+      setShowPreviewModal(false);
+      router.push(`/studio/${res.creationId}`);
+    } catch (e: unknown) {
+      toast.danger((e as Error).message ?? "Gagal memproses pembuatan video.");
+      setIsGeneratingCreation(false);
+    }
+  }
 
   return (
     <div className="space-y-6 py-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{state.topicTitle}</h1>
-      </div>
-
-      <div className="glass-card space-y-3 p-3">
-        <div className="flex items-center justify-center gap-1">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
-            const active = step === s.id;
-            const done = i < currentIndex;
-            const disabled = disabledFor(s.id);
-            const node = (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => !disabled && setStep(s.id)}
-                disabled={disabled}
-                aria-current={active ? "step" : undefined}
-                className={[
-                  "flex min-w-0 items-center justify-center gap-2 rounded-xl px-2 py-2 text-sm font-medium transition-colors sm:px-3",
-                  active
-                    ? "font-semibold text-brand-strong dark:text-brand"
-                    : done
-                      ? "text-brand-strong hover:bg-brand/10 dark:text-brand dark:hover:bg-brand/10"
-                      : disabled
-                        ? "cursor-not-allowed text-zinc-400 dark:text-zinc-600"
-                        : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-white/5",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                    active
-                      ? "bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand"
-                      : done
-                        ? "bg-brand/10 text-brand-strong dark:bg-brand/15 dark:text-brand"
-                        : "bg-zinc-100 text-zinc-500 dark:bg-white/5 dark:text-zinc-400",
-                  ].join(" ")}
-                >
-                  {done ? <CheckIcon width={14} height={14} /> : <Icon width={14} height={14} />}
-                </span>
-                <span className="hidden truncate sm:inline">
-                  {i + 1}. {s.label}
-                </span>
-                <span className="sm:hidden">{i + 1}</span>
-              </button>
-            );
-            const connector =
-              i < STEPS.length - 1 ? (
-                <div key={`connector-${s.id}`} className="flex h-6 w-10 shrink-0 items-center sm:w-16" aria-hidden>
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-brand transition-all duration-300"
-                      style={{ width: currentIndex > i ? "100%" : "0%" }}
-                    />
-                  </div>
-                </div>
-              ) : null;
-            return (
-              <Fragment key={s.id}>
-                {node}
-                {connector}
-              </Fragment>
-            );
-          })}
-        </div>
-      </div>
-
-      {step === "angle" && (
+      {/* PHASE 1: PILIH ANGLE & FLOATING COMPOSER DRAWER */}
+      {phase === "angle" && (
         <AngleStep
           project={state}
-          onUpdate={(patch) => {
-            const updated = { ...state, ...patch };
-            setState(updated);
-            // Auto advance to content type step when angle is selected
-            if (patch.selectedAngleId || updated.selectedAngleId) {
-              setStep("type");
-            }
-          }}
+          onUpdate={(patch) => setState((prev) => ({ ...prev, ...patch }))}
+          onProceedToBrief={handleProceedFromAngle}
         />
       )}
 
-      {step === "type" && (
-        <ContentTypeStep
-          project={state}
-          onUpdate={(patch) => setState((s) => ({ ...s, ...patch }))}
-          onDone={() => setStep("brief")}
-        />
-      )}
+      {/* PHASE 2: BRIEF & STORYBOARD (SINGLE ATAU MULTI-MEDIA ACCORDIONS) */}
+      {phase === "brief" && (
+        <div className="space-y-6">
+          {/* Header Bar dengan Judul Content Brief (Figma #1022:12094 / #1022:11913) */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Content Brief
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Template produksi video siap diisi untuk semua jenis konten.
+              </p>
+            </div>
 
-      {step === "brief" && state.contentType && (
-        <BriefEditor
-          projectId={state.id}
-          contentType={state.contentType}
-          brief={brief}
-          onBrief={setBrief}
-        />
-      )}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={() => setPhase("angle")}
+                className="gap-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                <ArrowLeftIcon width={14} height={14} /> Ganti Angle
+              </Button>
 
-      {step === "generate" && state.contentType && brief && (
-        <GenerateStep
-          projectId={state.id}
-          contentType={state.contentType}
-          rows={brief.rows}
-          briefReady={brief.status === "siap"}
-        />
+              {activeType === "video" && brief && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => setShowPreviewModal(true)}
+                  className="gap-1.5 text-xs font-semibold"
+                >
+                  <SparkIcon width={14} height={14} /> Preview Storyboard
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* 3-Column Header Summary (Figma #1022:12102) */}
+          <ProjectHeaderSummary
+            topicTitle={state.topicTitle}
+            angleTitle={state.angleTitle || "Angle Terpilih"}
+            selectedType={activeType}
+            availableTypes={isMultiType ? selectedMediaTypes : [activeType]}
+            isMultiType={isMultiType}
+            singleConfig={singleConfig}
+          />
+
+          {/* Content Body: Multi-Media Accordions atau Single Brief Editor */}
+          {isMultiType ? (
+            <MultiTypeAccordion
+              projectId={state.id}
+              types={selectedMediaTypes}
+              initialBriefs={brief ? { [activeType]: brief } : {}}
+              config={multiConfig}
+              onPreviewVideo={(b) => {
+                setBrief(b);
+                setShowPreviewModal(true);
+              }}
+              onAllCompleted={() => {
+                setShowPreviewModal(true);
+              }}
+            />
+          ) : (
+            <BriefEditor
+              projectId={state.id}
+              contentType={activeType}
+              brief={brief}
+              onBrief={setBrief}
+              onPreviewVideo={(b) => {
+                setBrief(b);
+                setShowPreviewModal(true);
+              }}
+              angleTitle={state.angleTitle || undefined}
+              singleConfig={singleConfig}
+            />
+          )}
+
+          {/* Modal Preview Storyboard (Figma #1022:12417) */}
+          <StoryboardPreviewModal
+            isOpen={showPreviewModal}
+            onClose={() => setShowPreviewModal(false)}
+            onGenerate={handleExecuteGenerate}
+            rows={brief?.rows || []}
+            topicTitle={state.topicTitle}
+            angleTitle={state.angleTitle || undefined}
+            isGenerating={isGeneratingCreation}
+          />
+        </div>
       )}
     </div>
   );

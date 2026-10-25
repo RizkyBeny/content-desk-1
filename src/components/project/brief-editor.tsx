@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Button, Chip, Spinner, toast } from "@heroui/react";
+import { Button, Spinner, toast } from "@heroui/react";
 import {
   DndContext,
   PointerSensor,
@@ -14,46 +15,41 @@ import {
 import {
   SortableContext,
   arrayMove,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { patch, post } from "@/lib/client";
 import { cn } from "@/lib/utils";
-import { getBriefSchema, type BriefSchema } from "../../../config/brief-schemas";
-import { GlassCard, SectionHeader } from "@/components/ui/primitives";
+import { getBriefSchema } from "../../../config/brief-schemas";
 import { EmptyBlock, SpinnerBlock } from "@/components/ui/states";
 import {
   CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DatabaseIcon,
   DownloadIcon,
-  GripIcon,
+  FolderIcon,
   ImageIcon,
   PencilIcon,
   PlusIcon,
+  RectangleVerticalIcon,
   RefreshIcon,
   SparkIcon,
   TrashIcon,
+  VideoIcon,
   XIcon,
 } from "@/components/ui/icons";
-import type { BriefDTO, BriefRow, BriefSummary, Caption, ContentType } from "@/types";
-
-const SHOW_REVISI_AI = false;
-
-/** Single image selalu satu baris; tipe lain boleh menambah/menghapus baris. */
-const ADDABLE_TYPES: ContentType[] = ["carousel", "video", "audio", "article"];
-
-/** Tipe yang bisa diurutkan ulang lewat drag & drop. */
-const SORTABLE_TYPES: ContentType[] = ["carousel", "video", "audio", "article"];
+import { InsertMediaModal, type MediaAsset } from "./insert-media-modal";
+import type { SingleMediaConfig } from "./angle-step";
+import type { BriefDTO, BriefRow, Caption, ContentType } from "@/types";
 
 const ROW_NOUN: Record<ContentType, string> = {
-  image: "baris",
+  image: "image",
   carousel: "slide",
   video: "scene",
   audio: "segmen",
   article: "section",
 };
 
-/** Susun prompt generate per baris brief (selaras dengan alur Generate). */
 function derivedPrompt(type: ContentType, row: BriefRow): string {
   if (type === "carousel") return [row.visual, row.judul, row.isi].filter(Boolean).join(". ");
   if (type === "audio") return row.naskah ?? "";
@@ -62,244 +58,69 @@ function derivedPrompt(type: ContentType, row: BriefRow): string {
   return [row.elemenVisual, row.gaya, row.teks].filter(Boolean).join(". ");
 }
 
-const GRIP_CLASS =
-  "inline-flex h-8 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-zinc-300";
-
-interface RowCellProps {
-  row: BriefRow;
-  ri: number;
-  schema: BriefSchema;
-  contentType: ContentType;
-  isEditing: boolean;
-  showActions: boolean;
-  sortable: boolean;
-  noun: string;
-  updateCell: (rowIndex: number, key: string, value: string) => void;
-  removeRow: (rowIndex: number) => void;
-  canRemove: boolean;
-  onStartEdit?: () => void;
-}
-
-/**
- * Kartu visual 2-kolom sesuai Figma node 799:44769:
- * - Kiri: Area visual preview / placeholder "Tentukan Visual Anda" + tombol "Pilih Gambar"
- * - Kanan: Judul pada gambar, Deskripsi pada gambar, dan Deskripsi Visual
- */
-function BriefVisualCard(props: RowCellProps & { id: string }) {
-  const {
-    row,
-    ri,
-    contentType,
-    schema,
-    isEditing,
-    showActions,
-    sortable,
-    noun,
-    updateCell,
-    removeRow,
-    canRemove,
-    onStartEdit,
-    id,
-  } = props;
-
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-    disabled: !sortable,
-  });
-
-  // Pemetaan kolom fleksibel berdasarkan content type
-  const titleKey =
-    schema.columns.find((c) => ["judul", "teks", "title"].includes(c.key))?.key ?? schema.columns[1]?.key ?? "judul";
-  const bodyKey =
-    schema.columns.find((c) => ["isi", "narasi", "teks_onscreen", "konten"].includes(c.key))?.key ??
-    schema.columns[2]?.key ??
-    "isi";
-  const visualKey =
-    schema.columns.find((c) => ["visual", "elemenVisual"].includes(c.key))?.key ?? schema.columns[3]?.key ?? "visual";
-
-  const titleVal = row[titleKey] ?? "";
-  const bodyVal = row[bodyKey] ?? "";
-  const visualVal = row[visualKey] ?? "";
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn(
-        "glass-card relative flex flex-col gap-5 rounded-2xl p-5 transition-all duration-300 hover:border-zinc-300/80 dark:hover:border-white/20 lg:flex-row",
-        isDragging && "z-10 opacity-70 shadow-2xl",
-      )}
-    >
-      {/* Kolom Kiri: Visual Placeholder Container (Figma 799:44769) */}
-      <div className="relative flex min-h-[280px] w-full flex-col justify-between overflow-hidden rounded-xl border border-zinc-200/70 bg-zinc-950/40 p-4 dark:border-white/10 dark:bg-black/40 lg:h-[335px] lg:w-[400px] lg:shrink-0">
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-300/80 bg-white/80 px-3 py-1 text-xs font-medium text-zinc-800 shadow-sm transition-colors hover:bg-white dark:border-white/20 dark:bg-white/10 dark:text-zinc-200 dark:hover:bg-white/15"
-          >
-            <ImageIcon width={14} height={14} />
-            Pilih Gambar
-          </button>
-          <span className="rounded-md bg-zinc-900/40 px-2 py-0.5 text-[11px] font-medium text-zinc-400 capitalize">
-            {noun} {ri + 1}
-          </span>
-        </div>
-
-        <div className="my-auto flex flex-col items-center gap-1.5 py-6 text-center">
-          <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-zinc-400">
-            <ImageIcon width={20} height={20} />
-          </div>
-          <p className="text-sm font-bold tracking-tight text-foreground">Tentukan Visual Anda</p>
-          <p className="max-w-[280px] text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            Pilih gambar dari galeri aset, unggah langsung dari perangkat, atau generate tampilan baru sesuai keinginan
-            Anda.
-          </p>
-        </div>
-
-        <div className="text-[10px] text-zinc-500 dark:text-zinc-500">Rasio {contentType === "video" ? "16:9" : "4:5"}</div>
-      </div>
-
-      {/* Kolom Kanan: Detail Konten Slide */}
-      <div className="flex flex-1 flex-col justify-between gap-4">
-        {/* Header baris / tindakan edit */}
-        <div className="flex items-center justify-between gap-2 border-b border-zinc-200/50 pb-2 dark:border-white/5">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-md bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand-strong dark:text-brand">
-              {noun.toUpperCase()} {ri + 1}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {showActions ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="danger-soft"
-                  onPress={() => removeRow(ri)}
-                  isDisabled={!canRemove}
-                  aria-label={`Hapus ${noun} ${ri + 1}`}
-                >
-                  <TrashIcon width={16} height={16} />
-                </Button>
-                {sortable ? (
-                  <button
-                    type="button"
-                    ref={setActivatorNodeRef}
-                    {...attributes}
-                    {...listeners}
-                    aria-label={`Ubah urutan ${noun} ${ri + 1}`}
-                    disabled={!canRemove}
-                    className={GRIP_CLASS}
-                  >
-                    <GripIcon width={16} height={16} />
-                  </button>
-                ) : null}
-              </>
-            ) : onStartEdit ? (
-              <Button size="sm" variant="secondary" onPress={onStartEdit}>
-                <PencilIcon width={14} height={14} /> Edit
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Field 1: Judul pada gambar */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Judul pada gambar</label>
-          {isEditing ? (
-            <input
-              value={titleVal}
-              onChange={(e) => updateCell(ri, titleKey, e.target.value)}
-              placeholder="Masukkan judul / headline..."
-              className="w-full rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900/70"
-            />
-          ) : (
-            <div className="rounded-lg border border-zinc-200/50 bg-zinc-50/50 px-3 py-2 text-sm font-semibold text-foreground dark:border-white/5 dark:bg-zinc-900/40">
-              {titleVal || <span className="text-zinc-400 italic font-normal">Belum ada judul</span>}
-            </div>
-          )}
-        </div>
-
-        {/* Field 2: Deskripsi pada gambar */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Deskripsi pada gambar</label>
-          {isEditing ? (
-            <textarea
-              rows={2}
-              value={bodyVal}
-              onChange={(e) => updateCell(ri, bodyKey, e.target.value)}
-              placeholder="Isi teks narasi slide..."
-              className="w-full resize-y rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900/70"
-            />
-          ) : (
-            <div className="rounded-lg border border-zinc-200/50 bg-zinc-50/50 px-3 py-2 text-sm text-zinc-700 dark:border-white/5 dark:bg-zinc-900/40 dark:text-zinc-300">
-              {bodyVal || <span className="text-zinc-400 italic">Belum ada deskripsi teks</span>}
-            </div>
-          )}
-        </div>
-
-        {/* Field 3: Deskripsi Visual */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Deskripsi Visual</label>
-          {isEditing ? (
-            <textarea
-              rows={3}
-              value={visualVal}
-              onChange={(e) => updateCell(ri, visualKey, e.target.value)}
-              placeholder="Prompt visual untuk generate gambar..."
-              className="w-full resize-y rounded-lg border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900/70"
-            />
-          ) : (
-            <div className="rounded-lg border border-zinc-200/50 bg-zinc-50/50 px-3 py-2 text-sm text-zinc-700 dark:border-white/5 dark:bg-zinc-900/40 dark:text-zinc-300">
-              {visualVal || <span className="text-zinc-400 italic">Belum ada deskripsi visual</span>}
-            </div>
-          )}
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-            Ubah atau sesuaikan prompt visual ini untuk menghasilkan variasi gambar yang berbeda.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface Props {
+export interface BriefEditorProps {
   projectId: string;
   contentType: ContentType;
   brief?: BriefDTO | null;
   onBrief: (b: BriefDTO | null) => void;
+  onPreviewVideo?: (b: BriefDTO) => void;
+  angleTitle?: string;
+  singleConfig?: SingleMediaConfig | null;
 }
 
-export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
+export function BriefEditor({
+  projectId,
+  contentType,
+  brief,
+  onBrief,
+  onPreviewVideo,
+  angleTitle = "Standarisasi Dapur dan Nasib Pelaku UMKM Lokal",
+  singleConfig,
+}: BriefEditorProps) {
   const router = useRouter();
   const schema = getBriefSchema(contentType);
   const caption: Caption | undefined = brief?.captions?.[0];
-  const noun = ROW_NOUN[contentType];
-  const canAddRows = ADDABLE_TYPES.includes(contentType);
-  const canSort = SORTABLE_TYPES.includes(contentType);
+  const noun = ROW_NOUN[contentType] || "baris";
 
   const [editRows, setEditRows] = useState<BriefRow[]>([]);
-  const [instruction, setInstruction] = useState("");
-  const [rowTarget, setRowTarget] = useState("all");
   const [busy, setBusy] = useState<"generate" | "revise" | "captions" | "export" | "save" | "media" | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
+  const [activeThumbnails, setActiveThumbnails] = useState<Record<number, number>>({});
   const autoGenRef = useRef(false);
+
+  // 1. Manual media attachment state per baris / scene (Gambar / Video untuk kotak 80x80)
+  const [sceneMedia, setSceneMedia] = useState<Record<number, MediaAsset>>({});
+  // 2. Referensi gambar untuk panduan AI generation per baris / scene
+  const [sceneReferences, setSceneReferences] = useState<Record<number, MediaAsset[]>>({});
+  // Target modal media picker yang sedang aktif
+  const [activeMediaTarget, setActiveMediaTarget] = useState<{
+    rowIndex: number;
+    mode: "manual" | "reference";
+    title: string;
+    subtitle?: string;
+    defaultTab: "video" | "image" | "upload";
+    allowedTypes?: ("video" | "image")[];
+    multiSelect?: boolean;
+  } | null>(null);
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
-  const rows: BriefRow[] = isEditing ? editRows : brief?.rows ?? [];
-  const summary: BriefSummary | null = brief?.summary ?? null;
-  const showActions = isEditing && canAddRows;
-  const rowIds = rows.map((row, i) => row.__id ?? `row-${i}`);
+  const rows: BriefRow[] = useMemo(() => {
+    return isEditing ? editRows : brief?.rows ?? [];
+  }, [isEditing, editRows, brief?.rows]);
+  const rowIds = useMemo(() => rows.map((row, i) => row.__id ?? `row-${i}`), [rows]);
 
   function rowIdAt(source: BriefRow[], i: number) {
     return source[i]?.__id ?? `row-${i}`;
   }
 
   function normalizeRows(source: BriefRow[]): BriefRow[] {
-    return source.map((row, i) => {
-      const next: BriefRow = { ...row, __id: row.__id ?? crypto.randomUUID() };
-      return next;
-    });
+    return source.map((row) => ({
+      ...row,
+      __id: row.__id ?? crypto.randomUUID(),
+    }));
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -345,11 +166,19 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
   function cancelEdit() {
     setIsEditing(false);
     setEditRows([]);
-    setInstruction("");
   }
 
   function updateCell(rowIndex: number, key: string, value: string) {
-    setEditRows((r) => r.map((row, i) => (i === rowIndex ? { ...row, [key]: value } : row)));
+    if (isEditing) {
+      setEditRows((r) => r.map((row, i) => (i === rowIndex ? { ...row, [key]: value } : row)));
+    } else {
+      if (!brief) return;
+      const next = normalizeRows(brief.rows).map((row, i) =>
+        i === rowIndex ? { ...row, [key]: value } : row,
+      );
+      setEditRows(next);
+      setIsEditing(true);
+    }
   }
 
   function addRow() {
@@ -358,6 +187,7 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
       for (const c of schema.columns) next[c.key] = "";
       return normalizeRows([...prev, next]);
     });
+    if (!isEditing) setIsEditing(true);
   }
 
   function removeRow(rowIndex: number) {
@@ -382,39 +212,6 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
       toast.success("Perubahan brief disimpan.");
     } catch (e: unknown) {
       toast.danger((e as Error).message ?? "Gagal menyimpan.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function revise() {
-    if (!brief || !instruction.trim()) return;
-    setBusy("revise");
-    try {
-      const target = rowTarget === "all" ? "all" : Number(rowTarget);
-      const res = await post<{ brief: BriefDTO }>(`/api/briefs/${brief.id}/revise`, {
-        instruction: instruction.trim(),
-        rowTarget: target,
-      });
-      apply(res.brief, true);
-      setInstruction("");
-      toast.success("Brief berhasil direvisi.");
-    } catch (e: unknown) {
-      toast.danger((e as Error).message ?? "Gagal merevisi brief.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function regenerateCaptions() {
-    if (!brief) return;
-    setBusy("captions");
-    try {
-      const res = await post<{ brief: BriefDTO }>(`/api/briefs/${brief.id}/captions`);
-      apply(res.brief);
-      toast.success("Caption diperbarui.");
-    } catch (e: unknown) {
-      toast.danger((e as Error).message ?? "Gagal membuat caption.");
     } finally {
       setBusy(null);
     }
@@ -445,11 +242,21 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
     if (!brief) return;
     setBusy("media");
     try {
-      const mediaSources = rows.map((row, i) => ({
-        briefRow: i + 1,
-        source: "ai_generated" as const,
-        prompt: derivedPrompt(contentType, row),
-      }));
+      const mediaSources = rows.map((row, i) => {
+        const manual = sceneMedia[i];
+        if (manual) {
+          return {
+            briefRow: i + 1,
+            source: "manual" as const,
+            assetId: manual.id,
+          };
+        }
+        return {
+          briefRow: i + 1,
+          source: "ai_generated" as const,
+          prompt: derivedPrompt(contentType, row),
+        };
+      });
       const res = await post<{ creationId: string }>("/api/creations", { projectId, mediaSources });
       toast.success("Generate dimulai. Mengalihkan ke editor...");
       router.push(`/studio/${res.creationId}`);
@@ -467,10 +274,32 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
     }
   }, []);
 
+  // Durasi kalkulasi untuk Video Storyboard
+  const durations = useMemo(() => {
+    return rows.map((r) => parseInt(r.durasi || "12", 10) || 12);
+  }, [rows]);
+
+  const totalDuration = useMemo(() => {
+    return durations.reduce((a, b) => a + b, 0);
+  }, [durations]);
+
+  const sceneTimeRanges = useMemo(() => {
+    const fmtTime = (s: number) => {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+    };
+    return rows.map((_, idx) => {
+      const start = durations.slice(0, idx).reduce((a, b) => a + b, 0);
+      const end = start + durations[idx];
+      return `${fmtTime(start)} - ${fmtTime(end)}`;
+    });
+  }, [rows, durations]);
+
   if (!brief) {
     return (
-      <GlassCard className="flex flex-col gap-4">
-        <SectionHeader title="Brief" description="Rincian konten berdasarkan angle terpilih." />
+      <div className="glass-card flex flex-col gap-4 rounded-2xl border border-zinc-200/90 bg-white/95 p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900/95">
+        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Brief Konten</h3>
         {busy === "generate" ? (
           <SpinnerBlock label="Menyusun brief dengan AI..." />
         ) : (
@@ -484,177 +313,785 @@ export function BriefEditor({ projectId, contentType, brief, onBrief }: Props) {
             }
           />
         )}
-      </GlassCard>
+      </div>
     );
   }
 
-  // Paragraf ringkasan brief deskriptif (sesuai layout Figma 799:44769)
-  const briefParagraph = summary
-    ? `Buat konten media sosial berjudul “${summary.title}” untuk ${summary.goal} dengan audiens ${summary.audience}. Gunakan nada ${summary.tone}. Buat dalam format ${contentType} ${summary.size}. Konten ditujukan untuk platform ${summary.platforms.join(", ")}, dengan visual yang relevan, konsisten, dan mudah dibaca di layar ponsel.`
-    : "Rincian konten berdasarkan angle terpilih.";
+  const activeRatio = singleConfig?.ratio || (contentType === "video" ? "9:16" : "9:16");
 
   return (
     <div className="space-y-6">
-      {/* Kartu Header Brief (Figma 799:44769) */}
-      <GlassCard className="flex flex-col gap-4">
-        <SectionHeader
-          title="Brief"
-          description="Rincian konten berdasarkan angle terpilih."
-          action={<Chip size="sm" variant="soft">{brief.status === "siap" ? "Siap" : "Draft"}</Chip>}
-        />
-
-        <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">{briefParagraph}</p>
-
-        {summary ? (
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-zinc-200/50 dark:border-white/5">
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">Platform:</span>
-            {summary.platforms.map((p) => (
-              <span key={p} className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
-                {p}
-              </span>
-            ))}
-            <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">Ukuran:</span>
-            <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
-              {summary.size}
+      {/* Container Card Composer SceneI (Figma #1022:12117 / #1022:11951 / #1022:12265) */}
+      <div className="glass-card relative flex flex-col gap-6 rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900 sm:p-6">
+        {/* Identitas mode bar (Figma #1022:12118 / #1022:11952 / #1022:12266) */}
+        <div className="flex w-full items-center justify-between border-b border-zinc-100 pb-3 dark:border-white/5">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+              {contentType === "image" && <RectangleVerticalIcon className="size-3.5" />}
+              {contentType === "carousel" && <FolderIcon className="size-3.5" />}
+              {contentType === "video" && <VideoIcon className="size-3.5" />}
+              {contentType === "image"
+                ? "Single Image"
+                : contentType === "carousel"
+                  ? "Multiple Image"
+                  : contentType === "video"
+                    ? "Video"
+                    : contentType.toUpperCase()}
             </span>
-            <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">Nada:</span>
-            <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
-              {summary.tone}
+            <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              {angleTitle}
             </span>
           </div>
-        ) : null}
-      </GlassCard>
 
-      {/* Toolbar Aksi Brief (Figma 799:44769) */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
-            {rows.length} {noun === "slide" ? "Slide Konten" : "Baris Konten"}
-          </span>
-          {isEditing && (
-            <Chip size="sm" variant="soft" color="warning">
-              Mode Edit Aktif
-            </Chip>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex size-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-white/10 dark:hover:text-zinc-300"
+            aria-label={isCollapsed ? "Buka brief" : "Tutup brief"}
+          >
+            {isCollapsed ? <ChevronDownIcon className="size-5" /> : <ChevronUpIcon className="size-5" />}
+          </button>
         </div>
 
-        {!isEditing ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" onPress={startEdit}>
-              <PencilIcon width={16} height={16} /> Edit
-            </Button>
-            <Button size="sm" variant="secondary" onPress={exportPdf} isDisabled={!!busy}>
-              <DownloadIcon width={16} height={16} /> Export .pdf
-            </Button>
-            <Button size="sm" variant="primary" onPress={generateMedia} isDisabled={!!busy}>
-              <SparkIcon width={16} height={16} /> Generate Media
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" onPress={cancelEdit} isDisabled={busy === "save"}>
-              <XIcon width={16} height={16} /> Batal
-            </Button>
-            <Button size="sm" variant="primary" onPress={saveEdit} isDisabled={busy === "save"}>
-              {busy === "save" ? <Spinner size="sm" /> : <CheckIcon width={16} height={16} />} Simpan
-            </Button>
-          </div>
+        {!isCollapsed && (
+          <>
+            {/* Header Title Row (Figma #1022:12131 / #1022:11964 / #1022:12278) */}
+            <div className="flex flex-col gap-4 border-b border-zinc-100 pb-5 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-1.5">
+                <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  {contentType === "video" ? "Story Board " : "Visual Brief"}
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Template produksi video siap diisi untuk semua jenis konten.
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
+                    Aspect Ratio {activeRatio}
+                  </span>
+                  {contentType === "video" && (
+                    <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
+                      {totalDuration} detik
+                    </span>
+                  )}
+                  <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
+                    {rows.length} {contentType === "video" ? "Scene" : contentType === "image" ? "Image" : "Slide"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {!isEditing ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onPress={startEdit}
+                      className="gap-1.5 border-zinc-200 text-xs font-medium dark:border-white/10"
+                    >
+                      <PencilIcon width={13} height={13} /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onPress={exportPdf}
+                      isDisabled={!!busy}
+                      className="gap-1.5 border-zinc-200 text-xs font-medium dark:border-white/10"
+                    >
+                      <DownloadIcon width={13} height={13} /> Unduh PDF
+                    </Button>
+                    {contentType === "video" ? (
+                      <Button
+                        size="sm"
+                        onPress={() => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia())}
+                        isDisabled={!!busy}
+                        className="gap-1.5 bg-zinc-900 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                      >
+                        <SparkIcon width={13} height={13} /> Generate Story Board
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onPress={generateMedia}
+                        isDisabled={!!busy}
+                        className="gap-1.5 bg-zinc-900 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                      >
+                        <SparkIcon width={13} height={13} /> Lanjut ke Editor
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="secondary" onPress={cancelEdit} isDisabled={busy === "save"}>
+                      <XIcon width={13} height={13} /> Batal
+                    </Button>
+                    <Button size="sm" variant="primary" onPress={saveEdit} isDisabled={busy === "save"}>
+                      {busy === "save" ? <Spinner size="sm" /> : <CheckIcon width={13} height={13} />} Simpan
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* LAYOUT 1: VIDEO STORYBOARD TABLE (Figma #1022:11911) */}
+            {contentType === "video" && (
+              <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900/60">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px] border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-zinc-200 bg-zinc-50/80 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-white/10 dark:bg-zinc-800/50 dark:text-zinc-400">
+                        <th className="w-20 px-4 py-3.5">Scene</th>
+                        <th className="w-32 px-4 py-3.5">Durasi</th>
+                        <th className="min-w-[280px] px-4 py-3.5">Visual</th>
+                        <th className="w-64 px-4 py-3.5">TEXT PADA Visual</th>
+                        <th className="min-w-[260px] px-4 py-3.5">Voiceover (VO)</th>
+                        {isEditing && <th className="w-16 px-4 py-3.5 text-center">Aksi</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200/80 text-sm dark:divide-white/5">
+                      {rows.map((row, ri) => {
+                        const sceneNumber = ri + 1;
+                        const timeRange = sceneTimeRanges[ri] ?? "00:00 - 00:10";
+                        const visualText = row.visual || row.elemenVisual || "";
+                        const textPadaVisual = row.teks_onscreen || row.judul || row.teks || "";
+                        const voiceoverText = row.narasi || row.naskah || row.isi || "";
+                        const mediaAttachment = sceneMedia[ri];
+
+                        return (
+                          <tr
+                            key={row.__id ?? `video-scene-${ri}`}
+                            className="transition-colors hover:bg-zinc-50/50 dark:hover:bg-white/[0.02]"
+                          >
+                            {/* Col 1: Scene */}
+                            <td className="px-4 py-4 align-top font-semibold text-zinc-900 dark:text-zinc-100">
+                              {sceneNumber}
+                            </td>
+
+                            {/* Col 2: Durasi */}
+                            <td className="px-4 py-4 align-top text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                              {timeRange}
+                            </td>
+
+                            {/* Col 3: Visual (Interactive Media Box + Deskripsi) */}
+                            <td className="px-4 py-4 align-top">
+                              <div className="flex items-start gap-3">
+                                {/* Thumbnail Box 80x80 (Figma EL-a56f717b): KHUSUS MEDIA MANUAL SCENE */}
+                                {mediaAttachment ? (
+                                  /* State 1: Ada Media Manual Terpilih (Gambar/Video) */
+                                  <div className="group relative size-20 shrink-0 overflow-hidden rounded-lg border border-brand/40 bg-black shadow-xs">
+                                    <Image
+                                      src={mediaAttachment.url}
+                                      alt={mediaAttachment.title}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                    {mediaAttachment.type === "video" && (
+                                      <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.2 text-[9px] font-mono font-medium text-white">
+                                        {mediaAttachment.duration || "Video"}
+                                      </span>
+                                    )}
+
+                                    {/* Hover Actions: Ganti / Hapus Media Manual */}
+                                    <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setActiveMediaTarget({
+                                            rowIndex: ri,
+                                            mode: "manual",
+                                            title: `Ganti Media Scene ${sceneNumber}`,
+                                            subtitle: "Ganti berkas media manual untuk scene ini",
+                                            defaultTab: mediaAttachment.type === "video" ? "video" : "image",
+                                            allowedTypes: ["video", "image"],
+                                            multiSelect: false,
+                                          })
+                                        }
+                                        className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/40"
+                                        title="Ganti media manual"
+                                      >
+                                        <PencilIcon className="size-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSceneMedia((prev) => {
+                                            const next = { ...prev };
+                                            delete next[ri];
+                                            return next;
+                                          });
+                                          toast.info(`Media manual Scene ${sceneNumber} dihapus.`);
+                                        }}
+                                        className="rounded-full bg-red-500/80 p-1.5 text-white hover:bg-red-600"
+                                        title="Hapus media manual"
+                                      >
+                                        <TrashIcon className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  /* State 2: Placeholder Kosong -> Klik untuk tambah/upload media manual */
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setActiveMediaTarget({
+                                        rowIndex: ri,
+                                        mode: "manual",
+                                        title: `Pilih Media Manual Scene ${sceneNumber}`,
+                                        subtitle: "Pilih foto atau video manual dari galeri atau unggah dari perangkat",
+                                        defaultTab: "video",
+                                        allowedTypes: ["video", "image"],
+                                        multiSelect: false,
+                                      })
+                                    }
+                                    className="group flex size-20 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50/70 text-zinc-400 transition-all hover:border-brand hover:bg-brand/5 hover:text-brand dark:border-zinc-700 dark:bg-zinc-800/60"
+                                    title="Klik untuk memilih atau mengunggah media video/gambar manual"
+                                  >
+                                    <PlusIcon className="size-5 transition-transform group-hover:scale-110" />
+                                    <span className="mt-1 text-[9px] font-semibold text-zinc-400 group-hover:text-brand">
+                                      Add Media
+                                    </span>
+                                  </button>
+                                )}
+
+                                <div className="flex flex-1 flex-col gap-2">
+                                  {isEditing ? (
+                                    <textarea
+                                      rows={2}
+                                      value={visualText}
+                                      onChange={(e) => updateCell(ri, "visual", e.target.value)}
+                                      placeholder="Visual / B-roll prompt..."
+                                      className="w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                                    />
+                                  ) : (
+                                    <p className="text-xs leading-relaxed text-zinc-800 dark:text-zinc-200">
+                                      {visualText || <span className="italic text-zinc-400">Belum ada visual</span>}
+                                    </p>
+                                  )}
+
+                                  {/* Bagian Referensi Gambar AI: Sembunyi jika media manual sudah terpasang */}
+                                  {!mediaAttachment ? (
+                                    <div className="flex items-center gap-2 pt-0.5">
+                                      {(sceneReferences[ri] || []).length === 0 ? (
+                                        /* Subcase B1: Belum ada referensi -> Tombol "+ Add Referensi" (Figma #1022:10170) */
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setActiveMediaTarget({
+                                              rowIndex: ri,
+                                              mode: "reference",
+                                              title: `Pilih Gambar Referensi Scene ${sceneNumber}`,
+                                              subtitle: "Pilih gambar referensi dari galeri atau upload untuk panduan AI generate",
+                                              defaultTab: "image",
+                                              allowedTypes: ["image"],
+                                              multiSelect: true,
+                                            })
+                                          }
+                                          className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs hover:border-brand hover:text-brand dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-brand dark:hover:text-brand transition-colors"
+                                        >
+                                          <PlusIcon className="size-3" />
+                                          <span>Add Referensi</span>
+                                        </button>
+                                      ) : (
+                                        /* Subcase B2: Ada Referensi -> Avatar stack + label "X Referensi" (Figma #1022:11992 row-2) */
+                                        <div className="inline-flex items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/70 px-2.5 py-1 dark:border-sky-900/40 dark:bg-sky-950/30">
+                                          <div className="flex items-center -space-x-2">
+                                            {(sceneReferences[ri] || []).slice(0, 3).map((ref, idx) => (
+                                              <div
+                                                key={ref.id || idx}
+                                                className="relative size-5.5 overflow-hidden rounded-full border-1.5 border-white bg-zinc-100 shadow-2xs dark:border-zinc-900"
+                                                title={ref.title}
+                                              >
+                                                <Image src={ref.url} alt={ref.title} fill className="object-cover" />
+                                              </div>
+                                            ))}
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setActiveMediaTarget({
+                                                rowIndex: ri,
+                                                mode: "reference",
+                                                title: `Kelola Gambar Referensi Scene ${sceneNumber}`,
+                                                subtitle: "Pilih atau ubah gambar referensi panduan AI",
+                                                defaultTab: "image",
+                                                allowedTypes: ["image"],
+                                                multiSelect: true,
+                                              })
+                                            }
+                                            className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline dark:text-sky-400"
+                                            title="Kelola gambar referensi"
+                                          >
+                                            {(sceneReferences[ri] || []).length} Referensi
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSceneReferences((prev) => {
+                                                const next = { ...prev };
+                                                delete next[ri];
+                                                return next;
+                                              });
+                                              toast.info(`Referensi Scene ${sceneNumber} dihapus.`);
+                                            }}
+                                            className="ml-0.5 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-200/60 hover:text-red-500 dark:hover:bg-zinc-800"
+                                            title="Hapus semua referensi"
+                                          >
+                                            <XIcon className="size-3" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5 pt-0.5">
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand-strong dark:bg-brand/20 dark:text-brand">
+                                        <CheckIcon className="size-3" />
+                                        <span className="max-w-[180px] truncate">{mediaAttachment.title}</span>
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Col 4: Text Pada Visual */}
+                            <td className="px-4 py-4 align-top">
+                              {isEditing ? (
+                                <textarea
+                                  rows={2}
+                                  value={textPadaVisual}
+                                  onChange={(e) => updateCell(ri, "teks_onscreen", e.target.value)}
+                                  placeholder="Headline di video..."
+                                  className="w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                                />
+                              ) : (
+                                <p className="text-xs font-medium leading-relaxed text-zinc-800 dark:text-zinc-200">
+                                  {textPadaVisual || <span className="italic text-zinc-400 font-normal">Tidak ada teks visual</span>}
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Col 5: Voiceover (VO) */}
+                            <td className="px-4 py-4 align-top">
+                              {isEditing ? (
+                                <textarea
+                                  rows={2}
+                                  value={voiceoverText}
+                                  onChange={(e) => updateCell(ri, "narasi", e.target.value)}
+                                  placeholder="Naskah voiceover..."
+                                  className="w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                                />
+                              ) : (
+                                <p className="text-xs italic leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                  {voiceoverText ? `"${voiceoverText}"` : <span className="text-zinc-400 not-italic">Belum ada VO</span>}
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Col 6: Aksi Hapus */}
+                            {isEditing && (
+                              <td className="px-4 py-4 align-top text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => removeRow(ri)}
+                                  disabled={rows.length <= 1}
+                                  className="rounded p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30"
+                                  title="Hapus scene"
+                                >
+                                  <TrashIcon width={14} height={14} />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {isEditing && (
+                  <div className="flex justify-center border-t border-zinc-100 p-3 dark:border-white/5">
+                    <Button size="sm" variant="secondary" onPress={addRow} className="gap-1.5 text-xs">
+                      <PlusIcon width={14} height={14} /> Tambah Scene
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* LAYOUT 2 & 3: SINGLE IMAGE (#1022:12092) & MULTI IMAGE CAROUSEL (#1022:12239) */}
+            {contentType !== "video" && (
+              <div className="flex flex-col gap-6">
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+                    {rows.map((row, ri) => {
+                      const titleKey =
+                        schema.columns.find((c) => ["judul", "teks", "title"].includes(c.key))?.key ??
+                        schema.columns[1]?.key ??
+                        "judul";
+                      const bodyKey =
+                        schema.columns.find((c) => ["isi", "narasi", "teks_onscreen", "konten"].includes(c.key))?.key ??
+                        schema.columns[2]?.key ??
+                        "isi";
+                      const visualKey =
+                        schema.columns.find((c) => ["visual", "elemenVisual"].includes(c.key))?.key ??
+                        schema.columns[3]?.key ??
+                        "visual";
+
+                      const titleVal = row[titleKey] ?? "";
+                      const bodyVal = row[bodyKey] ?? "";
+                      const visualVal = row[visualKey] ?? "";
+
+                      const selectedThumb = activeThumbnails[ri] ?? 0;
+                      const mediaAttachment = sceneMedia[ri];
+
+                      return (
+                        <div
+                          key={row.__id ?? `image-card-${ri}`}
+                          className="relative flex flex-col gap-6 rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all hover:border-zinc-300 dark:border-white/10 dark:bg-zinc-900/80 lg:flex-row"
+                        >
+                          {/* Left Column: Visual Preview + Ubah Gambar Dropdown (Figma #1022:12147 / #1022:12296) */}
+                          <div className="flex w-full flex-col gap-3 lg:w-[320px] lg:shrink-0">
+                            <div className="relative flex h-[240px] w-full flex-col justify-between overflow-hidden rounded-xl border border-zinc-200/80 bg-gradient-to-br from-zinc-100 to-zinc-200/60 p-3 dark:border-white/10 dark:from-zinc-950 dark:to-zinc-900">
+                              {/* Background Image jika media manual telah dipilih */}
+                              {mediaAttachment && (
+                                <Image
+                                  src={mediaAttachment.url}
+                                  alt={mediaAttachment.title}
+                                  fill
+                                  className="object-cover"
+                                />
+                              )}
+
+                              {/* Overlay Ubah Gambar Dropdown (Figma #1022:12297 / #1022:12298) */}
+                              <div className="relative z-10 self-start">
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenDropdownIndex(openDropdownIndex === ri ? null : ri)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur hover:bg-zinc-900 dark:bg-white/90 dark:text-zinc-900 dark:hover:bg-white"
+                                >
+                                  Ubah Gambar
+                                </button>
+
+                                {openDropdownIndex === ri && (
+                                  <div className="absolute left-0 top-9 z-30 w-64 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-xl dark:border-white/15 dark:bg-zinc-900">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMediaTarget({
+                                          rowIndex: ri,
+                                          mode: "manual",
+                                          title: `Pilih Gambar Aset Magneto (${noun} ${ri + 1})`,
+                                          defaultTab: "image",
+                                          allowedTypes: ["image"],
+                                          multiSelect: false,
+                                        });
+                                        setOpenDropdownIndex(null);
+                                      }}
+                                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+                                    >
+                                      <DatabaseIcon className="size-4 text-brand" />
+                                      <span>Pilih dari Magneto</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMediaTarget({
+                                          rowIndex: ri,
+                                          mode: "manual",
+                                          title: `Upload Berkas Gambar (${noun} ${ri + 1})`,
+                                          defaultTab: "upload",
+                                          allowedTypes: ["image"],
+                                          multiSelect: false,
+                                        });
+                                        setOpenDropdownIndex(null);
+                                      }}
+                                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+                                    >
+                                      <FolderIcon className="size-4 text-brand" />
+                                      <span>Pilih dari Perangkat Saya</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        toast.info("Generate variasi visual baru...");
+                                        setOpenDropdownIndex(null);
+                                      }}
+                                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+                                    >
+                                      <div className="flex items-center gap-2.5">
+                                        <SparkIcon className="size-4 text-brand-strong dark:text-brand" />
+                                        <span>Generate</span>
+                                      </div>
+                                      <span className="text-[10px] text-zinc-400">Rp6000/gen</span>
+                                    </button>
+
+                                    {mediaAttachment && (
+                                      <div className="mt-1 border-t border-zinc-100 pt-1 dark:border-white/10">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSceneMedia((prev) => {
+                                              const next = { ...prev };
+                                              delete next[ri];
+                                              return next;
+                                            });
+                                            setOpenDropdownIndex(null);
+                                            toast.info("Media manual dihapus.");
+                                          }}
+                                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                        >
+                                          <TrashIcon className="size-3.5" />
+                                          <span>Hapus Media Pilihan</span>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Preview Center Graphic jika belum ada media */}
+                              {!mediaAttachment && (
+                                <div className="my-auto flex flex-col items-center justify-center gap-2 text-center">
+                                  <div className="flex size-12 items-center justify-center rounded-full bg-white/70 text-zinc-400 shadow-sm dark:bg-white/10">
+                                    <ImageIcon width={24} height={24} />
+                                  </div>
+                                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                    Preview Visual {noun} {ri + 1}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="relative z-10 self-end rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+                                {mediaAttachment ? mediaAttachment.title : activeRatio}
+                              </div>
+                            </div>
+
+                            {/* Sub-section: Hasil Generate Image (Khusus Carousel / Multi Image, Figma #1022:12299) */}
+                            {contentType === "carousel" && (
+                              <div className="flex flex-col gap-2 pt-1">
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                    Hasil Generate Image
+                                  </span>
+                                  <span className="text-[11px] text-zinc-400">
+                                    Maksimal 3x generate image
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2.5">
+                                  {[0, 1, 2].map((thumbIdx) => {
+                                    const isSelected = selectedThumb === thumbIdx;
+                                    return (
+                                      <button
+                                        key={thumbIdx}
+                                        type="button"
+                                        onClick={() =>
+                                          setActiveThumbnails((prev) => ({ ...prev, [ri]: thumbIdx }))
+                                        }
+                                        className={cn(
+                                          "relative flex size-20 items-center justify-center overflow-hidden rounded-lg border bg-zinc-100 transition-all dark:bg-zinc-800",
+                                          isSelected
+                                            ? "border-2 border-brand shadow-md ring-2 ring-brand/30"
+                                            : "border-zinc-200/80 opacity-50 hover:opacity-100 dark:border-white/10",
+                                        )}
+                                      >
+                                        <ImageIcon width={20} height={20} className="text-zinc-400" />
+                                        {isSelected && (
+                                          <span className="absolute bottom-1 right-1 rounded-full bg-brand p-0.5 text-white">
+                                            <CheckIcon width={10} height={10} />
+                                          </span>
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Column: Content Fields (Figma #1022:12150 / #1022:12306) */}
+                          <div className="flex flex-1 flex-col gap-4">
+                            {/* Card Title Row with Badge Draft */}
+                            <div className="flex items-center justify-between border-b border-zinc-100 pb-2 dark:border-white/5">
+                              <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                                Visual Image {ri + 1}
+                              </h4>
+                              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+                                Draft
+                              </span>
+                            </div>
+
+                            {/* Field 1: Text Judul Di gambar (Figma #1022:12311) */}
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                Text Judul Di gambar
+                              </label>
+                              <input
+                                value={titleVal}
+                                onChange={(e) => updateCell(ri, titleKey, e.target.value)}
+                                placeholder="Masukkan judul headline pada gambar..."
+                                className="w-full rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                              />
+                            </div>
+
+                            {/* Field 2: Text Deskripsi Di gambar (Figma #1022:12312) */}
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                Text Deskripsi Di gambar
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={bodyVal}
+                                onChange={(e) => updateCell(ri, bodyKey, e.target.value)}
+                                placeholder="Isi deskripsi atau narasi singkat..."
+                                className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                              />
+                            </div>
+
+                            {/* Field 3: Visual Prompt (Figma #1022:12313) */}
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                                Visual
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={visualVal}
+                                onChange={(e) => updateCell(ri, visualKey, e.target.value)}
+                                placeholder="Prompt elemen visual untuk generate gambar..."
+                                className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
+
+                {/* Tombol Tambah Slide untuk Multi Image */}
+                {contentType === "carousel" && (
+                  <div className="flex justify-center pt-2">
+                    <Button size="sm" variant="secondary" onPress={addRow} className="gap-1.5 text-xs">
+                      <PlusIcon width={14} height={14} /> Tambah Slide
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Caption Card */}
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-zinc-200/70 bg-zinc-50/50 p-4 dark:border-white/5 dark:bg-zinc-800/30">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  Caption Rekomendasi
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={async () => {
+                    setBusy("captions");
+                    try {
+                      const res = await post<{ brief: BriefDTO }>(`/api/briefs/${brief.id}/captions`);
+                      apply(res.brief);
+                      toast.success("Caption diperbarui.");
+                    } catch (e: unknown) {
+                      toast.danger((e as Error).message ?? "Gagal caption.");
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                  isDisabled={!!busy}
+                  className="gap-1 text-xs"
+                >
+                  <RefreshIcon width={12} height={12} /> Buat ulang
+                </Button>
+              </div>
+
+              {caption ? (
+                <div className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
+                  <p className="whitespace-pre-wrap">{caption.text}</p>
+                  {caption.hashtags?.length > 0 && (
+                    <p className="mt-1 font-semibold text-brand-strong dark:text-brand">
+                      {caption.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs italic text-zinc-400">Belum ada caption dibuat.</p>
+              )}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Daftar Kartu Visual 2-Kolom (Figma 799:44769) */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-5">
-            {rows.map((row, ri) => (
-              <BriefVisualCard
-                key={row.__id ?? `row-${ri}`}
-                id={row.__id ?? `row-${ri}`}
-                row={row}
-                ri={ri}
-                schema={schema}
-                contentType={contentType}
-                isEditing={isEditing}
-                showActions={showActions}
-                sortable={canSort && isEditing}
-                noun={noun}
-                updateCell={updateCell}
-                removeRow={removeRow}
-                canRemove={rows.length > 1}
-                onStartEdit={!isEditing ? startEdit : undefined}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {/* STICKY FOOTER ACTIONS (Figma #1022:12235 / #1022:12014) */}
+      <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-zinc-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-zinc-900/95 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          Simpan perubahan sebelum melanjutkan ke Canvas Editor.
+        </span>
 
-      {/* Tombol Tambah Baris */}
-      {showActions ? (
-        <div className="flex justify-center pt-2">
-          <Button size="sm" variant="secondary" onPress={addRow}>
-            <PlusIcon width={16} height={16} /> Tambah {noun}
-          </Button>
-        </div>
-      ) : null}
+        <Button
+          size="sm"
+          onPress={contentType === "video" ? () => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia()) : generateMedia}
+          isDisabled={!!busy}
+          className="gap-2 bg-zinc-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+        >
+          <SparkIcon width={14} height={14} />
+          {contentType === "video" ? "Lanjut Generate Video" : "Lanjut ke Editor"}
+        </Button>
+      </div>
 
-      {/* Kartu Revisi AI Cepat (opsional) */}
-      {SHOW_REVISI_AI && !isEditing ? (
-        <GlassCard className="flex flex-col gap-3">
-          <SectionHeader
-            title="Revisi Cepat dengan AI"
-            description="Minta AI mengubah narasi, sudut pandang, atau nada pada baris tertentu."
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={rowTarget}
-              onChange={(e) => setRowTarget(e.target.value)}
-              className="rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm dark:border-white/10 dark:bg-zinc-900/70"
-            >
-              <option value="all">Semua baris</option>
-              {rows.map((_, i) => (
-                <option key={i} value={i}>
-                  {`Baris ${i + 1}`}
-                </option>
-              ))}
-            </select>
-            <input
-              value={instruction}
-              onChange={(e) => setInstruction(e.target.value)}
-              placeholder="Contoh: buat lebih ringkas & persuasif"
-              className="flex-1 rounded-xl border border-zinc-200/70 bg-white/80 px-3 py-2 text-sm dark:border-white/10 dark:bg-zinc-900/70"
-            />
-            <Button variant="primary" onPress={revise} isDisabled={!!busy || !instruction}>
-              {busy === "revise" ? "Memproses..." : "Revisi"}
-            </Button>
-          </div>
-        </GlassCard>
-      ) : null}
-
-      {/* Kartu Caption Bawah (Figma 799:44769) */}
-      <GlassCard className="flex flex-col gap-3">
-        <SectionHeader
-          title="Caption"
-          action={
-            <Button size="sm" variant="secondary" onPress={regenerateCaptions} isDisabled={!!busy}>
-              <RefreshIcon width={16} height={16} /> Buat ulang
-            </Button>
+      {/* MODAL INSERT MEDIA (GALERI MAGNETO & UPLOAD PERANGKAT) */}
+      <InsertMediaModal
+        isOpen={activeMediaTarget !== null}
+        onClose={() => setActiveMediaTarget(null)}
+        title={activeMediaTarget?.title}
+        subtitle={activeMediaTarget?.subtitle}
+        defaultTab={activeMediaTarget?.defaultTab ?? "video"}
+        allowedTypes={activeMediaTarget?.allowedTypes ?? ["video", "image"]}
+        multiSelect={activeMediaTarget?.multiSelect ?? false}
+        initialSelectedAssets={
+          activeMediaTarget
+            ? activeMediaTarget.mode === "manual"
+              ? sceneMedia[activeMediaTarget.rowIndex]
+                ? [sceneMedia[activeMediaTarget.rowIndex]]
+                : []
+              : sceneReferences[activeMediaTarget.rowIndex] || []
+            : []
+        }
+        onSelectMedia={(asset) => {
+          if (activeMediaTarget !== null) {
+            const { rowIndex, mode } = activeMediaTarget;
+            if (mode === "manual") {
+              setSceneMedia((prev) => ({
+                ...prev,
+                [rowIndex]: asset,
+              }));
+              toast.success(`Media Scene ${rowIndex + 1} berhasil diterapkan.`);
+            } else {
+              setSceneReferences((prev) => {
+                const existing = prev[rowIndex] || [];
+                if (existing.some((a) => a.id === asset.id || a.url === asset.url)) return prev;
+                return { ...prev, [rowIndex]: [...existing, asset] };
+              });
+              toast.success(`Referensi Scene ${rowIndex + 1} ditambahkan.`);
+            }
           }
-        />
-        {busy === "captions" ? (
-          <SpinnerBlock label="Membuat caption..." />
-        ) : caption ? (
-          <div className="rounded-xl border border-zinc-200/70 bg-white/50 p-4 text-sm dark:border-white/10 dark:bg-zinc-900/40">
-            <p className="whitespace-pre-wrap leading-relaxed text-foreground">{caption.text}</p>
-            {caption.hashtags?.length > 0 && (
-              <p className="mt-2 text-xs font-medium text-brand-strong dark:text-brand">
-                {caption.hashtags.map((h) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-500">Belum ada caption. Klik &quot;Buat ulang&quot;.</p>
-        )}
-      </GlassCard>
+        }}
+        onSelectMultiple={(assets) => {
+          if (activeMediaTarget !== null) {
+            const { rowIndex, mode } = activeMediaTarget;
+            if (mode === "reference") {
+              setSceneReferences((prev) => ({
+                ...prev,
+                [rowIndex]: assets,
+              }));
+              toast.success(`${assets.length} referensi Scene ${rowIndex + 1} berhasil disimpan.`);
+            }
+          }
+        }}
+      />
     </div>
   );
 }
