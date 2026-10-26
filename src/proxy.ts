@@ -16,6 +16,8 @@ const PUBLIC_PREFIXES = [
   "/robots.txt",
   "/brand",
   "/seed",
+  "/post-media",
+  "/figma_overview",
   "/login",
   "/api/auth/login",
   "/api/auth/logout",
@@ -24,6 +26,9 @@ const PUBLIC_PREFIXES = [
 ];
 
 function isPublicRoute(pathname: string): boolean {
+  if (/\.(png|jpe?g|gif|webp|svg|ico|mp4|woff2?)$/i.test(pathname)) {
+    return true;
+  }
   return PUBLIC_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );

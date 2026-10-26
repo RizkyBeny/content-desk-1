@@ -7,7 +7,6 @@ import {
   CheckIcon,
   ImageIcon,
   PlusIcon,
-  SparkIcon,
   UploadIcon,
   VideoIcon,
   XIcon,
@@ -235,24 +234,14 @@ export function InsertMediaModal({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-zinc-200 bg-white px-3.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-white/15 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              onClick={handleApply}
-              disabled={!selectedAsset}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-            >
-              <CheckIcon className="size-3.5" />
-              <span>Terapkan Media</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-white/10 dark:hover:text-zinc-200 transition-colors"
+            aria-label="Tutup modal"
+          >
+            <XIcon className="size-4" />
+          </button>
         </div>
 
         {/* Navigation Tabs */}
@@ -440,9 +429,13 @@ export function InsertMediaModal({
                         e.stopPropagation();
                         setPlayingVideoId(asset.id);
                       }}
+                      title={`Putar video ${asset.title}`}
+                      aria-label={`Putar video ${asset.title}`}
                       className="absolute inset-0 m-auto flex size-9 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:scale-110 hover:bg-black group-hover:opacity-100"
                     >
-                      <SparkIcon className="size-4" />
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="size-4 ml-0.5">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
                     </button>
                   )}
 

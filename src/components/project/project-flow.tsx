@@ -56,7 +56,19 @@ export function ProjectFlow({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isGeneratingCreation, setIsGeneratingCreation] = useState(false);
   const [multiConfig, setMultiConfig] = useState<MultiTypeConfig | null>(null);
-  const [singleConfig, setSingleConfig] = useState<SingleMediaConfig | null>(null);
+  const [singleConfig, setSingleConfig] = useState<SingleMediaConfig | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(`singleConfig_${project.id}`);
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      ratio: "9:16",
+      persona: initialBrief?.summary?.tone || "investigatif",
+      voiceOver: (project.contentType || "video") === "video" ? "Dalipin" : undefined,
+    };
+  });
 
   const isMultiType = selectedMediaTypes.length > 1;
 
@@ -72,6 +84,9 @@ export function ProjectFlow({
     setActiveType(primary);
     if (params.singleConfig) {
       setSingleConfig(params.singleConfig);
+      try {
+        localStorage.setItem(`singleConfig_${project.id}`, JSON.stringify(params.singleConfig));
+      } catch {}
     }
     if (params.multiTypeConfig) {
       setMultiConfig(params.multiTypeConfig);

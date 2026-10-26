@@ -114,6 +114,9 @@ export function OverviewDashboard() {
       {/* 4. Tab Views */}
       {activeTab === "executive-summary" && (
         <div className="space-y-6">
+          {/* Executive Summary Media Sosial */}
+          <SocialExecutiveSummary />
+
           {/* Topic Recommendation Section */}
           <TopicRecommendationSection
             onMakeContent={handleMakeContent}
@@ -122,9 +125,6 @@ export function OverviewDashboard() {
 
           {/* Key Takeaways Section (Highlights, Lowlights, Actions) */}
           <KeyTakeawaysSection />
-
-          {/* Executive Summary Media Sosial */}
-          <SocialExecutiveSummary />
 
           {/* Impression per Konten Table */}
           <ChannelPerformanceTable

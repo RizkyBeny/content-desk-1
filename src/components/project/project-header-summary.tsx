@@ -35,10 +35,16 @@ export function ProjectHeaderSummary({
   singleConfig,
   className = "",
 }: ProjectHeaderSummaryProps) {
+  const effectiveConfig = singleConfig ?? {
+    ratio: "9:16",
+    persona: "investigatif",
+    voiceOver: selectedType === "video" ? "Dalipin" : undefined,
+  };
+
   return (
     <GlassCard className={`grid grid-cols-1 divide-y divide-zinc-200 border border-zinc-200/80 p-0 shadow-sm dark:divide-white/10 dark:border-white/10 md:grid-cols-3 md:divide-x md:divide-y-0 ${className}`}>
       {/* Box 1: Tipe Konten */}
-      <div className="flex flex-col gap-2.5 p-4 sm:p-5">
+      <div className="flex flex-col gap-2 p-4 sm:p-5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Tipe Konten
@@ -49,7 +55,7 @@ export function ProjectHeaderSummary({
             </Chip>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {isMultiType ? (
             availableTypes.map((t) => {
               const config = TYPE_CONFIG[t] ?? { label: t, icon: LayersIcon };
@@ -77,23 +83,23 @@ export function ProjectHeaderSummary({
               );
             })()
           )}
-        </div>
 
-        {!isMultiType && singleConfig && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300">
-              Rasio {singleConfig.ratio}
-            </span>
-            <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium capitalize text-zinc-600 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300">
-              {singleConfig.persona}
-            </span>
-            {singleConfig.voiceOver && (
-              <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300">
-                VO: {singleConfig.voiceOver}
+          {!isMultiType && effectiveConfig && (
+            <>
+              <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-0.5 text-[10px] font-semibold text-zinc-700 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300">
+                Rasio {effectiveConfig.ratio}
               </span>
-            )}
-          </div>
-        )}
+              <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium capitalize text-zinc-600 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300">
+                {effectiveConfig.persona}
+              </span>
+              {effectiveConfig.voiceOver && (
+                <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300">
+                  VO: {effectiveConfig.voiceOver}
+                </span>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Box 2: Topik */}

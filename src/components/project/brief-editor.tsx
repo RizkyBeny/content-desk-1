@@ -399,16 +399,7 @@ export function BriefEditor({
                     >
                       <DownloadIcon width={13} height={13} /> Unduh PDF
                     </Button>
-                    {contentType === "video" ? (
-                      <Button
-                        size="sm"
-                        onPress={() => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia())}
-                        isDisabled={!!busy}
-                        className="gap-1.5 bg-zinc-900 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-                      >
-                        <SparkIcon width={13} height={13} /> Generate Story Board
-                      </Button>
-                    ) : (
+                    {contentType !== "video" && (
                       <Button
                         size="sm"
                         onPress={generateMedia}
