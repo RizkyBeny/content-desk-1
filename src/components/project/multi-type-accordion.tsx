@@ -219,6 +219,7 @@ export function MultiTypeAccordion({
                     setBriefs((prev) => ({ ...prev, [type]: newBrief }));
                   }}
                   onPreviewVideo={type === "video" ? onPreviewVideo : undefined}
+                  isMultiType={true}
                 />
 
                 <div className="mt-6 flex items-center justify-end border-t border-zinc-200/80 pt-4 dark:border-white/10">

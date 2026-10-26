@@ -66,6 +66,7 @@ export interface BriefEditorProps {
   onPreviewVideo?: (b: BriefDTO) => void;
   angleTitle?: string;
   singleConfig?: SingleMediaConfig | null;
+  isMultiType?: boolean;
 }
 
 export function BriefEditor({
@@ -76,6 +77,7 @@ export function BriefEditor({
   onPreviewVideo,
   angleTitle = "Standarisasi Dapur dan Nasib Pelaku UMKM Lokal",
   singleConfig,
+  isMultiType = false,
 }: BriefEditorProps) {
   const router = useRouter();
   const schema = getBriefSchema(contentType);
@@ -399,7 +401,7 @@ export function BriefEditor({
                     >
                       <DownloadIcon width={13} height={13} /> Unduh PDF
                     </Button>
-                    {contentType !== "video" && (
+                    {!isMultiType && contentType !== "video" && (
                       <Button
                         size="sm"
                         onPress={generateMedia}
@@ -1016,22 +1018,24 @@ export function BriefEditor({
         )}
       </div>
 
-      {/* STICKY FOOTER ACTIONS (Figma #1022:12235 / #1022:12014) */}
-      <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-zinc-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-zinc-900/95 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-          Simpan perubahan sebelum melanjutkan ke Canvas Editor.
-        </span>
+      {/* STICKY FOOTER ACTIONS (Figma #1022:12235 / #1022:12014) - Hanya untuk single media mode */}
+      {!isMultiType && (
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-zinc-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-zinc-900/95 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            Simpan perubahan sebelum melanjutkan ke Canvas Editor.
+          </span>
 
-        <Button
-          size="sm"
-          onPress={contentType === "video" ? () => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia()) : generateMedia}
-          isDisabled={!!busy}
-          className="gap-2 bg-zinc-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-        >
-          <SparkIcon width={14} height={14} />
-          {contentType === "video" ? "Lanjut Generate Video" : "Lanjut ke Editor"}
-        </Button>
-      </div>
+          <Button
+            size="sm"
+            onPress={contentType === "video" ? () => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia()) : generateMedia}
+            isDisabled={!!busy}
+            className="gap-2 bg-zinc-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+          >
+            <SparkIcon width={14} height={14} />
+            {contentType === "video" ? "Lanjut Generate Video" : "Lanjut ke Editor"}
+          </Button>
+        </div>
+      )}
 
       {/* MODAL INSERT MEDIA (GALERI MAGNETO & UPLOAD PERANGKAT) */}
       <InsertMediaModal
