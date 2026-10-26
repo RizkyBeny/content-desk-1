@@ -45,10 +45,14 @@ export async function getBriefByProject(user: SessionUser, projectId: string): P
   return brief ? toDTO(brief) : null;
 }
 
-export async function generateBrief(user: SessionUser, projectId: string): Promise<BriefDTO> {
+export async function generateBrief(
+  user: SessionUser,
+  projectId: string,
+  contentTypeOverride?: ContentType,
+): Promise<BriefDTO> {
   const project = await getProjectForUser(user, projectId);
-  if (!project.contentType) throw new ApiError("Pilih jenis konten dahulu.", 400);
-  const contentType = project.contentType as ContentType;
+  const contentType = (contentTypeOverride || project.contentType) as ContentType;
+  if (!contentType) throw new ApiError("Pilih jenis konten dahulu.", 400);
 
   const generation = await getAIProvider().generateBrief({
     topic: project.topicTitle ?? "",

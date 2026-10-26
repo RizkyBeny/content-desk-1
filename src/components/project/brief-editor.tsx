@@ -110,8 +110,36 @@ export function BriefEditor({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const rows: BriefRow[] = useMemo(() => {
-    return isEditing ? editRows : brief?.rows ?? [];
-  }, [isEditing, editRows, brief?.rows]);
+    const raw = isEditing ? editRows : brief?.rows ?? [];
+    if (contentType === "image") {
+      // Single Image Mode: HANYA TEPAT 1 GAMBAR
+      if (raw.length === 0) {
+        return [
+          {
+            elemenVisual: "Visual utama untuk konten Single Image",
+            teks: "Headline dan pesan utama",
+            rasio: singleConfig?.ratio || "1:1",
+            gaya: "Editorial & Modern",
+          },
+        ];
+      }
+      return raw.slice(0, 1);
+    }
+    if (contentType === "carousel") {
+      // Multiple Image (Carousel) Mode: HARUS LEBIH DARI 1 (Minimal 5 slide)
+      if (raw.length <= 1) {
+        return [
+          { slide: "1", judul: "Headline Menarik", isi: "Pengenalan topik utama yang menggugah rasa ingin tahu pembaca.", visual: "Cover visual dengan headline tegas" },
+          { slide: "2", judul: "Konteks & Latar Belakang", isi: "Penjelasan kronologi atau fakta awal secara ringkas.", visual: "Grafis timeline atau foto pendukung" },
+          { slide: "3", judul: "Fakta Kunci & Data", isi: "Angka penting, data statistik, atau temuan investigasi.", visual: "Infografis data perbandingan" },
+          { slide: "4", judul: "Dampak & Reaksi", isi: "Respon pihak terkait serta implikasinya bagi masyarakat.", visual: "Foto figur atau kutipan pernyataan" },
+          { slide: "5", judul: "Kesimpulan & Diskusi", isi: "Rangkuman singkat dan ajakan berpendapat di kolom komentar.", visual: "Branding penutup + call to action" },
+        ];
+      }
+      return raw;
+    }
+    return raw;
+  }, [isEditing, editRows, brief?.rows, contentType, singleConfig?.ratio]);
   const rowIds = useMemo(() => rows.map((row, i) => row.__id ?? `row-${i}`), [rows]);
 
   function rowIdAt(source: BriefRow[], i: number) {
@@ -149,7 +177,9 @@ export function BriefEditor({
   async function generate() {
     setBusy("generate");
     try {
-      const res = await post<{ brief: BriefDTO }>(`/api/projects/${projectId}/brief`);
+      const res = await post<{ brief: BriefDTO }>(`/api/projects/${projectId}/brief`, {
+        contentType,
+      });
       apply(res.brief, true);
       toast.success("Brief berhasil dibuat.");
     } catch (e: unknown) {
@@ -161,7 +191,8 @@ export function BriefEditor({
 
   function startEdit() {
     if (!brief) return;
-    setEditRows(normalizeRows(brief.rows));
+    const raw = normalizeRows(rows);
+    setEditRows(contentType === "image" ? raw.slice(0, 1) : raw);
     setIsEditing(true);
   }
 
@@ -319,7 +350,7 @@ export function BriefEditor({
     );
   }
 
-  const activeRatio = singleConfig?.ratio || (contentType === "video" ? "9:16" : "9:16");
+  const activeRatio = singleConfig?.ratio || (contentType === "image" ? "1:1" : "9:16");
 
   return (
     <div className="space-y-6">
@@ -364,7 +395,11 @@ export function BriefEditor({
                   {contentType === "video" ? "Story Board " : "Visual Brief"}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Template produksi video siap diisi untuk semua jenis konten.
+                  {contentType === "video"
+                    ? "Template produksi video siap diisi untuk semua jenis konten."
+                    : contentType === "image"
+                    ? "Brief visual 1 frame utama untuk konten gambar statis."
+                    : "Rangkaian slide visual untuk storytelling carousel."}
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">

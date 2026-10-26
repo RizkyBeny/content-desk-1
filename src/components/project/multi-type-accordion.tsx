@@ -220,6 +220,15 @@ export function MultiTypeAccordion({
                   }}
                   onPreviewVideo={type === "video" ? onPreviewVideo : undefined}
                   isMultiType={true}
+                  singleConfig={
+                    config
+                      ? type === "image"
+                        ? config.image
+                        : type === "carousel"
+                        ? config.carousel
+                        : config.video
+                      : undefined
+                  }
                 />
 
                 <div className="mt-6 flex items-center justify-end border-t border-zinc-200/80 pt-4 dark:border-white/10">

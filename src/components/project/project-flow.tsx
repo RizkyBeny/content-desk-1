@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button, toast } from "@heroui/react";
 import { post } from "@/lib/client";
@@ -71,6 +71,21 @@ export function ProjectFlow({
   });
 
   const isMultiType = selectedMediaTypes.length > 1;
+
+  const initialBriefsMap = useMemo<Partial<Record<ContentType, BriefDTO | null>>>(() => {
+    if (!brief) return {};
+    const firstRow = brief.rows?.[0] || {};
+    if ("elemenVisual" in firstRow || brief.rows?.length === 1) {
+      return { image: brief };
+    }
+    if ("slide" in firstRow) {
+      return { carousel: brief };
+    }
+    if ("scene" in firstRow) {
+      return { video: brief };
+    }
+    return { carousel: brief };
+  }, [brief]);
 
   async function handleProceedFromAngle(params: {
     angle: Angle;
@@ -195,7 +210,7 @@ export function ProjectFlow({
             <MultiTypeAccordion
               projectId={state.id}
               types={selectedMediaTypes}
-              initialBriefs={brief ? { [activeType]: brief } : {}}
+              initialBriefs={initialBriefsMap}
               config={multiConfig}
               onPreviewVideo={(b) => {
                 setBrief(b);
