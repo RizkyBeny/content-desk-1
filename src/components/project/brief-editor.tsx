@@ -895,8 +895,8 @@ export function BriefEditor({
                               </div>
                             </div>
 
-                            {/* Sub-section: Hasil Generate Image (Khusus Carousel / Multi Image, Figma #1022:12299) */}
-                            {contentType === "carousel" && (
+                            {/* Sub-section: Hasil Generate Image (Figma #1022:12299 - Single Image & Carousel) */}
+                            {(contentType === "carousel" || contentType === "image") && (
                               <div className="flex flex-col gap-2 pt-1">
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
@@ -924,9 +924,18 @@ export function BriefEditor({
                                             : "border-zinc-200/80 opacity-50 hover:opacity-100 dark:border-white/10",
                                         )}
                                       >
-                                        <ImageIcon width={20} height={20} className="text-zinc-400" />
+                                        {mediaAttachment && thumbIdx === 0 ? (
+                                          <Image
+                                            src={mediaAttachment.url}
+                                            alt={mediaAttachment.title}
+                                            fill
+                                            className="object-cover"
+                                          />
+                                        ) : (
+                                          <ImageIcon width={20} height={20} className="text-zinc-400" />
+                                        )}
                                         {isSelected && (
-                                          <span className="absolute bottom-1 right-1 rounded-full bg-brand p-0.5 text-white">
+                                          <span className="absolute bottom-1 right-1 z-10 rounded-full bg-brand p-0.5 text-white">
                                             <CheckIcon width={10} height={10} />
                                           </span>
                                         )}
