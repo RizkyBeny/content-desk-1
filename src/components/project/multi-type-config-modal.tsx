@@ -198,7 +198,7 @@ export function MultiTypeConfigModal({
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {/* Ratio */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -215,7 +215,7 @@ export function MultiTypeConfigModal({
                           image: { ...prev.image, ratio: r },
                         }))
                       }
-                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                      className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
                         config.image.ratio === r
                           ? "bg-zinc-900 text-white shadow-sm dark:bg-brand dark:text-zinc-950"
                           : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -253,6 +253,27 @@ export function MultiTypeConfigModal({
                     width={14}
                     height={14}
                     className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                  />
+                </div>
+              </div>
+
+              {/* Jumlah Gambar (Locked: 1 Gambar) */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Jumlah Gambar
+                </label>
+                <div className="relative">
+                  <select
+                    disabled
+                    value="1"
+                    className="w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-100/70 px-3 py-2 pr-8 text-xs font-medium text-zinc-500 shadow-sm cursor-not-allowed dark:border-white/10 dark:bg-zinc-800/50 dark:text-zinc-400"
+                  >
+                    <option value="1">1 Gambar</option>
+                  </select>
+                  <ChevronDownIcon
+                    width={14}
+                    height={14}
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 opacity-60"
                   />
                 </div>
               </div>
@@ -297,6 +318,36 @@ export function MultiTypeConfigModal({
                 </div>
               </div>
 
+              {/* Persona */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Persona Gaya
+                </label>
+                <div className="relative">
+                  <select
+                    value={config.carousel.persona}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        carousel: { ...prev.carousel, persona: e.target.value },
+                      }))
+                    }
+                    className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-zinc-800 shadow-sm focus:border-brand focus:outline-none dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200"
+                  >
+                    {PERSONA_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDownIcon
+                    width={14}
+                    height={14}
+                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                  />
+                </div>
+              </div>
+
               {/* Jumlah Gambar */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -319,36 +370,6 @@ export function MultiTypeConfigModal({
                     {SLIDE_COUNT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDownIcon
-                    width={14}
-                    height={14}
-                    className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
-                  />
-                </div>
-              </div>
-
-              {/* Persona */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                  Persona Gaya
-                </label>
-                <div className="relative">
-                  <select
-                    value={config.carousel.persona}
-                    onChange={(e) =>
-                      setConfig((prev) => ({
-                        ...prev,
-                        carousel: { ...prev.carousel, persona: e.target.value },
-                      }))
-                    }
-                    className="w-full appearance-none rounded-xl border border-zinc-200 bg-white px-3 py-2 pr-8 text-xs font-medium text-zinc-800 shadow-sm focus:border-brand focus:outline-none dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200"
-                  >
-                    {PERSONA_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
                       </option>
                     ))}
                   </select>
