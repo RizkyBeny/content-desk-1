@@ -17,16 +17,19 @@ export interface MultiTypeConfig {
   image: {
     ratio: AspectRatio;
     persona: string;
+    enabled: boolean;
   };
   carousel: {
     ratio: AspectRatio;
     slideCount: number;
     persona: string;
+    enabled: boolean;
   };
   video: {
     ratio: AspectRatio;
     persona: string;
     voiceOver: string;
+    enabled: boolean;
   };
 }
 
@@ -41,10 +44,7 @@ const RATIOS: AspectRatio[] = ["1:1", "4:3", "16:9", "9:16"];
 
 const PERSONA_OPTIONS = [
   "Investigatif",
-  "Edukatif & Informatif",
-  "Storyteller Emosional",
-  "Kasual & Ramah",
-  "Otoritatif & Formal",
+  "Fun & Casual",
 ];
 
 const SLIDE_COUNT_OPTIONS = [
@@ -54,12 +54,7 @@ const SLIDE_COUNT_OPTIONS = [
   { label: "10 Gambar", value: 10 },
 ];
 
-const VOICEOVER_OPTIONS = [
-  "Investigatif & Tegas",
-  "Narator Tenang (Storytelling)",
-  "Enerjik & Cepat (Viral Hook)",
-  "Hangat & Percakapan",
-];
+const VOICEOVER_OPTIONS = ["Ya", "Tidak perlu"];
 
 export function MultiTypeConfigModal({
   isOpen,
@@ -72,16 +67,19 @@ export function MultiTypeConfigModal({
     image: {
       ratio: "1:1",
       persona: "Investigatif",
+      enabled: true,
     },
     carousel: {
       ratio: "1:1",
       slideCount: 6,
       persona: "Investigatif",
+      enabled: true,
     },
     video: {
       ratio: "9:16",
       persona: "Investigatif",
       voiceOver: "Investigatif & Tegas",
+      enabled: true,
     },
   });
 
@@ -196,6 +194,19 @@ export function MultiTypeConfigModal({
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Gambar (Single Image)
               </h3>
+              <div className="ml-auto flex items-center">
+                <input
+                  type="checkbox"
+                  checked={config.image.enabled}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      image: { ...prev.image, enabled: e.target.checked },
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-zinc-400 dark:border-zinc-500 cursor-pointer"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -287,6 +298,19 @@ export function MultiTypeConfigModal({
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Multiple Gambar (Carousel)
               </h3>
+              <div className="ml-auto flex items-center">
+                <input
+                  type="checkbox"
+                  checked={config.carousel.enabled}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      carousel: { ...prev.carousel, enabled: e.target.checked },
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-zinc-400 dark:border-zinc-500 cursor-pointer"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -390,6 +414,19 @@ export function MultiTypeConfigModal({
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 Video Storyboard
               </h3>
+              <div className="ml-auto flex items-center">
+                <input
+                  type="checkbox"
+                  checked={config.video.enabled}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      video: { ...prev.video, enabled: e.target.checked },
+                    }))
+                  }
+                  className="w-4 h-4 rounded border-zinc-400 dark:border-zinc-500 cursor-pointer"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

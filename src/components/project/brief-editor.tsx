@@ -281,7 +281,11 @@ export function BriefEditor({
   }
 
   function removeRow(rowIndex: number) {
-    setEditRows((prev) => (prev.length <= 1 ? prev : normalizeRows(prev.filter((_, i) => i !== rowIndex))));
+    setEditRows((prev) => {
+      const base = isEditing ? prev : normalizeRows(rows);
+      return base.length <= 1 ? base : normalizeRows(base.filter((_, i) => i !== rowIndex));
+    });
+    if (!isEditing) setIsEditing(true);
   }
 
   function allRequiredFilled(source: BriefRow[]): boolean {
@@ -449,11 +453,11 @@ export function BriefEditor({
             <div className="flex flex-col gap-4 border-b border-zinc-100 pb-5 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-1.5">
                 <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  {contentType === "video" ? "Story Board " : "Visual Brief"}
+                  {contentType === "video" ? "Video Storyboard" : "Visual Brief"}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {contentType === "video"
-                    ? "Template produksi video siap diisi untuk semua jenis konten."
+                    ? "Storyboard per scene untuk produksi video: visual, text on screen, dan voiceover."
                     : contentType === "image"
                     ? "Brief visual 1 frame utama untuk konten gambar statis."
                     : "Rangkaian slide visual untuk storytelling carousel."}
@@ -493,16 +497,6 @@ export function BriefEditor({
                     >
                       <DownloadIcon width={13} height={13} /> Unduh PDF
                     </Button>
-                    {!isMultiType && contentType !== "video" && (
-                      <Button
-                        size="sm"
-                        onPress={generateMedia}
-                        isDisabled={!!busy}
-                        className="gap-1.5 bg-zinc-900 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-                      >
-                        <SparkIcon width={13} height={13} /> Lanjut ke Editor
-                      </Button>
-                    )}
                   </>
                 ) : (
                   <>
@@ -517,290 +511,267 @@ export function BriefEditor({
               </div>
             </div>
 
-            {/* LAYOUT 1: VIDEO STORYBOARD TABLE (Figma #1022:11911) */}
+            {/* LAYOUT 1: VIDEO STORYBOARD CARDS */}
             {contentType === "video" && (
-              <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900/60">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] border-collapse text-left">
-                    <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50/80 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:border-white/10 dark:bg-zinc-800/50 dark:text-zinc-400">
-                        <th className="w-20 px-4 py-3.5">Scene</th>
-                        <th className="w-32 px-4 py-3.5">Durasi</th>
-                        <th className="min-w-[280px] px-4 py-3.5">Visual</th>
-                        <th className="w-64 px-4 py-3.5">TEXT PADA Visual</th>
-                        <th className="min-w-[260px] px-4 py-3.5">Voiceover (VO)</th>
-                        {isEditing && <th className="w-16 px-4 py-3.5 text-center">Aksi</th>}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200/80 text-sm dark:divide-white/5">
-                      {rows.map((row, ri) => {
-                        const sceneNumber = ri + 1;
-                        const timeRange = sceneTimeRanges[ri] ?? "00:00 - 00:10";
-                        const visualText = row.visual || row.elemenVisual || "";
-                        const textPadaVisual = row.teks_onscreen || row.judul || row.teks || "";
-                        const voiceoverText = row.narasi || row.naskah || row.isi || "";
-                        const mediaAttachment = sceneMedia[ri];
+              <div className="flex flex-col gap-6">
+                {rows.map((row, ri) => {
+                  const sceneNumber = ri + 1;
+                  const timeRange = sceneTimeRanges[ri] ?? "00:00 - 00:10";
+                  const visualText = row.visual || row.elemenVisual || "";
+                  const textPadaVisual = row.teks_onscreen || row.judul || row.teks || "";
+                  const voiceoverText = row.narasi || row.naskah || row.isi || "";
+                  const durationValue = row.durasi ?? "";
+                  const mediaAttachment = sceneMedia[ri];
+                  const references = sceneReferences[ri] || [];
 
-                        return (
-                          <tr
-                            key={row.__id ?? `video-scene-${ri}`}
-                            className="transition-colors hover:bg-zinc-50/50 dark:hover:bg-white/[0.02]"
-                          >
-                            {/* Col 1: Scene */}
-                            <td className="px-4 py-4 align-top font-semibold text-zinc-900 dark:text-zinc-100">
-                              {sceneNumber}
-                            </td>
-
-                            {/* Col 2: Durasi */}
-                            <td className="px-4 py-4 align-top text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                              {timeRange}
-                            </td>
-
-                            {/* Col 3: Visual (Interactive Media Box + Deskripsi) */}
-                            <td className="px-4 py-4 align-top">
-                              <div className="flex items-start gap-3">
-                                {/* Thumbnail Box 80x80 (Figma EL-a56f717b): KHUSUS MEDIA MANUAL SCENE */}
-                                {mediaAttachment ? (
-                                  /* State 1: Ada Media Manual Terpilih (Gambar/Video) */
-                                  <div className="group relative size-20 shrink-0 overflow-hidden rounded-lg border border-brand/40 bg-black shadow-xs">
-                                    <Image
-                                      src={mediaAttachment.url}
-                                      alt={mediaAttachment.title}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                    {mediaAttachment.type === "video" && (
-                                      <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.2 text-[9px] font-mono font-medium text-white">
-                                        {mediaAttachment.duration || "Video"}
-                                      </span>
-                                    )}
-
-                                    {/* Hover Actions: Ganti / Hapus Media Manual */}
-                                    <div className="absolute inset-0 flex items-center justify-center gap-1.5 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setActiveMediaTarget({
-                                            rowIndex: ri,
-                                            mode: "manual",
-                                            title: `Ganti Media Scene ${sceneNumber}`,
-                                            subtitle: "Ganti berkas media manual untuk scene ini",
-                                            defaultTab: mediaAttachment.type === "video" ? "video" : "image",
-                                            allowedTypes: ["video", "image"],
-                                            multiSelect: false,
-                                          })
-                                        }
-                                        className="rounded-full bg-white/20 p-1.5 text-white hover:bg-white/40"
-                                        title="Ganti media manual"
-                                      >
-                                        <PencilIcon className="size-3.5" />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setSceneMedia((prev) => {
-                                            const next = { ...prev };
-                                            delete next[ri];
-                                            return next;
-                                          });
-                                          toast.info(`Media manual Scene ${sceneNumber} dihapus.`);
-                                        }}
-                                        className="rounded-full bg-red-500/80 p-1.5 text-white hover:bg-red-600"
-                                        title="Hapus media manual"
-                                      >
-                                        <TrashIcon className="size-3.5" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  /* State 2: Placeholder Kosong -> Klik untuk tambah/upload media manual */
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setActiveMediaTarget({
-                                        rowIndex: ri,
-                                        mode: "manual",
-                                        title: `Pilih Media Manual Scene ${sceneNumber}`,
-                                        subtitle: "Pilih foto atau video manual dari galeri atau unggah dari perangkat",
-                                        defaultTab: "video",
-                                        allowedTypes: ["video", "image"],
-                                        multiSelect: false,
-                                      })
-                                    }
-                                    className="group flex size-20 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50/70 text-zinc-400 transition-all hover:border-brand hover:bg-brand/5 hover:text-brand dark:border-zinc-700 dark:bg-zinc-800/60"
-                                    title="Klik untuk memilih atau mengunggah media video/gambar manual"
-                                  >
-                                    <PlusIcon className="size-5 transition-transform group-hover:scale-110" />
-                                    <span className="mt-1 text-[9px] font-semibold text-zinc-400 group-hover:text-brand">
-                                      Add Media
-                                    </span>
-                                  </button>
-                                )}
-
-                                <div className="flex flex-1 flex-col gap-2">
-                                  {isEditing ? (
-                                    <textarea
-                                      rows={2}
-                                      value={visualText}
-                                      onChange={(e) => updateCell(ri, "visual", e.target.value)}
-                                      placeholder="Visual / B-roll prompt..."
-                                      className="w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
-                                    />
-                                  ) : (
-                                    <p className="text-xs leading-relaxed text-zinc-800 dark:text-zinc-200">
-                                      {visualText || <span className="italic text-zinc-400">Belum ada visual</span>}
-                                    </p>
-                                  )}
-
-                                  {/* Bagian Referensi Gambar AI: Sembunyi jika media manual sudah terpasang */}
-                                  {!mediaAttachment ? (
-                                    <div className="flex items-center gap-2 pt-0.5">
-                                      {(sceneReferences[ri] || []).length === 0 ? (
-                                        /* Subcase B1: Belum ada referensi -> Tombol "+ Add Referensi" (Figma #1022:10170) */
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setActiveMediaTarget({
-                                              rowIndex: ri,
-                                              mode: "reference",
-                                              title: `Pilih Gambar Referensi Scene ${sceneNumber}`,
-                                              subtitle: "Pilih gambar referensi dari galeri atau upload untuk panduan AI generate",
-                                              defaultTab: "image",
-                                              allowedTypes: ["image"],
-                                              multiSelect: true,
-                                            })
-                                          }
-                                          className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 shadow-2xs hover:border-brand hover:text-brand dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-brand dark:hover:text-brand transition-colors"
-                                        >
-                                          <PlusIcon className="size-3" />
-                                          <span>Add Referensi</span>
-                                        </button>
-                                      ) : (
-                                        /* Subcase B2: Ada Referensi -> Avatar stack + label "X Referensi" (Figma #1022:11992 row-2) */
-                                        <div className="inline-flex items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/70 px-2.5 py-1 dark:border-sky-900/40 dark:bg-sky-950/30">
-                                          <div className="flex items-center -space-x-2">
-                                            {(sceneReferences[ri] || []).slice(0, 3).map((ref, idx) => (
-                                              <div
-                                                key={ref.id || idx}
-                                                className="relative size-5.5 overflow-hidden rounded-full border-1.5 border-white bg-zinc-100 shadow-2xs dark:border-zinc-900"
-                                                title={ref.title}
-                                              >
-                                                <Image src={ref.url} alt={ref.title} fill className="object-cover" />
-                                              </div>
-                                            ))}
-                                          </div>
-
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setActiveMediaTarget({
-                                                rowIndex: ri,
-                                                mode: "reference",
-                                                title: `Kelola Gambar Referensi Scene ${sceneNumber}`,
-                                                subtitle: "Pilih atau ubah gambar referensi panduan AI",
-                                                defaultTab: "image",
-                                                allowedTypes: ["image"],
-                                                multiSelect: true,
-                                              })
-                                            }
-                                            className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline dark:text-sky-400"
-                                            title="Kelola gambar referensi"
-                                          >
-                                            {(sceneReferences[ri] || []).length} Referensi
-                                          </button>
-
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setSceneReferences((prev) => {
-                                                const next = { ...prev };
-                                                delete next[ri];
-                                                return next;
-                                              });
-                                              toast.info(`Referensi Scene ${sceneNumber} dihapus.`);
-                                            }}
-                                            className="ml-0.5 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-200/60 hover:text-red-500 dark:hover:bg-zinc-800"
-                                            title="Hapus semua referensi"
-                                          >
-                                            <XIcon className="size-3" />
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1.5 pt-0.5">
-                                      <span className="inline-flex items-center gap-1 rounded-md bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand-strong dark:bg-brand/20 dark:text-brand">
-                                        <CheckIcon className="size-3" />
-                                        <span className="max-w-[180px] truncate">{mediaAttachment.title}</span>
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
+                  return (
+                    <div
+                      key={row.__id ?? `video-scene-card-${ri}`}
+                      className="relative flex flex-col gap-6 rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-all hover:border-zinc-300 dark:border-white/10 dark:bg-zinc-900/80 lg:flex-row"
+                    >
+                      {/* Left Column: Scene Visual, Media & Referensi */}
+                      <div className="flex w-full flex-col gap-3 lg:w-[320px] lg:shrink-0">
+                        <div className="relative flex h-[240px] w-full flex-col justify-between overflow-hidden rounded-xl border border-zinc-200/80 bg-gradient-to-br from-zinc-100 to-zinc-200/60 dark:border-white/10 dark:from-zinc-950 dark:to-zinc-900">
+                          {mediaAttachment ? (
+                            <>
+                              <Image
+                                src={mediaAttachment.url}
+                                alt={mediaAttachment.title}
+                                fill
+                                className="object-cover"
+                              />
+                              {mediaAttachment.type === "video" && (
+                                <span className="absolute bottom-2 right-2 z-10 rounded bg-black/70 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white backdrop-blur">
+                                  {mediaAttachment.duration || "Video"}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <div className="my-auto flex flex-col items-center justify-center gap-2 text-center">
+                              <div className="flex size-12 items-center justify-center rounded-full bg-white/70 text-zinc-400 shadow-sm dark:bg-white/10">
+                                <ImageIcon width={24} height={24} />
                               </div>
-                            </td>
+                              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                Preview Visual Scene {sceneNumber}
+                              </span>
+                            </div>
+                          )}
 
-                            {/* Col 4: Text Pada Visual */}
-                            <td className="px-4 py-4 align-top">
-                              {isEditing ? (
-                                <textarea
-                                  rows={2}
-                                  value={textPadaVisual}
-                                  onChange={(e) => updateCell(ri, "teks_onscreen", e.target.value)}
-                                  placeholder="Headline di video..."
-                                  className="w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs font-semibold text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
-                                />
-                              ) : (
-                                <p className="text-xs font-medium leading-relaxed text-zinc-800 dark:text-zinc-200">
-                                  {textPadaVisual || <span className="italic text-zinc-400 font-normal">Tidak ada teks visual</span>}
-                                </p>
-                              )}
-                            </td>
-
-                            {/* Col 5: Voiceover (VO) */}
-                            <td className="px-4 py-4 align-top">
-                              {isEditing ? (
-                                <textarea
-                                  rows={2}
-                                  value={voiceoverText}
-                                  onChange={(e) => updateCell(ri, "narasi", e.target.value)}
-                                  placeholder="Naskah voiceover..."
-                                  className="w-full resize-y rounded-lg border border-zinc-200/80 bg-white px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
-                                />
-                              ) : (
-                                <p className="text-xs italic leading-relaxed text-zinc-700 dark:text-zinc-300">
-                                  {voiceoverText ? `"${voiceoverText}"` : <span className="text-zinc-400 not-italic">Belum ada VO</span>}
-                                </p>
-                              )}
-                            </td>
-
-                            {/* Col 6: Aksi Hapus */}
-                            {isEditing && (
-                              <td className="px-4 py-4 align-top text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => removeRow(ri)}
-                                  disabled={rows.length <= 1}
-                                  className="rounded p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30"
-                                  title="Hapus scene"
-                                >
-                                  <TrashIcon width={14} height={14} />
-                                </button>
-                              </td>
+                          <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveMediaTarget({
+                                  rowIndex: ri,
+                                  mode: "manual",
+                                  title: mediaAttachment
+                                    ? `Ganti Media Scene ${sceneNumber}`
+                                    : `Pilih Media Scene ${sceneNumber}`,
+                                  subtitle:
+                                    "Pilih foto atau video manual dari galeri atau unggah dari perangkat",
+                                  defaultTab: mediaAttachment?.type === "video" ? "video" : "image",
+                                  allowedTypes: ["video", "image"],
+                                  multiSelect: false,
+                                })
+                              }
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900/90 px-3 py-1.5 text-xs font-semibold text-white shadow-md backdrop-blur hover:bg-zinc-900 dark:bg-white/90 dark:text-zinc-900 dark:hover:bg-white"
+                            >
+                              <PlusIcon className="size-3" />
+                              {mediaAttachment ? "Ubah Media" : "Add Media"}
+                            </button>
+                            {mediaAttachment && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSceneMedia((prev) => {
+                                    const next = { ...prev };
+                                    delete next[ri];
+                                    return next;
+                                  });
+                                  toast.info(`Media manual Scene ${sceneNumber} dihapus.`);
+                                }}
+                                className="rounded-lg bg-red-500/85 p-1.5 text-white shadow-md backdrop-blur hover:bg-red-600"
+                                title="Hapus media manual"
+                              >
+                                <TrashIcon className="size-3.5" />
+                              </button>
                             )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                          </div>
 
-                {isEditing && (
-                  <div className="flex justify-center border-t border-zinc-100 p-3 dark:border-white/5">
-                    <Button size="sm" variant="secondary" onPress={addRow} className="gap-1.5 text-xs">
-                      <PlusIcon width={14} height={14} /> Tambah Scene
-                    </Button>
-                  </div>
-                )}
+                          <div className="relative z-10 mt-auto flex items-end justify-between gap-2 p-3">
+                            <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] font-medium text-white backdrop-blur">
+                              {timeRange}
+                            </span>
+                            <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+                              {activeRatio}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Referensi Gambar AI per Scene */}
+                        <div className="flex flex-col gap-2">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                            Referensi AI
+                          </span>
+                          {references.length === 0 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveMediaTarget({
+                                  rowIndex: ri,
+                                  mode: "reference",
+                                  title: `Pilih Gambar Referensi Scene ${sceneNumber}`,
+                                  subtitle:
+                                    "Pilih gambar referensi dari galeri atau upload untuk panduan AI generate",
+                                  defaultTab: "image",
+                                  allowedTypes: ["image"],
+                                  multiSelect: true,
+                                })
+                              }
+                              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-600 shadow-2xs transition-colors hover:border-brand hover:text-brand dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-brand dark:hover:text-brand"
+                            >
+                              <PlusIcon className="size-3" />
+                              <span>Add Referensi</span>
+                            </button>
+                          ) : (
+                            <div className="inline-flex items-center gap-2 rounded-lg border border-sky-200/80 bg-sky-50/70 px-2.5 py-1.5 dark:border-sky-900/40 dark:bg-sky-950/30">
+                              <div className="flex items-center -space-x-2">
+                                {references.slice(0, 3).map((ref, idx) => (
+                                  <div
+                                    key={ref.id || idx}
+                                    className="relative size-6 overflow-hidden rounded-full border-2 border-white bg-zinc-100 shadow-2xs dark:border-zinc-900"
+                                    title={ref.title}
+                                  >
+                                    <Image src={ref.url} alt={ref.title} fill className="object-cover" />
+                                  </div>
+                                ))}
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActiveMediaTarget({
+                                    rowIndex: ri,
+                                    mode: "reference",
+                                    title: `Kelola Gambar Referensi Scene ${sceneNumber}`,
+                                    subtitle: "Pilih atau ubah gambar referensi panduan AI",
+                                    defaultTab: "image",
+                                    allowedTypes: ["image"],
+                                    multiSelect: true,
+                                  })
+                                }
+                                className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline dark:text-sky-400"
+                                title="Kelola gambar referensi"
+                              >
+                                {references.length} Referensi
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSceneReferences((prev) => {
+                                    const next = { ...prev };
+                                    delete next[ri];
+                                    return next;
+                                  });
+                                  toast.info(`Referensi Scene ${sceneNumber} dihapus.`);
+                                }}
+                                className="ml-auto rounded-full p-0.5 text-zinc-400 hover:bg-zinc-200/60 hover:text-red-500 dark:hover:bg-zinc-800"
+                                title="Hapus semua referensi"
+                              >
+                                <XIcon className="size-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right Column: Scene Fields */}
+                      <div className="flex flex-1 flex-col gap-4">
+                        <div className="flex items-center justify-between border-b border-zinc-100 pb-2 dark:border-white/5">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                              Scene {sceneNumber}
+                            </h4>
+                            <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+                              Draft
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeRow(ri)}
+                            disabled={rows.length <= 1}
+                            className="rounded p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30"
+                            title="Hapus scene"
+                          >
+                            <TrashIcon width={14} height={14} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[140px_1fr]">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                              Durasi (detik)
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={durationValue}
+                              onChange={(e) => updateCell(ri, "durasi", e.target.value)}
+                              placeholder="12"
+                              className="w-full rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                              Visual
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={visualText}
+                              onChange={(e) => updateCell(ri, "visual", e.target.value)}
+                              placeholder="Visual / B-roll prompt..."
+                              className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            Text on Screen
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={textPadaVisual}
+                            onChange={(e) => updateCell(ri, "teks_onscreen", e.target.value)}
+                            placeholder="Headline di video..."
+                            className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                            Voiceover (VO)
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={voiceoverText}
+                            onChange={(e) => updateCell(ri, "narasi", e.target.value)}
+                            placeholder="Naskah voiceover..."
+                            className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="flex justify-center pt-2">
+                  <Button size="sm" variant="secondary" onPress={addRow} className="gap-1.5 text-xs">
+                    <PlusIcon width={14} height={14} /> Tambah Scene
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -1114,12 +1085,23 @@ export function BriefEditor({
                           <div className="flex flex-1 flex-col gap-4">
                             {/* Card Title Row with Badge Draft */}
                             <div className="flex items-center justify-between border-b border-zinc-100 pb-2 dark:border-white/5">
-                              <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                                Visual Image {ri + 1}
-                              </h4>
-                              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
-                                Draft
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                                  {contentType === "carousel" ? `Visual Slide ${ri + 1}` : `Visual Image ${ri + 1}`}
+                                </h4>
+                                <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
+                                  Draft
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeRow(ri)}
+                                disabled={rows.length <= 1}
+                                className="rounded p-1 text-zinc-400 hover:text-red-500 disabled:opacity-30"
+                                title="Hapus baris"
+                              >
+                                <TrashIcon width={14} height={14} />
+                              </button>
                             </div>
 
                             {/* Field 1: Text Judul Di gambar (Figma #1022:12311) */}
@@ -1229,17 +1211,28 @@ export function BriefEditor({
       {!isMultiType && (
         <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-zinc-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-zinc-900/95 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            Simpan perubahan sebelum melanjutkan ke Canvas Editor.
+            {isEditing
+              ? "Simpan perubahan dulu sebelum melanjutkan."
+              : contentType === "video"
+                ? "Periksa preview storyboard sebelum melanjutkan ke Canvas Editor."
+                : "Simpan perubahan sebelum melanjutkan ke Canvas Editor."}
           </span>
 
           <Button
             size="sm"
             onPress={contentType === "video" ? () => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia()) : generateMedia}
-            isDisabled={!!busy}
+            isDisabled={!!busy || isEditing}
             className="gap-2 bg-zinc-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
           >
-            <SparkIcon width={14} height={14} />
-            {contentType === "video" ? "Lanjut Generate Video" : "Lanjut ke Editor"}
+            {contentType === "video" ? (
+              <>
+                <VideoIcon width={14} height={14} /> Preview Storyboard
+              </>
+            ) : (
+              <>
+                <SparkIcon width={14} height={14} /> Lanjut ke Editor
+              </>
+            )}
           </Button>
         </div>
       )}

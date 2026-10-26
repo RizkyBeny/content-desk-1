@@ -45,6 +45,7 @@ export interface AngleStepProps {
     promptContext: string;
     singleConfig?: SingleMediaConfig;
     multiTypeConfig?: MultiTypeConfig;
+    recommendedTypes?: RecommendedType[];
   }) => void;
 }
 
@@ -196,6 +197,7 @@ export function AngleStep({
           promptContext,
           singleConfig,
           multiTypeConfig: multiConfig,
+          recommendedTypes: res.recommendedTypes,
         });
       }
     } catch (e: unknown) {
@@ -249,19 +251,11 @@ export function AngleStep({
   const RATIO_OPTIONS: AspectRatio[] = ["9:16", "16:9", "1:1", "4:3"];
 
   const PERSONA_OPTIONS = [
-    "investigatif",
-    "edukatif",
-    "storyteller",
-    "kasual",
-    "formal",
+    "Investigatif",
+    "Fun & Casual",
   ] as const;
 
-  const VOICEOVER_OPTIONS = [
-    "Dalipin",
-    "Investigatif & Tegas",
-    "Narator Tenang",
-    "Enerjik & Cepat",
-  ] as const;
+  const VOICEOVER_OPTIONS = ["Ya", "Tidak perlu"] as const;
 
   const currentMediaOption = selectedMediaMode
     ? MEDIA_OPTIONS.find((m) => m.id === selectedMediaMode) ?? null
@@ -380,7 +374,7 @@ export function AngleStep({
             isDisabled={busy}
             className="gap-2 px-6 py-2.5 font-semibold shadow-sm hover:border-brand/40"
           >
-            <PlusIcon width={16} height={16} /> 3 opsi lainnya
+            <PlusIcon width={16} height={16} /> Generate Another Ideations
           </Button>
         </div>
       )}

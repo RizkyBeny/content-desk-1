@@ -10,7 +10,7 @@ import { BriefEditor } from "./brief-editor";
 import { MultiTypeAccordion } from "./multi-type-accordion";
 import { StoryboardPreviewModal } from "./storyboard-preview-modal";
 import type { MultiTypeConfig } from "./multi-type-config-modal";
-import { ArrowLeftIcon, SparkIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon } from "@/components/ui/icons";
 import type { Angle, BriefDTO, BriefRow, ContentType, RecommendedType } from "@/types";
 
 export interface ProjectState {
@@ -168,7 +168,13 @@ export function ProjectFlow({
                 Content Brief
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Template produksi video siap diisi untuk semua jenis konten.
+                {activeType === "image"
+                  ? "Susun brief visual untuk konten gambar statis."
+                  : activeType === "carousel"
+                    ? "Susun rangkaian slide visual untuk konten carousel."
+                    : activeType === "video"
+                      ? "Susun storyboard per scene untuk produksi video."
+                      : "Template produksi konten siap diisi."}
               </p>
             </div>
 
@@ -182,16 +188,6 @@ export function ProjectFlow({
                 <ArrowLeftIcon width={14} height={14} /> Ganti Angle
               </Button>
 
-              {activeType === "video" && brief && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onPress={() => setShowPreviewModal(true)}
-                  className="gap-1.5 text-xs font-semibold"
-                >
-                  <SparkIcon width={14} height={14} /> Preview Storyboard
-                </Button>
-              )}
             </div>
           </div>
 

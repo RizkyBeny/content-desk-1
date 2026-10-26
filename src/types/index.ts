@@ -121,6 +121,11 @@ export interface Angle {
 export interface RecommendedType {
   type: ContentType;
   reason: string;
+  visual?: string;
+  headline?: string;
+  gaya?: string;
+  isi?: string;
+  judul?: string;
 }
 
 export interface Caption {
