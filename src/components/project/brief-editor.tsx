@@ -50,6 +50,21 @@ const ROW_NOUN: Record<ContentType, string> = {
   article: "section",
 };
 
+export interface GeneratedVisual {
+  id: string;
+  url: string;
+  title: string;
+  createdAt?: string;
+}
+
+const GENERATED_IMAGE_POOL: { url: string; title: string }[] = [
+  { url: "/post-media/card-1.png", title: "AI Variasi: Liputan Investigasi" },
+  { url: "/post-media/card-2.png", title: "AI Variasi: Sorotan Pelaku UMKM" },
+  { url: "/post-media/card-3.png", title: "AI Variasi: Standarisasi & Data" },
+  { url: "/seed/unsplash/abstract-03.jpg", title: "AI Variasi: Nuansa Visual Editorial" },
+  { url: "/seed/unsplash/abstract-07.jpg", title: "AI Variasi: Komposisi Berita Terkini" },
+];
+
 function derivedPrompt(type: ContentType, row: BriefRow): string {
   if (type === "carousel") return [row.visual, row.judul, row.isi].filter(Boolean).join(". ");
   if (type === "audio") return row.naskah ?? "";
@@ -96,6 +111,13 @@ export function BriefEditor({
   const [sceneMedia, setSceneMedia] = useState<Record<number, MediaAsset>>({});
   // 2. Referensi gambar untuk panduan AI generation per baris / scene
   const [sceneReferences, setSceneReferences] = useState<Record<number, MediaAsset[]>>({});
+  // 3. Riwayat visual hasil AI generate per baris (Single Image / Carousel)
+  const [sceneGeneratedImages, setSceneGeneratedImages] = useState<Record<number, GeneratedVisual[]>>({});
+  // 4. Mode visual yang sedang aktif: "empty" | "manual" | "generated"
+  const [activeVisualMode, setActiveVisualMode] = useState<Record<number, "empty" | "manual" | "generated">>({});
+  // 5. Status proses loading generate per baris
+  const [generatingRows, setGeneratingRows] = useState<Record<number, boolean>>({});
+
   // Target modal media picker yang sedang aktif
   const [activeMediaTarget, setActiveMediaTarget] = useState<{
     rowIndex: number;
@@ -106,6 +128,41 @@ export function BriefEditor({
     allowedTypes?: ("video" | "image")[];
     multiSelect?: boolean;
   } | null>(null);
+
+  function handleGenerateAIImage(rowIndex: number) {
+    const currentList = sceneGeneratedImages[rowIndex] || [];
+    if (currentList.length >= 3) {
+      toast.warning("Maksimal 3x generate image telah tercapai.");
+      setActiveVisualMode((prev) => ({ ...prev, [rowIndex]: "generated" }));
+      setOpenDropdownIndex(null);
+      return;
+    }
+
+    setOpenDropdownIndex(null);
+    setGeneratingRows((prev) => ({ ...prev, [rowIndex]: true }));
+    setActiveVisualMode((prev) => ({ ...prev, [rowIndex]: "generated" }));
+
+    // Efek loading spinner ~1.2 detik
+    setTimeout(() => {
+      const nextIdx = currentList.length;
+      const poolItem = GENERATED_IMAGE_POOL[(rowIndex * 2 + nextIdx) % GENERATED_IMAGE_POOL.length];
+      const newVisual: GeneratedVisual = {
+        id: `ai-gen-${rowIndex}-${Date.now()}`,
+        url: poolItem.url,
+        title: `${poolItem.title} #${nextIdx + 1}`,
+        createdAt: new Date().toLocaleTimeString(),
+      };
+
+      setSceneGeneratedImages((prev) => {
+        const nextList = [...(prev[rowIndex] || []), newVisual];
+        return { ...prev, [rowIndex]: nextList };
+      });
+
+      setActiveThumbnails((prev) => ({ ...prev, [rowIndex]: nextIdx }));
+      setGeneratingRows((prev) => ({ ...prev, [rowIndex]: false }));
+      toast.success(`Variasi visual AI #${nextIdx + 1} berhasil digenerate!`);
+    }, 1200);
+  }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -770,8 +827,19 @@ export function BriefEditor({
                       const bodyVal = row[bodyKey] ?? "";
                       const visualVal = row[visualKey] ?? "";
 
-                      const selectedThumb = activeThumbnails[ri] ?? 0;
-                      const mediaAttachment = sceneMedia[ri];
+                      const visualMode = activeVisualMode[ri] ?? (sceneMedia[ri] ? "manual" : "empty");
+                      const manualMedia = sceneMedia[ri];
+                      const genList = sceneGeneratedImages[ri] || [];
+                      const selectedThumb = activeThumbnails[ri] ?? (genList.length > 0 ? genList.length - 1 : 0);
+                      const activeGenVisual = genList[selectedThumb];
+                      const isRowGenerating = !!generatingRows[ri];
+
+                      const activeDisplayMedia =
+                        visualMode === "manual" && manualMedia
+                          ? { url: manualMedia.url, title: manualMedia.title, isManual: true }
+                          : visualMode === "generated" && activeGenVisual
+                            ? { url: activeGenVisual.url, title: activeGenVisual.title, isManual: false }
+                            : null;
 
                       return (
                         <div
@@ -781,14 +849,31 @@ export function BriefEditor({
                           {/* Left Column: Visual Preview + Ubah Gambar Dropdown (Figma #1022:12147 / #1022:12296) */}
                           <div className="flex w-full flex-col gap-3 lg:w-[320px] lg:shrink-0">
                             <div className="relative flex h-[240px] w-full flex-col justify-between overflow-hidden rounded-xl border border-zinc-200/80 bg-gradient-to-br from-zinc-100 to-zinc-200/60 p-3 dark:border-white/10 dark:from-zinc-950 dark:to-zinc-900">
-                              {/* Background Image jika media manual telah dipilih */}
-                              {mediaAttachment && (
+                              {/* Background Image jika media aktif ada dan sedang tidak generating */}
+                              {activeDisplayMedia && !isRowGenerating && (
                                 <Image
-                                  src={mediaAttachment.url}
-                                  alt={mediaAttachment.title}
+                                  src={activeDisplayMedia.url}
+                                  alt={activeDisplayMedia.title}
                                   fill
                                   className="object-cover"
                                 />
+                              )}
+
+                              {/* Overlay Loading State ketika sedang generate AI */}
+                              {isRowGenerating && (
+                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2.5 bg-black/60 p-4 text-center backdrop-blur-sm transition-all">
+                                  <div className="relative flex size-12 items-center justify-center rounded-full bg-white/10 text-brand ring-2 ring-brand/40">
+                                    <RefreshIcon className="size-6 animate-spin text-brand" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-white">
+                                      Sedang Generate Gambar AI...
+                                    </span>
+                                    <span className="text-[10px] text-zinc-300">
+                                      Variasi ke-{genList.length + 1} dari 3
+                                    </span>
+                                  </div>
+                                </div>
                               )}
 
                               {/* Overlay Ubah Gambar Dropdown (Figma #1022:12297 / #1022:12298) */}
@@ -803,6 +888,7 @@ export function BriefEditor({
 
                                 {openDropdownIndex === ri && (
                                   <div className="absolute left-0 top-9 z-30 w-64 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-xl dark:border-white/15 dark:bg-zinc-900">
+                                    {/* 1. Pilih dari Magneto */}
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -821,6 +907,8 @@ export function BriefEditor({
                                       <DatabaseIcon className="size-4 text-brand" />
                                       <span>Pilih dari Magneto</span>
                                     </button>
+
+                                    {/* 2. Pilih dari Perangkat Saya */}
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -839,22 +927,48 @@ export function BriefEditor({
                                       <FolderIcon className="size-4 text-brand" />
                                       <span>Pilih dari Perangkat Saya</span>
                                     </button>
+
+                                    {/* 3. Generate Image AI */}
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        toast.info("Generate variasi visual baru...");
-                                        setOpenDropdownIndex(null);
-                                      }}
-                                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+                                      disabled={isRowGenerating || genList.length >= 3}
+                                      onClick={() => handleGenerateAIImage(ri)}
+                                      className={cn(
+                                        "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors",
+                                        genList.length >= 3
+                                          ? "cursor-not-allowed text-zinc-400 opacity-60"
+                                          : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10",
+                                      )}
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <SparkIcon className="size-4 text-brand-strong dark:text-brand" />
-                                        <span>Generate</span>
+                                        <span>Generate {genList.length > 0 ? "Variasi Baru" : "Image"}</span>
                                       </div>
-                                      <span className="text-[10px] text-zinc-400">Rp6000/gen</span>
+                                      <span className="text-[10px] text-zinc-400">
+                                        {genList.length >= 3 ? "Batas 3x tercapai" : "Rp6000/gen"}
+                                      </span>
                                     </button>
 
-                                    {mediaAttachment && (
+                                    {/* 4. Kembali ke Hasil Generate jika sedang mode manual & punya riwayat generate */}
+                                    {visualMode === "manual" && genList.length > 0 && (
+                                      <div className="mt-1 border-t border-zinc-100 pt-1 dark:border-white/10">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveVisualMode((prev) => ({ ...prev, [ri]: "generated" }));
+                                            setOpenDropdownIndex(null);
+                                            toast.info("Beralih ke Hasil Generate Image.");
+                                          }}
+                                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-brand hover:bg-brand/10"
+                                        >
+                                          <SparkIcon className="size-3.5" />
+                                          <span>Lihat Hasil Generate ({genList.length} variasi)</span>
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {/* 5. Hapus Media Manual jika ada */}
+                                    {manualMedia && (
                                       <div className="mt-1 border-t border-zinc-100 pt-1 dark:border-white/10">
                                         <button
                                           type="button"
@@ -864,6 +978,10 @@ export function BriefEditor({
                                               delete next[ri];
                                               return next;
                                             });
+                                            setActiveVisualMode((prev) => ({
+                                              ...prev,
+                                              [ri]: genList.length > 0 ? "generated" : "empty",
+                                            }));
                                             setOpenDropdownIndex(null);
                                             toast.info("Media manual dihapus.");
                                           }}
@@ -878,8 +996,8 @@ export function BriefEditor({
                                 )}
                               </div>
 
-                              {/* Preview Center Graphic jika belum ada media */}
-                              {!mediaAttachment && (
+                              {/* Preview Center Graphic jika belum ada media aktif & tidak sedang generating */}
+                              {!activeDisplayMedia && !isRowGenerating && (
                                 <div className="my-auto flex flex-col items-center justify-center gap-2 text-center">
                                   <div className="flex size-12 items-center justify-center rounded-full bg-white/70 text-zinc-400 shadow-sm dark:bg-white/10">
                                     <ImageIcon width={24} height={24} />
@@ -891,54 +1009,99 @@ export function BriefEditor({
                               )}
 
                               <div className="relative z-10 self-end rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
-                                {mediaAttachment ? mediaAttachment.title : activeRatio}
+                                {activeDisplayMedia ? activeDisplayMedia.title : activeRatio}
                               </div>
                             </div>
 
-                            {/* Sub-section: Hasil Generate Image (Figma #1022:12299 - Single Image & Carousel) */}
-                            {(contentType === "carousel" || contentType === "image") && (
-                              <div className="flex flex-col gap-2 pt-1">
-                                <div className="flex flex-col">
-                                  <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
-                                    Hasil Generate Image
-                                  </span>
-                                  <span className="text-[11px] text-zinc-400">
-                                    Maksimal 3x generate image
-                                  </span>
+                            {/* Sub-section: Hasil Generate Image (HANYA MUNCUL KETIKA MODE GENERATED / USER KLIK GENERATE) */}
+                            {(contentType === "carousel" || contentType === "image") && visualMode === "generated" && (
+                              <div className="flex flex-col gap-2 pt-1 transition-all">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                      Hasil Generate Image
+                                    </span>
+                                    <span className="text-[11px] text-zinc-400">
+                                      Maksimal 3x generate image ({genList.length}/3 terpakai)
+                                    </span>
+                                  </div>
+
+                                  {genList.length < 3 && !isRowGenerating && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleGenerateAIImage(ri)}
+                                      className="inline-flex items-center gap-1.5 rounded-lg border border-brand/30 bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand transition-all hover:bg-brand hover:text-white"
+                                    >
+                                      <SparkIcon width={12} height={12} />
+                                      <span>Generate Lagi</span>
+                                    </button>
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-2.5">
                                   {[0, 1, 2].map((thumbIdx) => {
-                                    const isSelected = selectedThumb === thumbIdx;
-                                    return (
-                                      <button
-                                        key={thumbIdx}
-                                        type="button"
-                                        onClick={() =>
-                                          setActiveThumbnails((prev) => ({ ...prev, [ri]: thumbIdx }))
-                                        }
-                                        className={cn(
-                                          "relative flex size-20 items-center justify-center overflow-hidden rounded-lg border bg-zinc-100 transition-all dark:bg-zinc-800",
-                                          isSelected
-                                            ? "border-2 border-brand shadow-md ring-2 ring-brand/30"
-                                            : "border-zinc-200/80 opacity-50 hover:opacity-100 dark:border-white/10",
-                                        )}
-                                      >
-                                        {mediaAttachment && thumbIdx === 0 ? (
+                                    const item = genList[thumbIdx];
+                                    const isSelected = selectedThumb === thumbIdx && !!item;
+                                    const isCurrentSlotLoading = isRowGenerating && thumbIdx === genList.length;
+
+                                    if (item) {
+                                      return (
+                                        <button
+                                          key={item.id || thumbIdx}
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveThumbnails((prev) => ({ ...prev, [ri]: thumbIdx }));
+                                            setActiveVisualMode((prev) => ({ ...prev, [ri]: "generated" }));
+                                          }}
+                                          className={cn(
+                                            "group relative flex size-20 items-center justify-center overflow-hidden rounded-lg border bg-zinc-100 transition-all dark:bg-zinc-800",
+                                            isSelected
+                                              ? "border-2 border-brand shadow-md ring-2 ring-brand/30"
+                                              : "border-zinc-200/80 opacity-60 hover:opacity-100 dark:border-white/10",
+                                          )}
+                                          title={`${item.title} - Klik untuk tampilkan`}
+                                        >
                                           <Image
-                                            src={mediaAttachment.url}
-                                            alt={mediaAttachment.title}
+                                            src={item.url}
+                                            alt={item.title}
                                             fill
                                             className="object-cover"
                                           />
-                                        ) : (
-                                          <ImageIcon width={20} height={20} className="text-zinc-400" />
-                                        )}
-                                        {isSelected && (
-                                          <span className="absolute bottom-1 right-1 z-10 rounded-full bg-brand p-0.5 text-white">
-                                            <CheckIcon width={10} height={10} />
+                                          <span className="absolute left-1 top-1 z-10 rounded bg-black/70 px-1 py-0.2 text-[9px] font-bold text-white backdrop-blur">
+                                            v{thumbIdx + 1}
                                           </span>
-                                        )}
+                                          {isSelected && (
+                                            <span className="absolute bottom-1 right-1 z-10 rounded-full bg-brand p-0.5 text-white shadow">
+                                              <CheckIcon width={10} height={10} />
+                                            </span>
+                                          )}
+                                        </button>
+                                      );
+                                    }
+
+                                    if (isCurrentSlotLoading) {
+                                      return (
+                                        <div
+                                          key={`loading-${thumbIdx}`}
+                                          className="relative flex size-20 animate-pulse flex-col items-center justify-center rounded-lg border-2 border-dashed border-brand/60 bg-brand/5 dark:bg-brand/10"
+                                        >
+                                          <RefreshIcon className="size-4 animate-spin text-brand" />
+                                          <span className="mt-1 text-[9px] font-semibold text-brand">Gen {thumbIdx + 1}...</span>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <button
+                                        key={`empty-${thumbIdx}`}
+                                        type="button"
+                                        disabled={isRowGenerating || thumbIdx > genList.length}
+                                        onClick={() => handleGenerateAIImage(ri)}
+                                        className="relative flex size-20 cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 text-zinc-400 opacity-60 transition-all hover:border-brand hover:bg-brand/5 hover:opacity-100 hover:text-brand dark:border-white/10 dark:bg-zinc-800/40"
+                                        title={thumbIdx === genList.length ? `Klik untuk generate variasi ke-${thumbIdx + 1}` : `Slot ${thumbIdx + 1}`}
+                                      >
+                                        <SparkIcon width={16} height={16} />
+                                        <span className="mt-1 text-[9px] font-medium">Slot {thumbIdx + 1}</span>
                                       </button>
                                     );
                                   })}
@@ -1107,7 +1270,11 @@ export function BriefEditor({
                 ...prev,
                 [rowIndex]: asset,
               }));
-              toast.success(`Media Scene ${rowIndex + 1} berhasil diterapkan.`);
+              setActiveVisualMode((prev) => ({
+                ...prev,
+                [rowIndex]: "manual",
+              }));
+              toast.success(`Media ${noun} ${rowIndex + 1} berhasil diterapkan.`);
             } else {
               setSceneReferences((prev) => {
                 const existing = prev[rowIndex] || [];
