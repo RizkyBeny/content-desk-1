@@ -12,6 +12,10 @@ import {
   CheckIcon,
   ChevronDownIcon,
   DownloadIcon,
+  LayersIcon,
+  PencilIcon,
+  PlusIcon,
+  RefreshIcon,
   SlidersIcon,
   UploadIcon,
   XIcon,
@@ -159,7 +163,7 @@ function UserPersonaIcon({ className }: { className?: string }) {
   );
 }
 
-// ── Tipe & Data Bawaan ───────────────────────────────────────────────────────
+// ── Types & Constants ───────────────────────────────────────────────────────
 
 export type ImageProductionParams = {
   images: number;
@@ -174,14 +178,15 @@ export type StoryboardImageCard = {
   description: string;
   visualPrompt: string;
   imageUrl: string;
+  variationName: string;
   variations: string[];
   isRegenerating?: boolean;
 };
 
 const IMAGE_COUNT_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10];
-const RATIO_OPTIONS = ["1:1", "9:16", "16:9", "4:5"] as const;
+const RATIO_OPTIONS = ["9:16", "1:1", "16:9", "4:5"] as const;
 const STYLE_OPTIONS = ["Cinematic", "3D Animation", "Realistis", "Vintage", "Minimalis", "Ilustrasi"] as const;
-const PERSONA_OPTIONS = ["Informatif", "Formal", "Kasual", "Enerjik", "Storytelling", "Investigatif"] as const;
+const PERSONA_OPTIONS = ["Investigatif", "Informatif", "Formal", "Kasual", "Enerjik", "Storytelling"] as const;
 
 const DEFAULT_CARD_IMAGES = [
   "/seed/unsplash/abstract-01.jpg",
@@ -196,30 +201,37 @@ const DEFAULT_CARD_IMAGES = [
   "/seed/unsplash/abstract-10.jpg",
   "/seed/unsplash/abstract-11.jpg",
   "/seed/unsplash/abstract-12.jpg",
-  "/seed/unsplash/abstract-13.jpg",
-  "/seed/unsplash/abstract-14.jpg",
-  "/seed/unsplash/abstract-15.jpg",
-  "/seed/unsplash/abstract-16.jpg",
-  "/seed/unsplash/abstract-17.jpg",
-  "/seed/unsplash/abstract-18.jpg",
+];
+
+const VARIATION_NAMES = [
+  "AI Variasi: Standarisasi & Data #1",
+  "AI Variasi: Komposisi Berita Terkini #1",
+  "AI Variasi: Sorotan Pelaku UMKM #1",
+  "AI Variasi: Nuansa Visual Editorial #1",
+  "AI Variasi: Liputan Investigasi #1",
+  "AI Variasi: Rangkuman & Data Visual #6",
+  "AI Variasi: Infografis Terarah #7",
+  "AI Variasi: Dokumenter Modern #8",
 ];
 
 const SAMPLE_GALLERY_ASSETS = [
-  { id: "a1", url: "/seed/unsplash/abstract-01.jpg", title: "Kopi Espresso & Gelas Air" },
-  { id: "a2", url: "/seed/unsplash/abstract-02.jpg", title: "Mesin Espresso Komersial" },
-  { id: "a3", url: "/seed/unsplash/abstract-03.jpg", title: "Ekstraksi Kopi Mengalir" },
-  { id: "a4", url: "/seed/unsplash/abstract-04.jpg", title: "Suasana Hangat Kafe Pagi" },
-  { id: "a5", url: "/seed/unsplash/abstract-05.jpg", title: "Penyajian Kopi Latte Art" },
-  { id: "a6", url: "/seed/unsplash/abstract-06.jpg", title: "Biji Kopi Sangrai Premium" },
-  { id: "a7", url: "/seed/unsplash/abstract-07.jpg", title: "Cangkir Keramik Minimalis" },
-  { id: "a8", url: "/seed/unsplash/abstract-08.jpg", title: "Interior Coffee Shop Modern" },
-  { id: "a9", url: "/seed/unsplash/abstract-09.jpg", title: "Kopi Pour Over Manual Brew" },
-  { id: "a10", url: "/seed/unsplash/abstract-10.jpg", title: "Barista Menyeduh Espresso" },
-  { id: "a11", url: "/seed/unsplash/abstract-11.jpg", title: "Detail Crema Espresso Tebal" },
-  { id: "a12", url: "/seed/unsplash/abstract-12.jpg", title: "Area Meja Bar Kayu Alami" },
+  { id: "a1", url: "/seed/unsplash/abstract-01.jpg", title: "Latar abstrak 01" },
+  { id: "a2", url: "/seed/unsplash/abstract-02.jpg", title: "Latar abstrak 02" },
+  { id: "a3", url: "/seed/unsplash/abstract-03.jpg", title: "Latar abstrak 03" },
+  { id: "a4", url: "/seed/unsplash/abstract-04.jpg", title: "Latar abstrak 04" },
+  { id: "a5", url: "/seed/unsplash/abstract-05.jpg", title: "Latar abstrak 05" },
+  { id: "a6", url: "/seed/unsplash/abstract-06.jpg", title: "Latar abstrak 06" },
+  { id: "a7", url: "/seed/unsplash/abstract-07.jpg", title: "Latar abstrak 07" },
+  { id: "a8", url: "/seed/unsplash/abstract-08.jpg", title: "Latar abstrak 08" },
+  { id: "a9", url: "/seed/unsplash/abstract-09.jpg", title: "Latar abstrak 09" },
+  { id: "a10", url: "/seed/unsplash/abstract-10.jpg", title: "Latar abstrak 10" },
+  { id: "a11", url: "/seed/unsplash/abstract-11.jpg", title: "Latar abstrak 11" },
+  { id: "a12", url: "/seed/unsplash/abstract-12.jpg", title: "Latar abstrak 12" },
 ];
 
-// ── Dropdown Filter Component (Disamakan dengan Video Studio Flow) ───────────
+const STORAGE_KEY = "cd2_visual_brief_state";
+
+// ── Dropdown Filter Component ───────────────────────────────────────────────
 
 function FilterDropdown<T extends string | number>({
   icon: Icon,
@@ -252,28 +264,27 @@ function FilterDropdown<T extends string | number>({
   }, [open]);
 
   return (
-    <div className="relative inline-block text-left" ref={containerRef}>
+    <div ref={containerRef} className="relative inline-block text-left">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-all select-none",
-          open
-            ? "border-brand bg-brand/10 text-brand dark:border-brand dark:bg-brand/15 dark:text-brand-light"
-            : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:border-white/20 dark:hover:bg-zinc-800",
-        )}
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-zinc-200/90 bg-white/70 px-3 text-xs font-medium text-zinc-700 shadow-2xs backdrop-blur-md transition-all hover:bg-zinc-100 hover:text-zinc-900 active:scale-95 dark:border-white/10 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700/80 dark:hover:text-white"
       >
-        <Icon className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
+        <Icon className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
         <span>{label}</span>
         <ChevronDownIcon
-          className={cn("h-3.5 w-3.5 text-zinc-400 transition-transform duration-200", open && "rotate-180 text-brand")}
+          className={cn(
+            "h-3 w-3 text-zinc-400 transition-transform duration-200",
+            open && "rotate-180",
+          )}
         />
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-1.5 z-50 min-w-[140px] rounded-xl border border-zinc-200 bg-white p-1 shadow-lg animate-in fade-in zoom-in-95 duration-150 dark:border-white/15 dark:bg-zinc-900">
-          <div className="max-h-56 overflow-y-auto py-0.5">
-            {options.map((opt) => (
+        <div className="absolute left-0 mt-1.5 z-50 w-44 origin-top-left rounded-xl border border-zinc-200 bg-white p-1 shadow-xl ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150 dark:border-white/15 dark:bg-zinc-900">
+          {options.map((opt) => {
+            const isSelected = opt === value;
+            return (
               <button
                 key={String(opt)}
                 type="button"
@@ -282,24 +293,44 @@ function FilterDropdown<T extends string | number>({
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-colors",
-                  opt === value
-                    ? "bg-brand/10 text-brand dark:bg-brand/20 dark:text-brand-light"
+                  "flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-xs transition-colors",
+                  isSelected
+                    ? "bg-brand/10 font-semibold text-brand dark:bg-brand/20 dark:text-brand-light"
                     : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
                 )}
               >
-                <span>{typeof opt === "number" ? `${opt} Gambar` : String(opt)}</span>
-                {opt === value && <CheckIcon className="h-3.5 w-3.5 text-brand" />}
+                <span>
+                  {typeof opt === "number"
+                    ? `${opt} Gambar`
+                    : opt.includes(":")
+                      ? `Rasio ${opt}`
+                      : opt}
+                </span>
+                {isSelected && <CheckIcon className="h-3 w-3 text-brand" />}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-// ── Main Image Studio Flow Component ────────────────────────────────────────
+function getSavedVisualBrief() {
+  if (typeof window === "undefined") return null;
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("step") === "visual-brief") {
+    const saved = window.sessionStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        /* abaikan */
+      }
+    }
+  }
+  return null;
+}
 
 export function ImageStudioFlow({
   items = [],
@@ -310,29 +341,28 @@ export function ImageStudioFlow({
 }) {
   const router = useRouter();
 
-  // 0: Entry Point, 1: Buat Image (Composer), 2: Asisten AI (khusus >=2 gambar), 3: Visual Brief (Figma 985:9029)
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [savedState] = useState(() => getSavedVisualBrief());
 
-  // Bersih dari teks predefined: user memasukkan teksnya sendiri
-  const [prompt, setPrompt] = useState("");
+  // 0: Entry Point, 1: Buat Image (Composer), 2: Content Brief (Breakdown), 3: Visual Brief (Figma 332:32994)
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(() => (savedState?.cards?.length ? 3 : 0));
 
-  const [params, setParams] = useState<ImageProductionParams>({
-    images: 3,
+  // Input prompt user
+  const [prompt, setPrompt] = useState(() => savedState?.prompt ?? "");
+
+  // Default Carousel Presets sesuai Figma (6 slide, 9:16, Cinematic, Investigatif)
+  const [params, setParams] = useState<ImageProductionParams>(() => savedState?.params ?? {
+    images: 6,
     ratio: "9:16",
     style: "Cinematic",
     persona: "Investigatif",
   });
   const [attachment, setAttachment] = useState<{ name: string; url: string } | null>(null);
 
-  // Asisten AI Chat state (Step 2)
-  const [conceptChoice, setConceptChoice] = useState<"scratch" | "existing" | null>(null);
-  const [assistantReplied, setAssistantReplied] = useState(false);
-  const [topicDescription, setTopicDescription] = useState("");
+  // Content Brief state (Step 2)
+  const [topicDescription, setTopicDescription] = useState(() => savedState?.topicDescription ?? "");
   const [imageDescriptions, setImageDescriptions] = useState<Record<number, string>>({});
-  const [activeAccordion, setActiveAccordion] = useState<string | null>("topic");
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Loading transition (Step 1/2 -> Step 3)
+  // Loading transition
   const [loadingStoryboard, setLoadingStoryboard] = useState(false);
   const [storyboardProgress, setStoryboardProgress] = useState(0);
 
@@ -344,21 +374,27 @@ export function ImageStudioFlow({
   const modalFileInputRef = useRef<HTMLInputElement>(null);
   const cardFileInputRef = useRef<HTMLInputElement>(null);
 
-  // State kartu storyboard gambar (Figma 985:9029)
-  const [cards, setCards] = useState<StoryboardImageCard[]>([]);
+  // State kartu storyboard gambar (Visual Brief)
+  const [cards, setCards] = useState<StoryboardImageCard[]>(() => savedState?.cards ?? []);
   const [activeCardForModal, setActiveCardForModal] = useState<number | null>(null);
   const [selectedAssetInModal, setSelectedAssetInModal] = useState<string | null>(null);
   const [assetModalTab, setAssetModalTab] = useState<"gallery" | "upload">("gallery");
 
+  // Caption Rekomendasi (Figma 332:32994)
+  const [captionHeadline, setCaptionHeadline] = useState(
+    () => savedState?.captionHeadline ?? "Jelaskan Kasus Korupsi Indonesia Dalam 60 Detik.",
+  );
+  const [captionBody, setCaptionBody] = useState(
+    () =>
+      savedState?.captionBody ??
+      "Kabar terkini soal Kasus Korupsi Indonesia yang perlu kamu tahu. Redaksi kumparan merangkum fakta dan kronologinya. Simak selengkapnya.",
+  );
+  const [captionHashtags, setCaptionHashtags] = useState(
+    () => savedState?.captionHashtags ?? "#beritaterkini #kumparan #kabar #kasus #korupsi #indonesia",
+  );
+
   // Dropdown menu "Ubah Gambar" popover (per kartu ID)
   const [openMenuCardId, setOpenMenuCardId] = useState<number | null>(null);
-
-  // Auto-scroll untuk Step 2 (Asisten AI)
-  useEffect(() => {
-    if (step === 2) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [step, conceptChoice, assistantReplied, activeAccordion, loadingStoryboard]);
 
   // Click outside listener untuk menutup popover menu "Ubah Gambar"
   useEffect(() => {
@@ -404,36 +440,41 @@ export function ImageStudioFlow({
     setOpenMenuCardId(null);
   }
 
-  // ── AI Prefill Generator Cerdas (Anotasi Figma: "Harusnya field ini prefilled dari AI sistemnya") ──
+  // ── AI Prefill Generator Cerdas sesuai Wireframe Kasus Korupsi / Jurnalisme ──
   function buildAIPrefilledCards(count: number, customDescriptions: Record<number, string> = {}): StoryboardImageCard[] {
-    const baseTopic = (prompt.trim() || topicDescription.trim() || "Rahasia Kopi Enak Ala Kafe!").trim();
+    const baseTopic = (prompt.trim() || topicDescription.trim() || "Jelaskan Kasus Korupsi Indonesia dalam 60 detik").trim();
     const cleanTopic = baseTopic.replace(/[#*`]/g, "");
 
-    const narrativeTemplates = [
+    const editorialTemplates = [
       {
-        titleSuffix: "Rahasia Utama Terungkap! ☕️",
-        desc: "Langkah mendasar yang sering dilewatkan namun menentukan 80% hasil akhir kualitas visual dan rasa.",
-        promptDetail: `A sleek commercial espresso machine on a coffee bar counter, with a subtle glowing 3D technical cutaway diagram overlay showing the copper internal boiler heating water. Digital graphic overlay showing "90°C - 96°C". Photorealistic stainless steel reflections, warm ambient lighting, highly detailed, 8k resolution`,
+        title: "Headline",
+        desc: `Buka dengan kabar menohok soal ${cleanTopic}.`,
+        promptDetail: "Foto berita + headline besar",
       },
       {
-        titleSuffix: "Faktor Kunci & Kesalahan Umum",
-        desc: "Mengapa banyak yang gagal di tahap awal dan bagaimana menghindari penurunan konsistensi sejak awal.",
-        promptDetail: `Macro close-up shot of rich golden crema flowing from a bottomless portafilter into a clear tempered glass cup. Volumetric steam swirls, warm dramatic side rim lighting, cinematic depth of field, 8k resolution`,
+        title: "Fakta 1: Kasus",
+        desc: "Rangkuman fakta dan konteks terkait kasus.",
+        promptDetail: "Ilustrasi/foto pendukung fakta 1",
       },
       {
-        titleSuffix: "Penerapan & Solusi Praktis",
-        desc: "Teknik terukur yang dapat langsung diaplikasikan untuk peningkatan performa secara instan.",
-        promptDetail: `Top-down minimalist flatlay of freshly roasted specialty coffee beans on dark slate counter with precision digital scale, timer, and artisan ceramic coffee cup, soft natural morning window light, high sharpness, photorealistic`,
+        title: "Fakta 2: Korupsi",
+        desc: "Rangkuman fakta dan konteks terkait peristiwa serta keterlibatan pihak kunci.",
+        promptDetail: "Ilustrasi/foto pendukung fakta 2",
       },
       {
-        titleSuffix: "Optimasi Lanjutan & Eksplorasi",
-        desc: "Langkah penyempurnaan profesional yang membedakan kualitas standar dengan hasil level premium.",
-        promptDetail: `Atmospheric modern urban coffee lab interior with warm amber accent lights, barista expertly adjusting commercial grinder, moody cinematic depth of field, photorealistic, 8k resolution`,
+        title: "Fakta 3: Indonesia",
+        desc: "Rangkuman fakta dan dampak regulasi maupun sosial terkait Indonesia.",
+        promptDetail: "Ilustrasi/foto pendukung fakta 3",
       },
       {
-        titleSuffix: "Kesimpulan & Langkah Selanjutnya",
-        desc: "Rangkuman lengkap dan panduan aksi cepat yang siap dibagikan kepada audiens Anda.",
-        promptDetail: `Stylized aesthetic coffee shop table setup with notebook, sleek smartphone displaying analytics chart, and ceramic mug emitting steam, cozy ambient interior lighting, ultra-detailed`,
+        title: "Fakta 4: Kasus",
+        desc: `Rangkuman fakta dan konteks mendalam terkait ${cleanTopic}.`,
+        promptDetail: "Ilustrasi/foto pendukung fakta 4",
+      },
+      {
+        title: "Rangkuman & Sumber",
+        desc: `Kesimpulan berita & ajak baca lengkap. ${cleanTopic}`,
+        promptDetail: "Logo kumparan + CTA",
       },
     ];
 
@@ -447,23 +488,11 @@ export function ImageStudioFlow({
       const var2 = DEFAULT_CARD_IMAGES[(baseIdx + 1) % DEFAULT_CARD_IMAGES.length];
       const var3 = DEFAULT_CARD_IMAGES[(baseIdx + 2) % DEFAULT_CARD_IMAGES.length];
 
-      const tmpl = narrativeTemplates[(i - 1) % narrativeTemplates.length];
-
-      // Judul prefilled
-      const cardTitle =
-        count === 1
-          ? cleanTopic.length > 40 ? `${cleanTopic.slice(0, 40)}...` : cleanTopic
-          : i === 1
-            ? cleanTopic.length > 35 ? `${cleanTopic.slice(0, 35)}...` : cleanTopic
-            : `${i}. ${tmpl.titleSuffix}`;
-
-      // Deskripsi prefilled
+      const tmpl = editorialTemplates[(i - 1) % editorialTemplates.length];
+      const cardTitle = i === 1 && count > 1 ? "Headline" : tmpl.title;
       const cardDesc = userDesc || tmpl.desc;
-
-      // Visual prompt prefilled
-      const cardVisual = userDesc
-        ? `A photorealistic scene showing "${userDesc}" with ${params.style.toLowerCase()} styling, ambient lighting, high detail, 8k resolution`
-        : tmpl.promptDetail;
+      const cardVisual = tmpl.promptDetail;
+      const variationName = VARIATION_NAMES[(i - 1) % VARIATION_NAMES.length];
 
       result.push({
         id: i,
@@ -471,6 +500,7 @@ export function ImageStudioFlow({
         description: cardDesc,
         visualPrompt: cardVisual,
         imageUrl: baseImg,
+        variationName,
         variations: [var1, var2, var3],
         isRegenerating: false,
       });
@@ -484,63 +514,61 @@ export function ImageStudioFlow({
     setCards(generated);
 
     setLoadingStoryboard(true);
-    setStoryboardProgress(15);
+    setStoryboardProgress(20);
 
-    const t1 = setTimeout(() => setStoryboardProgress(45), 300);
-    const t2 = setTimeout(() => setStoryboardProgress(75), 650);
-    const t3 = setTimeout(() => setStoryboardProgress(95), 1000);
-    const t4 = setTimeout(() => {
+    const t1 = setTimeout(() => setStoryboardProgress(55), 250);
+    const t2 = setTimeout(() => setStoryboardProgress(85), 550);
+    const t3 = setTimeout(() => {
       setStoryboardProgress(100);
       setLoadingStoryboard(false);
       setStep(3);
-    }, 1200);
+
+      // Simpan snapshot ke session
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            cards: generated,
+            params,
+            prompt,
+            topicDescription,
+            captionHeadline,
+            captionBody,
+            captionHashtags,
+          }),
+        );
+      }
+    }, 850);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
-      clearTimeout(t4);
     };
   }
 
-  // ── Penanganan Submit Step 1 Sesuai Alur Figma 985:9029 ────────────────────
+  // ── Penanganan Submit Step 1 ──────────────────────────────────────────────
   function handlePromptSubmit() {
     if (!prompt.trim()) {
       toast.danger("Mohon masukkan konsep atau brief gambar terlebih dahulu.");
       return;
     }
 
+    const clean = prompt.trim();
+    setTopicDescription(clean);
+
     if (params.images === 1) {
-      // ── BARIS 1 FIGMA (Single Image): Langsung loading ke Visual Brief (tanpa asisten) ──
       startLoadingToStoryboard(1, {});
     } else {
-      // ── BARIS 2 & 3 FIGMA (Multi Image): Masuk ke Asisten AI (Step 2) ──
-      // Anotasi Figma: "Topik ini udah prefilled"
-      setTopicDescription(prompt.trim());
-      setConceptChoice(null);
-      setAssistantReplied(false);
-      setImageDescriptions({});
-      setActiveAccordion("topic");
+      // Siapkan initial prefilled descriptions untuk scene 1..N
+      const initialDescs: Record<number, string> = {};
+      for (let i = 1; i <= params.images; i += 1) {
+        if (i === 1) initialDescs[i] = `Buka dengan kabar menohok soal ${clean}.`;
+        else if (i === params.images) initialDescs[i] = `Kesimpulan berita & ajak baca lengkap. ${clean}`;
+        else initialDescs[i] = `Rangkuman fakta dan konteks adegan ke-${i}...`;
+      }
+      setImageDescriptions(initialDescs);
       setStep(2);
-    }
-  }
-
-  // ── Penanganan Pilihan Konsep di Step 2 ───────────────────────────────────
-  function handleSelectConcept(choice: "scratch" | "existing") {
-    setConceptChoice(choice);
-
-    if (choice === "scratch") {
-      // ── BARIS 2 FIGMA: "Bantu susun dari awal AI membuat rekomendasi" ──
-      // Anotasi Figma: "Ketika ada di step ini, harusnya field ini prefilled dari AI sistemnya sih"
-      setTimeout(() => {
-        setAssistantReplied(true);
-      }, 300);
-    } else {
-      // ── BARIS 3 FIGMA: "Aku sudah punya konsep, Lengkapi detail scene" ──
-      setTimeout(() => {
-        setAssistantReplied(true);
-        setActiveAccordion("topic");
-      }, 300);
     }
   }
 
@@ -579,7 +607,33 @@ export function ImageStudioFlow({
         }),
       );
       toast.success(`Variasi gambar baru untuk Visual Image ${cardId} berhasil dibuat!`);
-    }, 850);
+    }, 700);
+  }
+
+  function handleAddSlide() {
+    const nextId = cards.length + 1;
+    const baseImg = DEFAULT_CARD_IMAGES[(nextId - 1) % DEFAULT_CARD_IMAGES.length];
+    const newCard: StoryboardImageCard = {
+      id: nextId,
+      title: `Slide ${nextId}`,
+      description: `Detail adegan tambahan untuk slide ${nextId}.`,
+      visualPrompt: "Ilustrasi/foto pendukung tambahan",
+      imageUrl: baseImg,
+      variationName: `AI Variasi: Tambahan #${nextId}`,
+      variations: [baseImg, DEFAULT_CARD_IMAGES[(nextId) % DEFAULT_CARD_IMAGES.length]],
+      isRegenerating: false,
+    };
+    setCards((prev) => [...prev, newCard]);
+    toast.success(`Slide ${nextId} ditambahkan ke Visual Brief!`);
+  }
+
+  function handleRegenerateCaption() {
+    const topic = topicDescription || prompt || "Berita Terkini";
+    setCaptionHeadline(`${topic} Dalam 60 Detik.`);
+    setCaptionBody(
+      `Update terbaru mengenai ${topic}. Redaksi menyajikan fakta investigatif dan analisis mendalam untuk kamu. Simak selengkapnya.`,
+    );
+    toast.success("Caption rekomendasi berhasil dibuat ulang!");
   }
 
   function handleApplyAssetToCard() {
@@ -604,10 +658,28 @@ export function ImageStudioFlow({
 
   async function handleProceedToEditor() {
     toast.success("Menyimpan draft dan mengarahkan ke Canvas Editor…");
+
+    // Simpan ke session storage agar persisten jika user klik "Back to brief"
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          cards,
+          params,
+          prompt,
+          topicDescription,
+          captionHeadline,
+          captionBody,
+          captionHashtags,
+        }),
+      );
+    }
+
     try {
       await put("/api/creations/canvas-1", {
         type: "carousel",
         ratio: params.ratio,
+        caption: `${captionHeadline}\n\n${captionBody}\n\n${captionHashtags}`,
         items: cards.map((c) => ({
           id: c.id,
           title: c.title || `Visual Image ${c.id}`,
@@ -622,7 +694,7 @@ export function ImageStudioFlow({
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // STEP 0: ENTRY POINT (Disamakan dengan Video Studio Flow)
+  // STEP 0: ENTRY POINT (Dashboard Gambar & Insights)
   // ══════════════════════════════════════════════════════════════════════════
   if (step === 0) {
     const completedImages = items.filter(
@@ -631,7 +703,7 @@ export function ImageStudioFlow({
 
     return (
       <div className="space-y-8 py-2 pb-10 animate-in fade-in duration-200">
-        {/* Hero Section dengan Tombol CTA angle-card */}
+        {/* Hero Section dengan Tombol CTA */}
         <header className="flex flex-col items-center gap-4 text-center pt-4 pb-2">
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-[54px] md:leading-[60px]">
             Generate Image
@@ -643,7 +715,7 @@ export function ImageStudioFlow({
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="angle-card relative inline-flex items-center justify-center gap-2 rounded-full bg-brand px-7 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-brand-hover"
+              className="angle-card relative inline-flex items-center justify-center gap-2 rounded-full bg-[#01AFAE] px-7 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-[#009b9a]"
             >
               <SparklesIcon className="h-4 w-4" />
               <span>Buat Gambar Sekarang</span>
@@ -656,6 +728,7 @@ export function ImageStudioFlow({
           <InsightSection
             onSimilar={(topic) => {
               setPrompt(`Buat konten visual gambar tentang: ${topic}. Tampilkan visual yang memikat dan narasi yang kuat.`);
+              setParams((p) => ({ ...p, images: 6, ratio: "9:16", style: "Cinematic", persona: "Investigatif" }));
               setStep(1);
             }}
           />
@@ -715,8 +788,8 @@ export function ImageStudioFlow({
           {/* Identitas Mode */}
           <div className="flex items-center justify-between pb-1">
             <div className="flex items-center gap-1.5 text-[13px] font-semibold text-zinc-800 dark:text-zinc-100">
-              <SparklesIcon className="h-4 w-4 text-brand" />
-              <span>Mode AI</span>
+              <SparklesIcon className="h-4 w-4 text-[#01AFAE]" />
+              <span>Generate Image</span>
             </div>
             <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-normal">
               Produksi konten
@@ -807,12 +880,12 @@ export function ImageStudioFlow({
               />
             </div>
 
-            {/* Tombol Kirim / Buat Konten */}
+            {/* Tombol Kirim */}
             <button
               type="button"
               onClick={handlePromptSubmit}
               disabled={loadingStoryboard}
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#202020] px-5 text-sm font-medium text-white shadow-sm transition-all hover:bg-black active:scale-95 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#01AFAE] px-6 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#009b9a] active:scale-95 disabled:opacity-50"
             >
               Kirim
             </button>
@@ -823,7 +896,7 @@ export function ImageStudioFlow({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1 hover:text-brand dark:hover:text-brand-light transition-colors"
+              className="inline-flex items-center gap-1 hover:text-[#01AFAE] dark:hover:text-[#7de9e6] transition-colors"
             >
               <UploadIcon className="h-3 w-3" />
               <span>Tambahkan gambar sebagai referensi visual.</span>
@@ -838,36 +911,17 @@ export function ImageStudioFlow({
             <span>Shift + Enter untuk baris baru</span>
           </div>
         </div>
-
-        {/* Loading Progress Transition (Single Image -> Visual Brief) */}
-        {loadingStoryboard && (
-          <div className="w-full glass-panel angle-card rounded-2xl p-6 shadow-xl border border-zinc-200/80 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-300 font-medium mb-3">
-              <span className="flex items-center gap-2">
-                <SparklesIcon className="h-4 w-4 text-brand animate-spin" />
-                <span>Menyiapkan Visual Brief & Variasi Gambar AI...</span>
-              </span>
-              <span>{storyboardProgress}%</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <div
-                className="h-full bg-brand transition-all duration-300 ease-out"
-                style={{ width: `${storyboardProgress}%` }}
-              />
-            </div>
-          </div>
-        )}
       </div>
     );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // STEP 2: ASISTEN AI (Wireframe - 30 & Skenario 1 / 2)
+  // STEP 2: CONTENT BRIEF / PROMPT BREAKDOWN CONFIRMATION (Figma 270:16304)
   // ══════════════════════════════════════════════════════════════════════════
   if (step === 2) {
     return (
-      <div className="mx-auto flex flex-1 w-full max-w-4xl flex-col gap-6 py-4 pb-72 md:pb-80 animate-in fade-in duration-200 relative">
-        {/* Navigasi Kembali & Header */}
+      <div className="mx-auto flex flex-1 w-full max-w-4xl flex-col gap-6 py-4 pb-32 animate-in fade-in duration-200 relative">
+        {/* Navigasi Kembali */}
         <div className="w-full">
           <button
             type="button"
@@ -880,328 +934,123 @@ export function ImageStudioFlow({
 
         <header className="flex flex-col items-center gap-1.5 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Buat Gambar
+            Content Brief
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Template produksi gambar siap diisi untuk semua jenis konten.
           </p>
         </header>
 
-        {/* Chat Thread */}
-        <div className="flex w-full flex-col gap-4 py-2">
-          {/* User Message Bubble */}
-          <div className="flex justify-end">
-            <div className="glass-panel angle-card max-w-2xl rounded-2xl rounded-tr-sm p-4 text-[14px] leading-relaxed text-zinc-800 dark:text-zinc-100 transition-all duration-300">
-              <p className="whitespace-pre-line">{prompt}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-1 border-t border-zinc-200/60 dark:border-white/10 text-[11px] text-zinc-500 dark:text-zinc-400">
-                <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
-                  {params.images} Gambar
-                </span>
-                <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
-                  Rasio {params.ratio}
-                </span>
-                <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
-                  {params.style}
-                </span>
-                <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
-                  {params.persona}
-                </span>
-              </div>
+        {/* User Prompt Bubble (Kanan) */}
+        <div className="flex justify-end w-full">
+          <div className="glass-panel angle-card max-w-2xl rounded-2xl rounded-tr-sm p-4 text-[14px] leading-relaxed text-zinc-800 dark:text-zinc-100 transition-all duration-300">
+            <p className="whitespace-pre-line">{prompt}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-zinc-200/60 dark:border-white/10 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
+                {params.images} Gambar
+              </span>
+              <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
+                Rasio {params.ratio}
+              </span>
+              <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
+                {params.style}
+              </span>
+              <span className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 font-medium">
+                {params.persona}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Assistant Message 1 */}
-          <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand dark:bg-brand/20 dark:text-brand-light">
-              <SparklesIcon className="h-4 w-4" />
+        {/* Breakdown Kartu Scene (Figma 270:16304) */}
+        <div className="flex flex-col gap-4 pt-2">
+          {/* Card Topik Utama Prefilled */}
+          <div className="glass-panel angle-card rounded-2xl border border-zinc-200/90 dark:border-white/10 p-5 transition-all">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#01AFAE]/15 text-[#01AFAE] dark:text-[#7de9e6] px-2.5 py-1 text-xs font-semibold">
+                <ImageIcon className="h-3.5 w-3.5" />
+                <span>Topik Utama (Prefilled)</span>
+              </span>
             </div>
-            <div className="flex flex-col gap-1 max-w-2xl">
-              <div className="flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500">
-                <span className="font-semibold text-zinc-700 dark:text-zinc-300">Asisten konten</span>
-                <span>09.41</span>
-              </div>
-              <div className="glass-panel angle-card rounded-2xl rounded-tl-sm p-4 text-[14px] leading-relaxed text-zinc-800 dark:text-zinc-200 transition-all duration-300">
-                <p>
-                  Kamu sudah punya konsep visual per-gambar, atau ingin aku bantu menyusunnya dari awal?
-                </p>
-                <p className="mt-2 text-zinc-500 dark:text-zinc-400 text-xs">
-                  Pilih jawaban yang paling sesuai agar hasil visual {params.images} gambar lebih terarah dan sesuai ekspektasimu.
-                </p>
-              </div>
-            </div>
+            <textarea
+              rows={2}
+              value={topicDescription}
+              onChange={(e) => setTopicDescription(e.target.value)}
+              placeholder="Topik utama prefilled dari prompt awal..."
+              className="w-full resize-none rounded-xl border border-zinc-200 bg-white/60 p-3 text-xs leading-relaxed text-foreground placeholder:text-zinc-400 outline-none focus:border-[#01AFAE] focus:ring-1 focus:ring-[#01AFAE] dark:border-white/10 dark:bg-zinc-900/60"
+            />
           </div>
 
-          {/* User Selection Chip */}
-          {conceptChoice && (
-            <div className="flex justify-end animate-in fade-in duration-200">
-              <div className="glass-panel angle-card rounded-2xl rounded-tr-sm border-brand/30 bg-brand/10 text-brand-strong p-3.5 text-[14px] font-medium dark:bg-brand/20 dark:text-brand-light transition-all duration-300">
-                {conceptChoice === "scratch"
-                  ? "Bantu susun dari awal AI membuat rekomendasi"
-                  : "Aku sudah punya konsep, Lengkapi detail scene"}
-              </div>
-            </div>
-          )}
-
-          {/* Assistant Reply 2 */}
-          {assistantReplied && (
-            <div className="flex items-start gap-3 animate-in fade-in duration-200">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand dark:bg-brand/20 dark:text-brand-light">
-                <SparklesIcon className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col gap-1 max-w-2xl">
-                <div className="flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500">
-                  <span className="font-semibold text-zinc-700 dark:text-zinc-300">Asisten konten</span>
-                  <span>09.41</span>
-                </div>
-                <div className="glass-panel angle-card rounded-2xl rounded-tl-sm p-4 text-[14px] leading-relaxed text-zinc-800 dark:text-zinc-200 transition-all duration-300">
-                  {conceptChoice === "scratch" ? (
-                    <p>
-                      Tenang, aku sudah menganalisis konsepmu dan menyiapkan rekomendasi otomatis lengkap dengan teks judul, deskripsi, dan prompt visual untuk setiap slide carousel.
-                    </p>
-                  ) : (
-                    <p>
-                      Bagus! Topik utamamu sudah terisi otomatis. Silakan lengkapi detail deskripsi untuk masing-masing adegan agar hasil visual sesuai dengan ekspektasimu:
-                    </p>
-                  )}
-                </div>
-
-                {/* Skenario 1 (Bantu susun dari awal): Tombol langsung Buka Visual Brief dengan AI Prefilled */}
-                {conceptChoice === "scratch" && (
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => startLoadingToStoryboard(params.images, {})}
-                      disabled={loadingStoryboard}
-                      className="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-hover active:scale-95 disabled:opacity-50"
-                    >
-                      <SparklesIcon className="h-4 w-4" />
-                      <span>Buka Visual Brief</span>
-                      <span>→</span>
-                    </button>
+          {/* Cards Gambar 1 s/d N */}
+          {Array.from({ length: params.images }, (_, i) => i + 1).map((num) => {
+            const desc = imageDescriptions[num] || "";
+            return (
+              <div
+                key={`gambar-card-${num}`}
+                className="glass-panel angle-card rounded-2xl border border-zinc-200/90 dark:border-white/10 p-5 transition-all flex flex-col gap-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-md bg-[#01AFAE]/15 text-[#01AFAE] dark:text-[#7de9e6] px-2.5 py-1 text-xs font-semibold">
+                      Gambar {num}
+                    </span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Detail visual gambar {num}...
+                    </span>
                   </div>
-                )}
+                </div>
+                <textarea
+                  rows={2}
+                  value={desc}
+                  onChange={(e) => updateImageDescription(num, e.target.value)}
+                  placeholder={`Jelaskan objek, suasana, teks, dan komposisi untuk gambar ${num}...`}
+                  className="w-full resize-none rounded-xl border border-zinc-200 bg-white/60 p-3 text-xs leading-relaxed text-foreground placeholder:text-zinc-400 outline-none focus:border-[#01AFAE] focus:ring-1 focus:ring-[#01AFAE] dark:border-white/10 dark:bg-zinc-900/60"
+                />
               </div>
-            </div>
-          )}
+            );
+          })}
+        </div>
 
-          {/* Skenario 2: Accordion Input Gambar (Topik udah prefilled sesuai catatan Figma!) */}
-          {conceptChoice === "existing" && assistantReplied && !loadingStoryboard && (
-            <div className="flex flex-col gap-3 pt-3 animate-in fade-in duration-300">
-              {/* Accordion Item: Topic (Anotasi Figma: "Topik ini udah prefilled") */}
-              <div className="glass-panel angle-card rounded-2xl border border-zinc-200/90 dark:border-white/10 transition-all duration-300 overflow-hidden">
+        {/* Loading Progress Transition */}
+        {loadingStoryboard && (
+          <div className="w-full glass-panel angle-card rounded-2xl p-6 shadow-xl border border-zinc-200/80 dark:border-white/10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-300 font-medium mb-3">
+              <span className="flex items-center gap-2">
+                <SparklesIcon className="h-4 w-4 text-[#01AFAE] animate-spin" />
+                <span>Menyiapkan Visual Brief & Variasi Gambar AI...</span>
+              </span>
+              <span>{storyboardProgress}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+              <div
+                className="h-full bg-[#01AFAE] transition-all duration-300 ease-out"
+                style={{ width: `${storyboardProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Floating Bottom Dock (Figma 270:16445) */}
+        {!loadingStoryboard && (
+          <div className="fixed bottom-20 md:bottom-6 left-0 md:left-20 lg:left-64 right-0 z-40 px-4 pointer-events-none flex justify-center">
+            <div className="w-full max-w-4xl pointer-events-auto">
+              <div className="glass-panel angle-card w-full rounded-2xl p-4 px-6 flex items-center justify-between gap-4 shadow-2xl backdrop-blur-xl border border-zinc-200/90 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 animate-in slide-in-from-bottom-2 duration-300">
                 <button
                   type="button"
-                  onClick={() => setActiveAccordion((prev) => (prev === "topic" ? null : "topic"))}
-                  className="flex w-full items-center justify-between p-4 text-left font-medium transition-colors hover:bg-zinc-50/60 dark:hover:bg-white/[0.02]"
+                  onClick={() => setStep(1)}
+                  className="text-xs font-semibold text-[#01AFAE] hover:underline"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-                      <ImageIcon className="h-3.5 w-3.5 text-brand" />
-                      <span>Topik Utama (Prefilled)</span>
-                    </span>
-                    <span className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[280px] sm:max-w-md">
-                      {topicDescription || prompt}
-                    </span>
-                  </div>
-                  <ChevronDownIcon
-                    className={cn(
-                      "h-4 w-4 text-zinc-400 transition-transform duration-200",
-                      activeAccordion === "topic" && "rotate-180",
-                    )}
-                  />
+                  Ubah pilihan
                 </button>
-                {activeAccordion === "topic" && (
-                  <div className="p-4 pt-0 border-t border-zinc-200/60 dark:border-white/10 mt-1">
-                    <textarea
-                      rows={3}
-                      value={topicDescription}
-                      onChange={(e) => setTopicDescription(e.target.value)}
-                      placeholder="Topik utama prefilled dari prompt awal..."
-                      className="w-full resize-none rounded-xl border border-zinc-200 bg-white/60 p-3 text-xs text-foreground placeholder:text-zinc-400 outline-none focus:border-brand focus:ring-1 focus:ring-brand dark:border-white/10 dark:bg-zinc-900/60"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Accordion Items: Gambar 1 s/d N */}
-              {Array.from({ length: params.images }, (_, i) => i + 1).map((num) => {
-                const key = `img-${num}`;
-                const isOpen = activeAccordion === key;
-                const desc = imageDescriptions[num] || "";
-
-                return (
-                  <div
-                    key={key}
-                    className="glass-panel angle-card rounded-2xl border border-zinc-200/90 dark:border-white/10 transition-all duration-300 overflow-hidden"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setActiveAccordion((prev) => (prev === key ? null : key))}
-                      className="flex w-full items-center justify-between p-4 text-left font-medium transition-colors hover:bg-zinc-50/60 dark:hover:bg-white/[0.02]"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand dark:bg-brand/20 dark:text-brand-light">
-                          <span>Gambar {num}</span>
-                        </span>
-                        <span className="text-xs text-zinc-600 dark:text-zinc-400 truncate max-w-[280px] sm:max-w-md">
-                          {desc || `Detail visual gambar ${num}...`}
-                        </span>
-                      </div>
-                      <ChevronDownIcon
-                        className={cn(
-                          "h-4 w-4 text-zinc-400 transition-transform duration-200",
-                          isOpen && "rotate-180",
-                        )}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div className="p-4 pt-0 border-t border-zinc-200/60 dark:border-white/10 mt-1">
-                        <textarea
-                          rows={3}
-                          value={desc}
-                          onChange={(e) => updateImageDescription(num, e.target.value)}
-                          placeholder={`Jelaskan objek, suasana, teks, dan komposisi untuk gambar ${num}...`}
-                          className="w-full resize-none rounded-xl border border-zinc-200 bg-white/60 p-3 text-xs text-foreground placeholder:text-zinc-400 outline-none focus:border-brand focus:ring-1 focus:ring-brand dark:border-white/10 dark:bg-zinc-900/60"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Tombol Lanjut ke Visual Brief setelah mengisi accordion */}
-              <div className="pt-3 flex justify-end">
                 <button
                   type="button"
                   onClick={() => startLoadingToStoryboard(params.images, imageDescriptions)}
-                  disabled={loadingStoryboard}
-                  className="inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-brand-hover active:scale-95 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#01AFAE] hover:bg-[#009b9a] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-all active:scale-95"
                 >
-                  <SparklesIcon className="h-4 w-4" />
                   <span>Buka Visual Brief</span>
                   <span>→</span>
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Anchor Auto-scroll */}
-          <div
-            ref={chatEndRef}
-            className="scroll-mb-72 md:scroll-mb-80 h-px w-full pointer-events-none"
-            aria-hidden="true"
-          />
-        </div>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            STICKY / FIXED BOTTOM DOCK (Figma Node 80:16790)
-            Menampung kartu pilihan radio konsep sesuai desain Figma 80:16790
-           ══════════════════════════════════════════════════════════════════ */}
-        {!loadingStoryboard && (
-          <div className="fixed bottom-20 md:bottom-4 left-0 right-0 md:left-16 lg:left-64 z-30 px-3 sm:px-4 pointer-events-none transition-all duration-300">
-            <div className="mx-auto w-full max-w-4xl pointer-events-auto">
-              {!assistantReplied ? (
-                /* KARTU PILIHAN KONSEP (FIGMA 80:16790) */
-                <div className="glass-panel angle-card w-full rounded-2xl p-6 shadow-2xl backdrop-blur-xl border border-zinc-200/90 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 transition-all duration-300">
-                  <h3 className="text-sm sm:text-base font-semibold text-foreground mb-3">
-                    Kamu sudah punya konsep scene-by-scene, atau ingin aku bantu menyusunnya dari awal?
-                  </h3>
-                  <div className="h-px w-full bg-zinc-200/80 dark:bg-white/10 mb-4" />
-
-                  <div className="flex flex-col gap-3">
-                    {/* Opsi 1 */}
-                    <button
-                      type="button"
-                      onClick={() => handleSelectConcept("existing")}
-                      className={cn(
-                        "flex w-full items-center gap-3.5 rounded-xl p-4 text-left transition-all duration-200 border",
-                        conceptChoice === "existing"
-                          ? "border-2 border-brand bg-brand/5 dark:bg-brand/10"
-                          : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/20",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
-                          conceptChoice === "existing"
-                            ? "border-2 border-brand"
-                            : "border-2 border-zinc-300 dark:border-zinc-600",
-                        )}
-                      >
-                        {conceptChoice === "existing" && <div className="h-2.5 w-2.5 rounded-full bg-brand" />}
-                      </div>
-                      <span
-                        className={cn(
-                          "text-sm text-foreground",
-                          conceptChoice === "existing" ? "font-semibold" : "font-medium",
-                        )}
-                      >
-                        Aku sudah punya konsep, Lengkapi detail scene
-                      </span>
-                    </button>
-
-                    {/* Opsi 2 */}
-                    <button
-                      type="button"
-                      onClick={() => handleSelectConcept("scratch")}
-                      className={cn(
-                        "flex w-full items-center gap-3.5 rounded-xl p-4 text-left transition-all duration-200 border",
-                        conceptChoice === "scratch"
-                          ? "border-2 border-brand bg-brand/5 dark:bg-brand/10"
-                          : "border-zinc-200 bg-white hover:border-zinc-300 dark:border-white/10 dark:bg-zinc-900/60 dark:hover:border-white/20",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
-                          conceptChoice === "scratch"
-                            ? "border-2 border-brand"
-                            : "border-2 border-zinc-300 dark:border-zinc-600",
-                        )}
-                      >
-                        {conceptChoice === "scratch" && <div className="h-2.5 w-2.5 rounded-full bg-brand" />}
-                      </div>
-                      <span
-                        className={cn(
-                          "text-sm text-foreground",
-                          conceptChoice === "scratch" ? "font-semibold" : "font-medium",
-                        )}
-                      >
-                        Bantu susun dari awal AI membuat rekomendasi
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              ) : conceptChoice === "existing" ? (
-                /* ACTION BAR SKENARIO 2 (DOCK BAWAH) */
-                <div className="glass-panel angle-card w-full rounded-2xl p-4 px-6 flex flex-wrap items-center justify-between gap-4 shadow-2xl backdrop-blur-xl border border-zinc-200/90 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 animate-in slide-in-from-bottom-2 duration-300">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                      Simpan perubahan sebelum melanjutkan ke Canvas Editor.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConceptChoice(null);
-                        setAssistantReplied(false);
-                      }}
-                      className="text-xs text-brand hover:underline font-medium ml-1"
-                    >
-                      Ubah pilihan
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => startLoadingToStoryboard(params.images, imageDescriptions)}
-                    disabled={loadingStoryboard}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-all hover:bg-brand-hover active:scale-95 disabled:opacity-50"
-                  >
-                    <SparklesIcon className="h-4 w-4" />
-                    <span>Buka Visual Brief</span>
-                    <span>→</span>
-                  </button>
-                </div>
-              ) : null}
             </div>
           </div>
         )}
@@ -1210,10 +1059,10 @@ export function ImageStudioFlow({
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // STEP 3: VISUAL BRIEF (Figma Wireframe - 31, 32, 33 Mandiri Sesuai 985:9029)
+  // STEP 3: VISUAL BRIEF & AI VARIATION (Figma 332:32994)
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div className="mx-auto w-full max-w-5xl py-4 pb-16 animate-in fade-in duration-200">
+    <div className="mx-auto w-full max-w-5xl py-4 pb-36 animate-in fade-in duration-200">
       {/* Navigasi Kembali */}
       <div className="w-full shrink-0 mb-4">
         <button
@@ -1221,32 +1070,109 @@ export function ImageStudioFlow({
           onClick={() => setStep(params.images === 1 ? 1 : 2)}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-foreground dark:text-zinc-400 dark:hover:text-white transition-colors"
         >
-          {params.images === 1 ? "← Kembali ke Brief" : "← Kembali ke Asisten AI"}
+          {params.images === 1 ? "← Kembali ke Brief" : "← Kembali ke Content Brief"}
         </button>
       </div>
 
-      {/* ── Header Visual Brief (Figma 985:9029) ─────────────────────────── */}
+      {/* ── Context & Brief Configuration Summary Bar (Figma #332:33799 / #355:3314) ── */}
+      <div className="mb-6 rounded-2xl border border-zinc-200/90 bg-white/95 dark:border-white/10 dark:bg-zinc-900/90 p-4 sm:p-5 shadow-xs">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-zinc-200/80 dark:divide-white/10 gap-4 md:gap-0">
+          {/* Kolom 1: Konfigurasi Gambar */}
+          <div className="flex flex-col gap-2 md:pr-5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              IMAGE CONFIGURATION
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#002C22]/40 text-[#00D492] px-2 py-0.5 text-xs font-semibold border border-[#00D492]/20">
+                <LayersIcon className="h-3 w-3" />
+                <span>{params.images > 1 ? "Multiple Image" : "Single Image"}</span>
+              </span>
+              <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                {cards.length} Slide
+              </span>
+              <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Rasio {params.ratio}
+              </span>
+              <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                {params.style}
+              </span>
+            </div>
+          </div>
+
+          {/* Kolom 2: Topik */}
+          <div className="flex flex-col gap-1.5 pt-3 md:pt-0 md:px-5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              TOPIK
+            </span>
+            <p className="text-sm font-bold text-foreground line-clamp-2" title={topicDescription || prompt}>
+              {topicDescription || prompt}
+            </p>
+          </div>
+
+          {/* Kolom 3: Angle & Ubah Button */}
+          <div className="flex flex-col justify-between gap-2 pt-3 md:pt-0 md:pl-5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                  ANGLE
+                </span>
+                <span className="inline-flex items-center rounded-full bg-[#01AFAE]/15 text-[#01AFAE] dark:text-[#7de9e6] px-2 py-0.5 text-[10px] font-bold">
+                  Dipilih
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep(params.images > 1 ? 2 : 1)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#01AFAE] hover:text-[#009b9a] transition-colors"
+              >
+                <PencilIcon className="h-3 w-3" />
+                <span>Ubah</span>
+              </button>
+            </div>
+            <p className="text-xs text-zinc-600 dark:text-zinc-300 line-clamp-2 font-medium">
+              <span className="font-bold text-foreground">{params.persona}:</span>{" "}
+              {topicDescription || prompt}
+            </p>
+          </div>
+        </div>
+
+        {/* Quota Banner Sub-row */}
+        <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 text-xs">
+            <SparklesIcon className="h-3.5 w-3.5 text-[#01AFAE]" />
+            <span>Maksimal 3x generate image (1/3 terpakai)</span>
+          </div>
+          <span className="text-[11px] text-zinc-400">
+            Perubahan visual brief akan disinkronkan otomatis ke Studio Canvas.
+          </span>
+        </div>
+      </div>
+
+      {/* Header Visual Brief */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Visual Brief
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Template produksi gambar siap diisi untuk semua jenis konten.
+            Rangkaian slide visual untuk storytelling carousel.
           </p>
 
           {/* Metadata Chips (Aspect Ratio, Gambar Count) */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="inline-flex items-center rounded-md bg-[#002C22]/40 text-[#00D492] px-2.5 py-1 text-xs font-medium border border-[#00D492]/20">
+              Multiple Image
+            </span>
             <span className="inline-flex items-center rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
               Aspect Ratio {params.ratio}
             </span>
             <span className="inline-flex items-center rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-              {cards.length} Gambar
+              {cards.length} Slide
             </span>
           </div>
         </div>
 
-        {/* Action Buttons: Unduh PDF & Lanjut ke Editor */}
+        {/* Action Button: Unduh PDF */}
         <div className="flex items-center gap-2.5">
           <button
             type="button"
@@ -1256,29 +1182,21 @@ export function ImageStudioFlow({
             <DownloadIcon className="h-3.5 w-3.5" />
             <span>Unduh PDF</span>
           </button>
-          <button
-            type="button"
-            onClick={handleProceedToEditor}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F0F0F] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-black active:scale-95 dark:bg-brand dark:hover:bg-brand-hover dark:text-white"
-          >
-            <SparklesIcon className="h-3.5 w-3.5" />
-            <span>Lanjut ke Editor</span>
-          </button>
         </div>
       </div>
 
-      {/* ── Cards List: Visual Image 1 s/d N (Figma 1010:27225) ───────────── */}
+      {/* ── Cards List: Kolom Kiri Visual AI (Figma #355:3413) / Kolom Kanan Detail Teks ── */}
       <div className="flex flex-col gap-5">
-        {cards.map((card) => (
+        {cards.map((card, idx) => (
           <div
             key={card.id}
             className="rounded-2xl border border-zinc-200/90 bg-white/95 p-5 sm:p-6 shadow-xs dark:border-white/10 dark:bg-zinc-900/90 transition-all"
           >
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-              {/* ── Kolom Kiri: Visual Image Preview + Ubah Gambar + Multi-Regenerate AI (5 Cols) ── */}
+              {/* ── Kolom Kiri: Visual Preview & AI Variations (5 Cols) (Figma #355:3413) ── */}
               <div className="md:col-span-5 flex flex-col gap-3">
-                {/* Box Gambar Preview */}
-                <div className="relative group w-full aspect-[16/10] overflow-hidden rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-900 shadow-xs">
+                {/* Box Gambar Preview 9:16 atau 1:1 */}
+                <div className="relative group w-full aspect-[9/14] sm:aspect-[9/12] max-h-[380px] overflow-hidden rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-950 shadow-xs">
                   <Image
                     src={card.imageUrl}
                     alt={`Visual Image ${card.id}`}
@@ -1289,27 +1207,34 @@ export function ImageStudioFlow({
                     )}
                   />
 
+                  {/* Overlay Badge Label AI Variasi */}
+                  <div className="absolute top-3 right-3 z-20 pointer-events-none">
+                    <span className="inline-flex items-center rounded-md bg-black/70 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-md border border-white/10">
+                      {card.variationName}
+                    </span>
+                  </div>
+
                   {/* Loading overlay jika sedang regenerate */}
                   {card.isRegenerating && (
                     <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/60 text-white backdrop-blur-xs">
-                      <SparklesIcon className="h-5 w-5 animate-spin text-brand" />
+                      <SparklesIcon className="h-5 w-5 animate-spin text-[#01AFAE]" />
                       <span className="text-[11px] font-medium tracking-wide">
                         Menghasilkan variasi AI…
                       </span>
                     </div>
                   )}
 
-                  {/* Tombol Ubah Gambar Melayang di Pojok Kiri Atas */}
+                  {/* Tombol Ubah Gambar di Pojok Kiri Atas */}
                   <div className="absolute top-3 left-3 z-30" data-ubah-menu-container>
                     <button
                       type="button"
                       onClick={() =>
                         setOpenMenuCardId((prev) => (prev === card.id ? null : card.id))
                       }
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-black/80 px-3 py-1.5 text-xs font-medium text-white shadow-md backdrop-blur-md transition-all hover:bg-black active:scale-95"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-black/80 px-2.5 py-1 text-[11px] font-medium text-white shadow-md backdrop-blur-md transition-all hover:bg-black active:scale-95"
                     >
                       <EditImageIcon className="h-3 w-3" />
-                      <span>Ubah Gambar</span>
+                      <span>Ubah</span>
                       <ChevronDownIcon
                         className={cn(
                           "h-3 w-3 transition-transform duration-200",
@@ -1318,9 +1243,9 @@ export function ImageStudioFlow({
                       />
                     </button>
 
-                    {/* Dropdown Popover Menu (Pilih Magneto / Perangkat / Generate AI) */}
+                    {/* Popover Menu */}
                     {openMenuCardId === card.id && (
-                      <div className="absolute top-full left-0 mt-1.5 z-40 w-56 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 dark:border-white/15 dark:bg-zinc-900">
+                      <div className="absolute top-full left-0 mt-1.5 z-40 w-52 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 dark:border-white/15 dark:bg-zinc-900">
                         <button
                           type="button"
                           onClick={() => {
@@ -1329,9 +1254,9 @@ export function ImageStudioFlow({
                             setAssetModalTab("gallery");
                             setOpenMenuCardId(null);
                           }}
-                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+                          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          <LibraryIcon className="h-4 w-4 text-zinc-500" />
+                          <LibraryIcon className="h-3.5 w-3.5 text-zinc-500" />
                           <span>Pilih dari Magneto</span>
                         </button>
                         <button
@@ -1341,17 +1266,17 @@ export function ImageStudioFlow({
                             cardFileInputRef.current?.click();
                             setOpenMenuCardId(null);
                           }}
-                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+                          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
                         >
-                          <FolderIcon className="h-4 w-4 text-zinc-500" />
-                          <span>Pilih dari Perangkat Saya</span>
+                          <FolderIcon className="h-3.5 w-3.5 text-zinc-500" />
+                          <span>Pilih dari Komputer</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleRegenerateCardImage(card.id)}
-                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-brand hover:bg-brand/10 dark:hover:bg-brand/20 transition-colors"
+                          className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium text-[#01AFAE] hover:bg-[#01AFAE]/10 transition-colors"
                         >
-                          <SparklesIcon className="h-4 w-4 text-brand" />
+                          <SparklesIcon className="h-3.5 w-3.5 text-[#01AFAE]" />
                           <span>Generate by AI</span>
                         </button>
                       </div>
@@ -1359,19 +1284,10 @@ export function ImageStudioFlow({
                   </div>
                 </div>
 
-                {/* Baris Thumbnail "Generate Image by AI" (Figma 1010:27225) */}
-                <div className="flex flex-col gap-1.5 pt-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                      Generate Image by AI
-                    </span>
-                    <span className="text-[11px] text-zinc-400">
-                      {card.variations.length} variasi
-                    </span>
-                  </div>
-
-                  {/* Thumbnail Scroll Tray + Tombol Regenerate */}
-                  <div className="flex items-center gap-2 overflow-x-auto py-1">
+                {/* 3 Variasi Thumbnails + Status Kuota & Tombol Generate Lagi */}
+                <div className="flex flex-col gap-2 pt-1">
+                  {/* Thumbnail Row */}
+                  <div className="flex items-center gap-2">
                     {card.variations.map((varImg, varIdx) => {
                       const isSelected = card.imageUrl === varImg;
                       return (
@@ -1380,10 +1296,10 @@ export function ImageStudioFlow({
                           type="button"
                           onClick={() => handleSelectVariation(card.id, varImg)}
                           className={cn(
-                            "relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all cursor-pointer shadow-2xs",
+                            "relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 transition-all cursor-pointer shadow-2xs",
                             isSelected
-                              ? "border-brand ring-2 ring-brand/40 scale-100"
-                              : "border-transparent opacity-75 hover:opacity-100 hover:border-zinc-300 dark:hover:border-zinc-600",
+                              ? "border-[#01AFAE] ring-2 ring-[#01AFAE]/30 scale-100"
+                              : "border-transparent opacity-70 hover:opacity-100 hover:border-zinc-300 dark:hover:border-zinc-600",
                           )}
                         >
                           <Image
@@ -1393,88 +1309,77 @@ export function ImageStudioFlow({
                             className="object-cover"
                           />
                           {isSelected && (
-                            <div className="absolute top-1 right-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-brand text-white shadow-xs">
-                              <CheckIcon className="h-2.5 w-2.5" />
+                            <div className="absolute top-0.5 right-0.5 z-10 flex h-3 w-3 items-center justify-center rounded-full bg-[#01AFAE] text-white">
+                              <CheckIcon className="h-2 w-2" />
                             </div>
                           )}
                         </button>
                       );
                     })}
+                  </div>
 
-                    {/* Shimmering placeholder saat sedang regenerate */}
-                    {card.isRegenerating && (
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-brand/50 bg-brand/10 animate-pulse flex items-center justify-center text-brand">
-                        <SparklesIcon className="h-4 w-4 animate-spin" />
-                      </div>
-                    )}
-
-                    {/* Tombol + Regenerate Langsung */}
+                  {/* Quota Text & Tombol Generate Lagi */}
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-[11px] text-zinc-400">
+                      Maksimal 3x generate image (1/3 terpakai)
+                    </span>
                     <button
                       type="button"
                       onClick={() => handleRegenerateCardImage(card.id)}
                       disabled={card.isRegenerating}
-                      className="inline-flex h-14 items-center justify-center gap-1 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/80 px-2.5 text-[11px] font-medium text-zinc-600 hover:border-brand hover:bg-brand/5 hover:text-brand transition-all dark:border-white/15 dark:bg-zinc-800/40 dark:text-zinc-400 dark:hover:border-brand dark:hover:text-brand-light shrink-0 disabled:opacity-50"
-                      title="Regenerate variasi gambar baru dengan AI"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#01AFAE]/40 bg-[#01AFAE]/10 px-3 py-1 text-xs font-semibold text-[#01AFAE] hover:bg-[#01AFAE]/20 transition-all active:scale-95 disabled:opacity-50"
                     >
-                      <SparklesIcon className="h-3.5 w-3.5 text-brand" />
-                      <span>+ Regenerate</span>
+                      <RefreshIcon className={cn("h-3 w-3", card.isRegenerating && "animate-spin")} />
+                      <span>Generate Lagi</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* ── Kolom Kanan: Input Judul, Deskripsi, dan Visual (7 Cols - Prefilled AI) ── */}
+              {/* ── Kolom Kanan: Detail Teks Slide (7 Cols) ── */}
               <div className="md:col-span-7 flex flex-col gap-3.5">
-                {/* Header Kartu: Judul + Badge Draft */}
                 <div className="flex items-center justify-between pb-1">
-                  <h3 className="text-base font-bold text-foreground">
-                    Visual Image {card.id}
-                  </h3>
-                  <span className="rounded-md bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                    Draft
+                  <span className="inline-flex items-center rounded-md bg-[#01AFAE]/15 text-[#01AFAE] dark:text-[#7de9e6] px-2.5 py-1 text-xs font-bold">
+                    Visual Image {idx + 1}
                   </span>
                 </div>
 
-                {/* Field 1: Text Judul Di gambar (Prefilled!) */}
+                {/* Input Teks Judul */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-foreground">
-                    Text Judul Di gambar <span className="text-red-500">*</span>
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    Headline / Judul
                   </label>
                   <input
                     type="text"
                     value={card.title}
                     onChange={(e) => updateCardField(card.id, "title", e.target.value)}
-                    placeholder="Rahasia Kopi Enak Ala Kafe! ☕️"
-                    className="w-full rounded-xl border border-zinc-200 bg-white/70 px-3.5 py-2.5 text-xs text-foreground placeholder:text-zinc-400 outline-none focus:border-brand focus:ring-1 focus:ring-brand dark:border-white/10 dark:bg-zinc-900/60"
+                    placeholder="Judul slide..."
+                    className="w-full rounded-xl border border-zinc-200 bg-white/60 p-2.5 text-sm font-semibold text-foreground placeholder:text-zinc-400 outline-none focus:border-[#01AFAE] focus:ring-1 focus:ring-[#01AFAE] dark:border-white/10 dark:bg-zinc-800/60"
                   />
                 </div>
 
-                {/* Field 2: Text Deskripsi Di gambar (Prefilled!) */}
+                {/* Input Teks Deskripsi */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-foreground">
-                    Text Deskripsi Di gambar <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={card.description}
-                    onChange={(e) => updateCardField(card.id, "description", e.target.value)}
-                    placeholder="Deskripsi poin penting teks pada gambar..."
-                    className="w-full rounded-xl border border-zinc-200 bg-white/70 px-3.5 py-2.5 text-xs text-foreground placeholder:text-zinc-400 outline-none focus:border-brand focus:ring-1 focus:ring-brand dark:border-white/10 dark:bg-zinc-900/60"
-                  />
-                </div>
-
-                {/* Field 3: Visual Prompt (Prefilled!) */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-foreground">
-                    Visual <span className="text-red-500">*</span>
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                    Deskripsi Konten
                   </label>
                   <textarea
-                    rows={3}
-                    value={card.visualPrompt}
-                    onChange={(e) => updateCardField(card.id, "visualPrompt", e.target.value)}
-                    placeholder="Prompt detail visual untuk generator AI..."
-                    className="w-full resize-none rounded-xl border border-zinc-200 bg-white/70 px-3.5 py-2.5 text-xs text-foreground placeholder:text-zinc-400 outline-none focus:border-brand focus:ring-1 focus:ring-brand dark:border-white/10 dark:bg-zinc-900/60 leading-relaxed"
+                    rows={2}
+                    value={card.description}
+                    onChange={(e) => updateCardField(card.id, "description", e.target.value)}
+                    placeholder="Rangkuman narasi untuk slide ini..."
+                    className="w-full resize-none rounded-xl border border-zinc-200 bg-white/60 p-2.5 text-xs text-foreground placeholder:text-zinc-400 outline-none focus:border-[#01AFAE] focus:ring-1 focus:ring-[#01AFAE] dark:border-white/10 dark:bg-zinc-800/60"
                   />
+                </div>
+
+                {/* Prompt Hint Box */}
+                <div className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-3 dark:border-white/5 dark:bg-zinc-800/40">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    Rekomendasi Visual
+                  </span>
+                  <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+                    {card.visualPrompt}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1482,8 +1387,88 @@ export function ImageStudioFlow({
         ))}
       </div>
 
+      {/* Tombol Tambah Slide (Figma 270:17502) */}
+      <div className="mt-6 flex justify-center">
+        <button
+          type="button"
+          onClick={handleAddSlide}
+          className="inline-flex items-center gap-2 rounded-xl border border-dashed border-zinc-300 dark:border-white/20 bg-zinc-50/50 dark:bg-zinc-800/30 px-6 py-3 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:border-[#01AFAE] hover:text-[#01AFAE] transition-all"
+        >
+          <PlusIcon className="h-4 w-4" />
+          <span>Tambah Slide</span>
+        </button>
+      </div>
 
-      {/* Hidden File Input untuk Opsi "Pilih dari Perangkat Saya" */}
+      {/* ── Section CAPTION REKOMENDASI (Figma 332:32994) ── */}
+      <div className="mt-8 rounded-2xl border border-zinc-200/90 bg-white/95 p-6 shadow-xs dark:border-white/10 dark:bg-zinc-900/90 transition-all flex flex-col gap-4">
+        <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80 dark:border-white/10">
+          <span className="text-xs font-bold tracking-wider uppercase text-zinc-400">
+            CAPTION REKOMENDASI
+          </span>
+          <button
+            type="button"
+            onClick={handleRegenerateCaption}
+            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-white/15 px-3 py-1 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <RefreshIcon className="h-3 w-3 text-zinc-400" />
+            <span>Buat ulang</span>
+          </button>
+        </div>
+
+        {/* Input Headline Caption */}
+        <div className="flex flex-col gap-1">
+          <input
+            type="text"
+            value={captionHeadline}
+            onChange={(e) => setCaptionHeadline(e.target.value)}
+            className="w-full text-base font-bold text-foreground bg-transparent outline-none border-0 focus:ring-0 p-0"
+            placeholder="Judul / Headline caption..."
+          />
+        </div>
+
+        {/* Textarea Body Caption */}
+        <div className="flex flex-col gap-1">
+          <textarea
+            rows={3}
+            value={captionBody}
+            onChange={(e) => setCaptionBody(e.target.value)}
+            className="w-full resize-none text-xs leading-relaxed text-zinc-600 dark:text-zinc-300 bg-transparent outline-none border-0 focus:ring-0 p-0"
+            placeholder="Isi narasi caption..."
+          />
+        </div>
+
+        {/* Hashtags */}
+        <div className="pt-2">
+          <input
+            type="text"
+            value={captionHashtags}
+            onChange={(e) => setCaptionHashtags(e.target.value)}
+            className="w-full text-xs font-medium text-[#01AFAE] bg-transparent outline-none border-0 focus:ring-0 p-0"
+            placeholder="#hashtag"
+          />
+        </div>
+      </div>
+
+      {/* ── Floating Bottom Dock (Figma 332:32994) ── */}
+      <div className="fixed bottom-20 md:bottom-6 left-0 md:left-20 lg:left-64 right-0 z-40 px-4 pointer-events-none flex justify-center">
+        <div className="w-full max-w-5xl pointer-events-auto">
+          <div className="glass-panel angle-card w-full rounded-2xl p-4 px-6 flex items-center justify-between gap-4 shadow-2xl backdrop-blur-xl border border-zinc-200/90 dark:border-white/15 bg-white/95 dark:bg-zinc-900/95 animate-in slide-in-from-bottom-2 duration-300">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              Visual Brief siap dialihkan ke Studio Canvas untuk konfigurasi lanjutan.
+            </span>
+            <button
+              type="button"
+              onClick={handleProceedToEditor}
+              className="inline-flex items-center gap-2 rounded-full bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-100 dark:bg-white dark:text-zinc-900 px-6 py-2.5 text-xs font-bold shadow-lg transition-all active:scale-95 shrink-0"
+            >
+              <SparklesIcon className="h-4 w-4 text-[#01AFAE]" />
+              <span>Lanjut ke Editor</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden File Input untuk Kartu */}
       <input
         type="file"
         ref={cardFileInputRef}
@@ -1492,10 +1477,10 @@ export function ImageStudioFlow({
         className="hidden"
       />
 
-      {/* ── MODAL PILIH MEDIA ASET MAGNETO ─────────────────────────────────── */}
+      {/* ── Modal Pilih Gambar Magneto / Komputer ── */}
       {activeCardForModal !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-3xl rounded-2xl border border-zinc-200/90 bg-white p-6 shadow-2xl max-h-[90vh] flex flex-col justify-between animate-in zoom-in-95 duration-200 dark:border-white/15 dark:bg-zinc-900">
+          <div className="glass-panel angle-card flex flex-col w-full max-w-2xl max-h-[85vh] rounded-2xl p-6 shadow-2xl border border-zinc-200/90 dark:border-white/15 bg-white dark:bg-zinc-900">
             {/* Header Modal */}
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-white/10">
               <div className="flex flex-col gap-1">
@@ -1523,7 +1508,7 @@ export function ImageStudioFlow({
                   type="button"
                   onClick={handleApplyAssetToCard}
                   disabled={!selectedAssetInModal}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand hover:bg-brand-hover px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#01AFAE] hover:bg-[#009b9a] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                 >
                   <CheckIcon className="h-3.5 w-3.5" />
                   <span>Terapkan ke Gambar</span>
@@ -1539,13 +1524,13 @@ export function ImageStudioFlow({
                 className={cn(
                   "pb-2.5 text-sm font-semibold transition-colors relative",
                   assetModalTab === "gallery"
-                    ? "text-brand"
+                    ? "text-[#01AFAE]"
                     : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
                 )}
               >
                 Galeri Gambar Magneto
                 {assetModalTab === "gallery" && (
-                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-brand rounded-full" />
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-[#01AFAE] rounded-full" />
                 )}
               </button>
               <button
@@ -1554,13 +1539,13 @@ export function ImageStudioFlow({
                 className={cn(
                   "pb-2.5 text-sm font-semibold transition-colors relative",
                   assetModalTab === "upload"
-                    ? "text-brand"
+                    ? "text-[#01AFAE]"
                     : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
                 )}
               >
                 Upload Berkas
                 {assetModalTab === "upload" && (
-                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-brand rounded-full" />
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-[#01AFAE] rounded-full" />
                 )}
               </button>
             </div>
@@ -1578,7 +1563,7 @@ export function ImageStudioFlow({
                         className={cn(
                           "group relative aspect-square overflow-hidden rounded-xl border transition-all cursor-pointer shadow-xs",
                           isSelected
-                            ? "border-brand ring-2 ring-brand"
+                            ? "border-[#01AFAE] ring-2 ring-[#01AFAE]"
                             : "border-zinc-200 hover:border-zinc-300 dark:border-white/10 dark:hover:border-white/20",
                         )}
                       >
@@ -1589,7 +1574,7 @@ export function ImageStudioFlow({
                           </span>
                         </div>
                         {isSelected && (
-                          <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white shadow-md">
+                          <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#01AFAE] text-white shadow-md">
                             <CheckIcon className="h-3 w-3" />
                           </div>
                         )}

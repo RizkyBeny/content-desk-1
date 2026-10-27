@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "@heroui/react";
 import { SaveIcon, XIcon } from "@/components/ui/icons";
 import type { CreationDTO } from "@/types";
@@ -162,6 +163,7 @@ export function ExportMediaModal({
   assetUrls,
   channelLogoUrl,
   previewNode,
+  backHref,
 }: {
   open: boolean;
   onClose: () => void;
@@ -169,6 +171,7 @@ export function ExportMediaModal({
   assetUrls?: Record<string, string>;
   channelLogoUrl?: string | null;
   previewNode?: ReactNode;
+  backHref?: string;
 }) {
   if (!open) return null;
   return (
@@ -178,6 +181,7 @@ export function ExportMediaModal({
       assetUrls={assetUrls}
       channelLogoUrl={channelLogoUrl}
       previewNode={previewNode}
+      backHref={backHref}
     />
   );
 }
@@ -188,13 +192,16 @@ function ExportModalInner({
   assetUrls,
   channelLogoUrl,
   previewNode,
+  backHref,
 }: {
   onClose: () => void;
   creation: CreationDTO;
   assetUrls?: Record<string, string>;
   channelLogoUrl?: string | null;
   previewNode?: ReactNode;
+  backHref?: string;
 }) {
+  const router = useRouter();
   const defaultCaption =
     creation.captions[0]?.text ||
     "Dominasi Baru ASEAN: Indonesia Jadi Satu-Satunya Negara yang Loloskan Semua Kategori Usia ke Piala Asia!\n\nMau update berita terkini, follow Kumparan sekarang!";
@@ -250,6 +257,38 @@ function ExportModalInner({
       await new Promise((resolve) => setTimeout(resolve, 800));
       toast.success("Media berhasil diekspor dan siap dipublikasikan!");
       onClose();
+
+      if (backHref) {
+        const type = creation.type;
+        let nextStep = "carousel";
+        let newDone = ["image"];
+
+        if (type === "carousel") {
+          nextStep = "video";
+          newDone = ["image", "carousel"];
+        } else if (type === "video") {
+          nextStep = "complete";
+          newDone = ["image", "carousel", "video"];
+        }
+
+        // Persist to localStorage
+        try {
+          if (creation.projectId) {
+            const existingRaw = localStorage.getItem(`done_types_${creation.projectId}`);
+            const existing: string[] = existingRaw ? JSON.parse(existingRaw) : [];
+            const merged = Array.from(new Set([...existing, ...newDone]));
+            localStorage.setItem(`done_types_${creation.projectId}`, JSON.stringify(merged));
+          }
+          const existingStudioRaw = localStorage.getItem("done_types_brief_studio");
+          const existingStudio: string[] = existingStudioRaw ? JSON.parse(existingStudioRaw) : [];
+          const mergedStudio = Array.from(new Set([...existingStudio, ...newDone]));
+          localStorage.setItem("done_types_brief_studio", JSON.stringify(mergedStudio));
+        } catch {}
+
+        const sep = backHref.includes("?") ? "&" : "?";
+        const redirectUrl = `${backHref}${sep}activeStep=${nextStep}&done=${newDone.join(",")}`;
+        router.push(redirectUrl);
+      }
     } catch {
       toast.danger("Gagal mengekspor media.");
     } finally {

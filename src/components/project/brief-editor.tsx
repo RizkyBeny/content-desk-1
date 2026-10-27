@@ -70,7 +70,7 @@ function derivedPrompt(type: ContentType, row: BriefRow): string {
   if (type === "audio") return row.naskah ?? "";
   if (type === "video") return row.visual ?? "";
   if (type === "article") return row.poin ?? "";
-  return [row.elemenVisual, row.gaya, row.teks].filter(Boolean).join(". ");
+  return [row.visual || row.elemenVisual, row.judul || row.teks, row.isi || row.gaya || row.teks_deskripsi].filter(Boolean).join(". ");
 }
 
 export interface BriefEditorProps {
@@ -173,10 +173,16 @@ export function BriefEditor({
       if (raw.length === 0) {
         return [
           {
-            elemenVisual: "Visual utama untuk konten Single Image",
-            teks: "Headline dan pesan utama",
+            judul: "Rahasia Kopi Enak Ala Kafe! ☕",
+            teks: "Rahasia Kopi Enak Ala Kafe! ☕",
+            isi: "Tips menyeduh kopi nikmat dan konsisten dari barista profesional.",
+            gaya: "Tips menyeduh kopi nikmat dan konsisten dari barista profesional.",
+            teks_deskripsi: "Tips menyeduh kopi nikmat dan konsisten dari barista profesional.",
+            elemenVisual:
+              "A sleek commercial espresso machine on a coffee bar counter, with a subtle glowing 3D technical cutaway diagram overlay showing the copper internal boiler heating water. Digital graphic overlay showing '90°C - 96°C'. Photorealistic stainless steel reflections, warm ambient lighting, highly detailed, 8k resolution",
+            visual:
+              "A sleek commercial espresso machine on a coffee bar counter, with a subtle glowing 3D technical cutaway diagram overlay showing the copper internal boiler heating water. Digital graphic overlay showing '90°C - 96°C'. Photorealistic stainless steel reflections, warm ambient lighting, highly detailed, 8k resolution",
             rasio: singleConfig?.ratio || "1:1",
-            gaya: "Editorial & Modern",
           },
         ];
       }
@@ -186,11 +192,58 @@ export function BriefEditor({
       // Multiple Image (Carousel) Mode: HARUS LEBIH DARI 1 (Minimal 5 slide)
       if (raw.length <= 1) {
         return [
-          { slide: "1", judul: "Headline Menarik", isi: "Pengenalan topik utama yang menggugah rasa ingin tahu pembaca.", visual: "Cover visual dengan headline tegas" },
-          { slide: "2", judul: "Konteks & Latar Belakang", isi: "Penjelasan kronologi atau fakta awal secara ringkas.", visual: "Grafis timeline atau foto pendukung" },
-          { slide: "3", judul: "Fakta Kunci & Data", isi: "Angka penting, data statistik, atau temuan investigasi.", visual: "Infografis data perbandingan" },
-          { slide: "4", judul: "Dampak & Reaksi", isi: "Respon pihak terkait serta implikasinya bagi masyarakat.", visual: "Foto figur atau kutipan pernyataan" },
-          { slide: "5", judul: "Kesimpulan & Diskusi", isi: "Rangkuman singkat dan ajakan berpendapat di kolom komentar.", visual: "Branding penutup + call to action" },
+          {
+            slide: "1",
+            judul: "Rahasia Kopi Enak Ala Kafe! ☕",
+            teks: "Rahasia Kopi Enak Ala Kafe! ☕",
+            isi: "Tips menyeduh kopi nikmat dan konsisten dari barista profesional.",
+            gaya: "Tips menyeduh kopi nikmat dan konsisten dari barista profesional.",
+            teks_deskripsi: "Tips menyeduh kopi nikmat dan konsisten dari barista profesional.",
+            visual:
+              "A sleek commercial espresso machine on a coffee bar counter, with a subtle glowing 3D technical cutaway diagram overlay showing the copper internal boiler heating water. Digital graphic overlay showing '90°C - 96°C'. Photorealistic stainless steel reflections, warm ambient lighting, highly detailed, 8k resolution",
+            elemenVisual:
+              "A sleek commercial espresso machine on a coffee bar counter, with a subtle glowing 3D technical cutaway diagram overlay showing the copper internal boiler heating water. Digital graphic overlay showing '90°C - 96°C'. Photorealistic stainless steel reflections, warm ambient lighting, highly detailed, 8k resolution",
+          },
+          {
+            slide: "2",
+            judul: "Suhu & Tekanan Ekstraksi Optimal",
+            teks: "Suhu & Tekanan Ekstraksi Optimal",
+            isi: "Kunci espresso sempurna terletak pada stabilitas temperatur 90-96°C dan tekanan pompa konsisten 9 bar.",
+            gaya: "Kunci espresso sempurna terletak pada stabilitas temperatur 90-96°C dan tekanan pompa konsisten 9 bar.",
+            teks_deskripsi: "Kunci espresso sempurna terletak pada stabilitas temperatur 90-96°C dan tekanan pompa konsisten 9 bar.",
+            visual: "Close up portafilter pouring rich golden crema espresso into clear glass cup with steam",
+            elemenVisual: "Close up portafilter pouring rich golden crema espresso into clear glass cup with steam",
+          },
+          {
+            slide: "3",
+            judul: "Rasio Grinding & Distribusi Bubuk",
+            teks: "Rasio Grinding & Distribusi Bubuk",
+            isi: "Ukuran gilingan halus merata menentukan laju aliran dan ekstraksi rasa tanpa rasa pahit berlebih.",
+            gaya: "Ukuran gilingan halus merata menentukan laju aliran dan ekstraksi rasa tanpa rasa pahit berlebih.",
+            teks_deskripsi: "Ukuran gilingan halus merata menentukan laju aliran dan ekstraksi rasa tanpa rasa pahit berlebih.",
+            visual: "Flat burr coffee grinder dispensing fresh ground coffee into basket with WDT distribution needle tool",
+            elemenVisual: "Flat burr coffee grinder dispensing fresh ground coffee into basket with WDT distribution needle tool",
+          },
+          {
+            slide: "4",
+            judul: "Teknik Frothing Susu Velvet Microfoam",
+            teks: "Teknik Frothing Susu Velvet Microfoam",
+            isi: "Tekstur susu lembut mengkilap tanpa gelembung kasar untuk latte art tahan lama dan rasa manis alami.",
+            gaya: "Tekstur susu lembut mengkilap tanpa gelembung kasar untuk latte art tahan lama dan rasa manis alami.",
+            teks_deskripsi: "Tekstur susu lembut mengkilap tanpa gelembung kasar untuk latte art tahan lama dan rasa manis alami.",
+            visual: "Stainless steel pitcher pouring swan latte art pattern into ceramic cup on wooden bar",
+            elemenVisual: "Stainless steel pitcher pouring swan latte art pattern into ceramic cup on wooden bar",
+          },
+          {
+            slide: "5",
+            judul: "Kesimpulan & Diskusi",
+            teks: "Kesimpulan & Diskusi",
+            isi: "Cobain langkah ini di rumah dan bagikan pengalaman kopi favoritmu di kolom komentar!",
+            gaya: "Cobain langkah ini di rumah dan bagikan pengalaman kopi favoritmu di kolom komentar!",
+            teks_deskripsi: "Cobain langkah ini di rumah dan bagikan pengalaman kopi favoritmu di kolom komentar!",
+            visual: "Barista smiling presenting steaming cup on rustic wooden table with Kumparan branding",
+            elemenVisual: "Barista smiling presenting steaming cup on rustic wooden table with Kumparan branding",
+          },
         ];
       }
       return raw;
@@ -268,6 +321,20 @@ export function BriefEditor({
       );
       setEditRows(next);
       setIsEditing(true);
+    }
+  }
+
+  function handleUpdateContentField(ri: number, field: "judul" | "isi" | "visual", val: string) {
+    if (field === "judul") {
+      updateCell(ri, "judul", val);
+      updateCell(ri, "teks", val);
+    } else if (field === "isi") {
+      updateCell(ri, "isi", val);
+      updateCell(ri, "gaya", val);
+      updateCell(ri, "teks_deskripsi", val);
+    } else if (field === "visual") {
+      updateCell(ri, "visual", val);
+      updateCell(ri, "elemenVisual", val);
     }
   }
 
@@ -353,7 +420,7 @@ export function BriefEditor({
       });
       const res = await post<{ creationId: string }>("/api/creations", { projectId, mediaSources });
       toast.success("Generate dimulai. Mengalihkan ke editor...");
-      router.push(`/studio/${res.creationId}`);
+      router.push(`/studio/${res.creationId}?from=${contentType}&backHref=${encodeURIComponent(`/proyek/${projectId}`)}`);
     } catch (e: unknown) {
       toast.danger((e as Error).message ?? "Gagal memproses media.");
     } finally {
@@ -415,37 +482,45 @@ export function BriefEditor({
 
   return (
     <div className="space-y-6">
-      {/* Container Card Composer SceneI (Figma #1022:12117 / #1022:11951 / #1022:12265) */}
-      <div className="glass-card relative flex flex-col gap-6 rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900 sm:p-6">
+      {/* Container Card Composer Scene (Figma #1022:12117 / #1022:11951 / #1022:12265) */}
+      <div
+        className={cn(
+          "relative flex flex-col gap-6",
+          !isMultiType &&
+            "glass-card rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-zinc-900 sm:p-6"
+        )}
+      >
         {/* Identitas mode bar (Figma #1022:12118 / #1022:11952 / #1022:12266) */}
-        <div className="flex w-full items-center justify-between border-b border-zinc-100 pb-3 dark:border-white/5">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-              {contentType === "image" && <RectangleVerticalIcon className="size-3.5" />}
-              {contentType === "carousel" && <FolderIcon className="size-3.5" />}
-              {contentType === "video" && <VideoIcon className="size-3.5" />}
-              {contentType === "image"
-                ? "Single Image"
-                : contentType === "carousel"
-                  ? "Multiple Image"
-                  : contentType === "video"
-                    ? "Video"
-                    : contentType.toUpperCase()}
-            </span>
-            <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-              {angleTitle}
-            </span>
-          </div>
+        {!isMultiType && (
+          <div className="flex w-full items-center justify-between border-b border-zinc-100 pb-3 dark:border-white/5">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                {contentType === "image" && <RectangleVerticalIcon className="size-3.5" />}
+                {contentType === "carousel" && <FolderIcon className="size-3.5" />}
+                {contentType === "video" && <VideoIcon className="size-3.5" />}
+                {contentType === "image"
+                  ? "Single Image"
+                  : contentType === "carousel"
+                    ? "Multiple Image"
+                    : contentType === "video"
+                      ? "Video"
+                      : contentType.toUpperCase()}
+              </span>
+              <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                {angleTitle}
+              </span>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex size-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-white/10 dark:hover:text-zinc-300"
-            aria-label={isCollapsed ? "Buka brief" : "Tutup brief"}
-          >
-            {isCollapsed ? <ChevronDownIcon className="size-5" /> : <ChevronUpIcon className="size-5" />}
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="flex size-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-white/10 dark:hover:text-zinc-300"
+              aria-label={isCollapsed ? "Buka brief" : "Tutup brief"}
+            >
+              {isCollapsed ? <ChevronDownIcon className="size-5" /> : <ChevronUpIcon className="size-5" />}
+            </button>
+          </div>
+        )}
 
         {!isCollapsed && (
           <>
@@ -472,7 +547,7 @@ export function BriefEditor({
                     </span>
                   )}
                   <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-300">
-                    {rows.length} {contentType === "video" ? "Scene" : contentType === "image" ? "Image" : "Slide"}
+                    {rows.length} {contentType === "video" ? "Scene" : "Image"}
                   </span>
                 </div>
               </div>
@@ -496,6 +571,26 @@ export function BriefEditor({
                       className="gap-1.5 border-zinc-200 text-xs font-medium dark:border-white/10"
                     >
                       <DownloadIcon width={13} height={13} /> Unduh PDF
+                    </Button>
+                    <Button
+                      size="sm"
+                      onPress={
+                        contentType === "video"
+                          ? () => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia())
+                          : generateMedia
+                      }
+                      isDisabled={!!busy}
+                      className="gap-2 bg-zinc-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+                    >
+                      {contentType === "video" ? (
+                        <>
+                          <VideoIcon width={14} height={14} /> Preview Storyboard
+                        </>
+                      ) : (
+                        <>
+                          <SparkIcon width={14} height={14} /> Lanjut ke Editor
+                        </>
+                      )}
                     </Button>
                   </>
                 ) : (
@@ -805,12 +900,15 @@ export function BriefEditor({
                       const activeGenVisual = genList[selectedThumb];
                       const isRowGenerating = !!generatingRows[ri];
 
+                      const defaultFallbackUrl =
+                        GENERATED_IMAGE_POOL[(ri * 2) % GENERATED_IMAGE_POOL.length]?.url || "/post-media/card-1.png";
+
                       const activeDisplayMedia =
                         visualMode === "manual" && manualMedia
                           ? { url: manualMedia.url, title: manualMedia.title, isManual: true }
                           : visualMode === "generated" && activeGenVisual
                             ? { url: activeGenVisual.url, title: activeGenVisual.title, isManual: false }
-                            : null;
+                            : { url: defaultFallbackUrl, title: `Visual Image ${ri + 1}`, isManual: false };
 
                       return (
                         <div
@@ -913,11 +1011,9 @@ export function BriefEditor({
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <SparkIcon className="size-4 text-brand-strong dark:text-brand" />
-                                        <span>Generate {genList.length > 0 ? "Variasi Baru" : "Image"}</span>
+                                        <span>Generate (Rp6000/Generate)</span>
                                       </div>
-                                      <span className="text-[10px] text-zinc-400">
-                                        {genList.length >= 3 ? "Batas 3x tercapai" : "Rp6000/gen"}
-                                      </span>
+                                      <span className="text-[11px] text-zinc-400" title="Informasi biaya generate">ℹ️</span>
                                     </button>
 
                                     {/* 4. Kembali ke Hasil Generate jika sedang mode manual & punya riwayat generate */}
@@ -966,18 +1062,6 @@ export function BriefEditor({
                                   </div>
                                 )}
                               </div>
-
-                              {/* Preview Center Graphic jika belum ada media aktif & tidak sedang generating */}
-                              {!activeDisplayMedia && !isRowGenerating && (
-                                <div className="my-auto flex flex-col items-center justify-center gap-2 text-center">
-                                  <div className="flex size-12 items-center justify-center rounded-full bg-white/70 text-zinc-400 shadow-sm dark:bg-white/10">
-                                    <ImageIcon width={24} height={24} />
-                                  </div>
-                                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                                    Preview Visual {noun} {ri + 1}
-                                  </span>
-                                </div>
-                              )}
 
                               <div className="relative z-10 self-end rounded bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
                                 {activeDisplayMedia ? activeDisplayMedia.title : activeRatio}
@@ -1087,7 +1171,7 @@ export function BriefEditor({
                             <div className="flex items-center justify-between border-b border-zinc-100 pb-2 dark:border-white/5">
                               <div className="flex items-center gap-2">
                                 <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                                  {contentType === "carousel" ? `Visual Slide ${ri + 1}` : `Visual Image ${ri + 1}`}
+                                  Visual Image {ri + 1}
                                 </h4>
                                 <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
                                   Draft
@@ -1110,9 +1194,9 @@ export function BriefEditor({
                                 Text Judul Di gambar
                               </label>
                               <input
-                                value={titleVal}
-                                onChange={(e) => updateCell(ri, titleKey, e.target.value)}
-                                placeholder="Masukkan judul headline pada gambar..."
+                                value={row.judul ?? row.teks ?? ""}
+                                onChange={(e) => handleUpdateContentField(ri, "judul", e.target.value)}
+                                placeholder="Rahasia Kopi Enak Ala Kafe! ☕"
                                 className="w-full rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm font-medium text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
                               />
                             </div>
@@ -1124,9 +1208,9 @@ export function BriefEditor({
                               </label>
                               <textarea
                                 rows={2}
-                                value={bodyVal}
-                                onChange={(e) => updateCell(ri, bodyKey, e.target.value)}
-                                placeholder="Isi deskripsi atau narasi singkat..."
+                                value={row.isi ?? row.teks_deskripsi ?? row.gaya ?? ""}
+                                onChange={(e) => handleUpdateContentField(ri, "isi", e.target.value)}
+                                placeholder="Input group control"
                                 className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
                               />
                             </div>
@@ -1138,9 +1222,9 @@ export function BriefEditor({
                               </label>
                               <textarea
                                 rows={3}
-                                value={visualVal}
-                                onChange={(e) => updateCell(ri, visualKey, e.target.value)}
-                                placeholder="Prompt elemen visual untuk generate gambar..."
+                                value={row.visual ?? row.elemenVisual ?? ""}
+                                onChange={(e) => handleUpdateContentField(ri, "visual", e.target.value)}
+                                placeholder="A sleek commercial espresso machine on a coffee bar counter, with a subtle glowing 3D technical cutaway diagram overlay showing the copper internal boiler heating water..."
                                 className="w-full resize-y rounded-lg border border-zinc-200/90 bg-white px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand dark:border-white/10 dark:bg-zinc-900"
                               />
                             </div>
@@ -1207,35 +1291,6 @@ export function BriefEditor({
         )}
       </div>
 
-      {/* STICKY FOOTER ACTIONS (Figma #1022:12235 / #1022:12014) - Hanya untuk single media mode */}
-      {!isMultiType && (
-        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-2xl border border-zinc-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl dark:border-white/15 dark:bg-zinc-900/95 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {isEditing
-              ? "Simpan perubahan dulu sebelum melanjutkan."
-              : contentType === "video"
-                ? "Periksa preview storyboard sebelum melanjutkan ke Canvas Editor."
-                : "Simpan perubahan sebelum melanjutkan ke Canvas Editor."}
-          </span>
-
-          <Button
-            size="sm"
-            onPress={contentType === "video" ? () => (onPreviewVideo ? onPreviewVideo(brief) : generateMedia()) : generateMedia}
-            isDisabled={!!busy || isEditing}
-            className="gap-2 bg-zinc-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-          >
-            {contentType === "video" ? (
-              <>
-                <VideoIcon width={14} height={14} /> Preview Storyboard
-              </>
-            ) : (
-              <>
-                <SparkIcon width={14} height={14} /> Lanjut ke Editor
-              </>
-            )}
-          </Button>
-        </div>
-      )}
 
       {/* MODAL INSERT MEDIA (GALERI MAGNETO & UPLOAD PERANGKAT) */}
       <InsertMediaModal

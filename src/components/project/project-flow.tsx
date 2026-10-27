@@ -140,7 +140,7 @@ export function ProjectFlow({
 
       toast.success("Generate kreasi dimulai! Mengalihkan ke Canvas Editor...");
       setShowPreviewModal(false);
-      router.push(`/studio/${res.creationId}`);
+      router.push(`/studio/${res.creationId}?from=${activeType}&backHref=${encodeURIComponent(`/proyek/${state.id}`)}`);
     } catch (e: unknown) {
       toast.danger((e as Error).message ?? "Gagal memproses pembuatan video.");
       setIsGeneratingCreation(false);

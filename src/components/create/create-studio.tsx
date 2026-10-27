@@ -19,6 +19,7 @@ import { InsightSection } from "./insight-section";
 import { GuidedImageFlow } from "./guided-image-flow";
 import { ImageStudioFlow } from "./image-studio-flow";
 import { VideoStudioFlow } from "./video-studio-flow";
+import { BriefStudioFlow } from "./brief-studio-flow";
 import { ReferenceOutputGrid } from "./reference-output-grid";
 import { TopicChips } from "./topic-chips";
 import { useGenerations } from "./use-generations";
@@ -250,6 +251,10 @@ export function CreateStudio({ type, canModerate }: { type: GenerationType; canM
 
   if (type === "video") {
     return <VideoStudioFlow items={items} canModerate={canModerate} />;
+  }
+
+  if (type === "brief") {
+    return <BriefStudioFlow canModerate={canModerate} />;
   }
 
   return (

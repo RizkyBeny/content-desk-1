@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@heroui/react";
-import { EyeIcon, SparkIcon, TagIcon, XIcon } from "@/components/ui/icons";
+import { EyeIcon, PlusIcon, SparkIcon, TagIcon, XIcon } from "@/components/ui/icons";
 import { TOPIC_RECOMMENDATIONS_DATA, type TopicRecommendationItem } from "../../../config/overview";
 import { HoverTip } from "./hover-tip";
 import { post } from "@/lib/client";
+import { TambahTopikModal } from "./tambah-topik-modal";
 
 export interface ContentReference {
   id: string;
@@ -61,6 +62,7 @@ export function TopicRecommendationSection({
   const [promptText, setPromptText] = useState("");
   const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
   const [isRefModalOpen, setIsRefModalOpen] = useState(false);
+  const [isTambahTopikOpen, setIsTambahTopikOpen] = useState(false);
   const [refInputText, setRefInputText] = useState("");
   const [contentReferences, setContentReferences] = useState<ContentReference[]>([]);
 
@@ -226,11 +228,21 @@ export function TopicRecommendationSection({
       <div className="space-y-5">
         {/* Header & Topic Score Info Callout */}
         <div className="flex flex-col justify-between gap-6 border-t border-zinc-100 pt-8 lg:flex-row lg:items-center dark:border-white/5">
-          <div>
-            <h3 className="text-base font-bold tracking-tight text-zinc-900 sm:text-lg dark:text-white">
-              Topic Recommendation
-            </h3>
-            <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="text-base font-bold tracking-tight text-zinc-900 sm:text-lg dark:text-white">
+                Topic Recommendation
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsTambahTopikOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs transition-colors hover:bg-zinc-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              >
+                <PlusIcon className="size-3.5 text-zinc-500 dark:text-zinc-400" />
+                <span>Tambah Topik</span>
+              </button>
+            </div>
+            <p className="text-xs text-zinc-500 sm:text-sm dark:text-zinc-400">
               Topik dengan skor tertinggi (0–100) dari konten di platform & sosial media kumparan
             </p>
           </div>
@@ -344,7 +356,7 @@ export function TopicRecommendationSection({
                         <span>Menyiapkan Angle...</span>
                       </>
                     ) : (
-                      <span>Buat Postingan</span>
+                      <span>Bikin Konten</span>
                     )}
                   </button>
                 </div>
@@ -420,6 +432,12 @@ export function TopicRecommendationSection({
           </div>
         </div>
       )}
+
+      {/* 4. MODAL DIALOG: TAMBAH TOPIK (Figma #314:19393) */}
+      <TambahTopikModal
+        isOpen={isTambahTopikOpen}
+        onClose={() => setIsTambahTopikOpen(false)}
+      />
     </section>
   );
 }

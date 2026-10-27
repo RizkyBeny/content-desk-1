@@ -196,6 +196,7 @@ function EditorInner({
         creation={creation}
         assetUrls={assetUrls}
         channelLogoUrl={channelLogoUrl}
+        backHref={backHref}
       />
     </>
   );

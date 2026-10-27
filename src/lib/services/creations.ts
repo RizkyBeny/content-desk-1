@@ -430,6 +430,7 @@ export interface CanvasDraftItem {
 export interface CanvasDraftPayload {
   type?: ContentType;
   ratio?: Ratio;
+  caption?: string;
   items?: CanvasDraftItem[];
 }
 
@@ -500,6 +501,20 @@ export async function syncCanvasDraft(
           editorState: nextEditorState as unknown as Prisma.InputJsonValue,
         },
       });
+
+      if (payload.caption && typeof payload.caption === "string") {
+        await prisma.contentBrief.updateMany({
+          where: { projectId: creation.projectId },
+          data: {
+            captions: [
+              {
+                channel: "instagram",
+                text: payload.caption,
+              },
+            ],
+          },
+        });
+      }
     } else if (targetType === "video") {
       const scenes: SceneObject[] = items.map((it, idx) => {
         const sceneNum = idx + 1;
